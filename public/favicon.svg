@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="au" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#D4AF37"/><stop offset="0.5" stop-color="#C6A15B"/><stop offset="1" stop-color="#9C7B3C"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="26" fill="#080808"/>
+  <rect x="1.5" y="1.5" width="117" height="117" rx="24.5" fill="none" stroke="#2a2a2a" stroke-width="1"/>
+  <!-- A stroke -->
+  <path d="M28 92 L52 30 L64 30" fill="none" stroke="url(#au)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M36 72 L58 72" fill="none" stroke="url(#au)" stroke-width="7" stroke-linecap="round"/>
+  <!-- P stem + pin bowl -->
+  <path d="M64 30 L64 92" fill="none" stroke="url(#au)" stroke-width="7" stroke-linecap="round"/>
+  <path d="M64 30 L74 30 A17 17 0 0 1 74 64 L64 64" fill="none" stroke="url(#au)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- pin point -->
+  <circle cx="91" cy="47" r="4" fill="#D4AF37"/>
+</svg>
