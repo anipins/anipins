@@ -62,7 +62,7 @@ export default function FeaturedSlider() {
                 else if (info.offset.x > 70) { setDir(-1); setIdx(i => (i - 1 + arts.length) % arts.length); }
               }}
               className="absolute inset-0 cursor-grab active:cursor-grabbing">
-              <img src={`/api/img/${a.orig}`} alt={a.character_name} className="h-full w-full object-cover" draggable={false} />
+              <img src={`/api/img/${a.orig || a.thumb}`} alt={a.character_name} className="h-full w-full object-cover" draggable={false} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
               <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }}
                 className="absolute inset-x-0 bottom-0 p-6 md:p-9">

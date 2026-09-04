@@ -29,8 +29,13 @@ export async function GET(req: NextRequest) {
   if (sort === "popular") order = "downloads DESC, views DESC";
   if (sort === "trending") order = "views DESC, downloads DESC";
 
+  // `orig` is only exposed for the small featured set (hero slider needs the
+  // full-quality image); the general feed stays thumb-only for performance.
+  const cols = featured === "1"
+    ? "id, title, character_name, character_slug, anime_name, anime_slug, tags, category, featured, thumb, orig, width, height, views, downloads"
+    : "id, title, character_name, character_slug, anime_name, anime_slug, tags, category, featured, thumb, width, height, views, downloads";
   const items = await rows(
-    `SELECT id, title, character_name, character_slug, anime_name, anime_slug, tags, category, featured, thumb, width, height, views, downloads
+    `SELECT ${cols}
      FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ? OFFSET ?`,
     ...args, limit + 1, page * limit
   );
