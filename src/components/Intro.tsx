@@ -6,33 +6,51 @@ export default function Intro() {
   const [show, setShow] = useState(false);
   useEffect(() => {
     if (sessionStorage.getItem("anipins_intro")) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      sessionStorage.setItem("anipins_intro", "1");
+      return;
+    }
     sessionStorage.setItem("anipins_intro", "1");
     setShow(true);
-    const t = setTimeout(() => setShow(false), 1600);
+    const t = setTimeout(() => setShow(false), 1700);
     return () => clearTimeout(t);
   }, []);
-  const stroke = { strokeDasharray: 300, strokeDashoffset: 300 };
   return (
     <AnimatePresence>
       {show && (
         <motion.div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-ink"
           exit={{ opacity: 0, transition: { duration: 0.5, ease: "easeInOut" } }}>
-          <svg viewBox="0 0 120 120" className="h-24 w-24">
-            <defs>
-              <linearGradient id="ig" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stopColor="#D4AF37"/><stop offset="1" stopColor="#9C7B3C"/>
-              </linearGradient>
-            </defs>
-            {["M28 92 L52 30 L64 30", "M36 72 L58 72", "M64 30 L64 92", "M64 30 L74 30 A17 17 0 0 1 74 64 L64 64"].map((d, i) => (
-              <motion.path key={i} d={d} fill="none" stroke="url(#ig)" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round"
-                initial={stroke} animate={{ strokeDashoffset: 0 }} transition={{ duration: 0.7, delay: 0.1 + i * 0.12, ease: "easeInOut" }} />
-            ))}
-            <motion.circle cx="91" cy="47" r="4" fill="#D4AF37" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.75, duration: 0.3 }} />
-          </svg>
+          <div className="relative flex items-center justify-center">
+            {/* soft gold aura behind the logo */}
+            <motion.div
+              className="absolute h-52 w-52 rounded-full"
+              style={{ background: "radial-gradient(circle, rgba(198,161,91,0.28) 0%, rgba(198,161,91,0.08) 45%, transparent 70%)" }}
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1.15 }}
+              transition={{ duration: 1.1, ease: "easeOut" }}
+            />
+            {/* thin gold ring drawing itself around the logo */}
+            <svg viewBox="0 0 160 160" className="absolute h-44 w-44 -rotate-90">
+              <motion.circle cx="80" cy="80" r="76" fill="none" stroke="#C6A15B" strokeWidth="1"
+                opacity="0.55" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+                transition={{ duration: 1.0, ease: "easeInOut" }} />
+            </svg>
+            {/* the logo itself */}
+            <motion.img
+              src="/brand/ap-symbol-intro.png" alt="AniPins"
+              className="h-32 w-32 select-none"
+              initial={{ opacity: 0, scale: 0.82, filter: "blur(6px)" }}
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+              draggable={false}
+            />
+          </div>
           <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55, duration: 0.5 }}
-            className="mt-5 font-display text-2xl font-semibold tracking-tight">Ani<span className="text-gold">Pins</span></motion.p>
+            className="mt-6 font-display text-2xl font-semibold tracking-tight">Ani<span className="text-gold">Pins</span></motion.p>
           <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.7, duration: 0.6, ease: "easeInOut" }}
             className="mt-4 h-px w-32 origin-center bg-gold/50" />
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9, duration: 0.5 }}
+            className="mt-3 text-[10px] uppercase tracking-[0.4em] text-fog">Discover · Save · Create</motion.p>
         </motion.div>
       )}
     </AnimatePresence>
