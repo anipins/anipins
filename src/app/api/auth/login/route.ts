@@ -1,16 +1,38 @@
-import { NextRequest, NextResponse } from "next/server";
-import { row } from "@/lib/db";
-import { checkPassword, createSession, COOKIE } from "@/lib/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { authenticateUser, createSession } from '@/lib/auth';
+import { initDatabase } from '@/lib/db';
 
-export async function POST(req: NextRequest) {
-  const { email, password } = await req.json();
-  const em = String(email || "").toLowerCase().trim();
-  const u = await row("SELECT * FROM users WHERE email=?", em);
-  if (!u || !checkPassword(password || "", u.password_hash)) {
-    return NextResponse.json({ error: "Incorrect email or password." }, { status: 401 });
+export async function POST(request: NextRequest) {
+  try {
+    initDatabase();
+    const { email, password } = await request.json();
+    
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
+    }
+
+    const user = await authenticateUser(email, password);
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    const token = createSession(user.id);
+    const response = NextResponse.json({ 
+      user: { id: user.id, email: user.email, username: user.username, display_name: user.display_name, role: user.role },
+      success: true 
+    });
+    
+    response.cookies.set('anipins_session', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
+    });
+
+    return response;
+  } catch (error) {
+    console.error('Login error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-  const token = await createSession(u.id);
-  const res = NextResponse.json({ ok: true, role: u.role });
-  res.cookies.set(COOKIE, token, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30 });
-  return res;
 }
