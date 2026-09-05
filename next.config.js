@@ -1,8 +1,12 @@
 /** @type {import('next').NextConfig} */
-module.exports = {
-  experimental: {
-    serverComponentsExternalPackages: ["better-sqlite3", "sharp", "pg"],
-    outputFileTracingIncludes: { "/api/setup": ["./seed/**/*"] }
+const nextConfig = {
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'anipins-three.vercel.app' },
+    ],
+    unoptimized: true,
   },
-  images: { unoptimized: true }
+  serverExternalPackages: ['better-sqlite3'],
 };
+
+module.exports = nextConfig;
