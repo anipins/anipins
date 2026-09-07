@@ -1,40 +1,38 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Inter, Space_Grotesk } from "next/font/google";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import Intro from "@/components/Intro";
+import Toaster from "@/components/Toaster";
+import ArtLightbox from "@/components/ArtLightbox";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-grotesk" });
 
 export const metadata: Metadata = {
   title: "AniPins — Discover. Save. Create.",
   description: "Anime artwork curated for inspiration. Discover, save, share and download high-quality anime character art.",
-  keywords: "anime, anime art, anime wallpapers, anime characters, manga, fan art, wallpapers",
-  icons: {
-    icon: '/favicon.svg',
-    apple: '/brand/ap-symbol-192.png',
-  },
+  icons: { icon: "/favicon.svg", apple: "/brand/ap-symbol-192.png" },
   openGraph: {
     title: "AniPins — Discover. Save. Create.",
     description: "Anime artwork curated for inspiration.",
-    url: "https://anipins-three.vercel.app",
+    images: ["/brand/og-image.png"],
     siteName: "AniPins",
-    images: [{ url: "https://anipins-three.vercel.app/brand/og-image.png" }],
-    type: "website",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "AniPins — Discover. Save. Create.",
-    description: "Anime artwork curated for inspiration.",
-    images: ["https://anipins-three.vercel.app/brand/og-image.png"],
-  },
+  twitter: { card: "summary_large_image", images: ["/brand/og-image.png"] },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-      </head>
-      <body className="bg-[#080808] text-white antialiased" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-        {children}
+    <html lang="en" className={`${inter.variable} ${grotesk.variable}`}>
+      <body>
+        <Intro />
+        <Navbar />
+        <main className="min-h-[70vh]">{children}</main>
+        <Footer />
+        <Toaster />
+        <ArtLightbox />
       </body>
     </html>
   );
