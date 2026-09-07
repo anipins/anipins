@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Logo from "./Logo";
 
 const IG_URL = "https://www.instagram.com/_anipins_?igsi=dzZzem42bnBha3Y=";
+const APP_URL = "https://anipins-mobile.onhercules.app";
 const LINKS = [
   { href: "/explore", label: "Explore" },
   { href: "/characters", label: "Characters" },
@@ -91,6 +92,15 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-2 shrink-0">
+          <a
+  href={APP_URL}
+  target="_blank"
+  rel="noopener noreferrer"
+  title="Download AniPins App"
+  className="inline-flex items-center gap-2 rounded-full hairline px-4 py-2 text-sm font-medium text-gold hover:text-paper hover:border-gold-dim hover:bg-white/5 transition-colors"
+>
+  Download App
+</a>
           <a href={IG_URL} target="_blank" rel="noopener noreferrer" title="Instagram — @_anipins_"
             className="rounded-full p-2.5 text-fog hover:text-gold hover:bg-white/5 transition-colors">
             <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>
@@ -126,6 +136,14 @@ export default function Navbar() {
               {LINKS.map(l => (
                 <Link key={l.href} href={l.href} className={`py-2.5 text-[15px] ${path === l.href ? "text-gold" : "text-fog hover:text-paper"}`}>{l.label}</Link>
               ))}
+             <a
+  href={APP_URL}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="py-2.5 text-[15px] text-gold font-medium hover:text-paper"
+>
+  Download App
+</a>
               <a href={IG_URL} target="_blank" rel="noopener noreferrer" className="py-2.5 text-[15px] text-fog hover:text-gold">Instagram — @_anipins_</a>
               {user ? (
                 <>
