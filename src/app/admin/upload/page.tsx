@@ -114,6 +114,14 @@ export default function AdminUpload() {
             <option>Aesthetic</option>
           </select>
         </div>
+        <div><label className="label">Gender / Sex</label>
+          <select name="gender" className="input">
+            <option value="">Not specified</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Non-binary">Non-binary</option>
+          </select>
+        </div>
         <label className="flex items-center gap-3 text-sm">
           <input type="checkbox" name="featured" value="1" className="h-4 w-4 accent-white" /> Featured Artwork (shown in homepage hero)
         </label>

@@ -27,6 +27,16 @@ export default function MasonryFeed({ query = {} }: { query?: Record<string, str
   useEffect(() => { load(0, true); }, [key]);
 
   useEffect(() => {
+    const refresh = () => {
+      setPage(0);
+      setHasMore(true);
+      load(0, true);
+    };
+    window.addEventListener("anipins:refresh", refresh);
+    return () => window.removeEventListener("anipins:refresh", refresh);
+  }, [load]);
+
+  useEffect(() => {
     const el = sentinel.current;
     if (!el) return;
     const obs = new IntersectionObserver((entries) => {

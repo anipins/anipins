@@ -54,6 +54,32 @@ export async function saveImage(buffer: Buffer, origName: string) {
   return { orig: origKey, thumb: thumbKey, width: meta.width || 0, height: meta.height || 0 };
 }
 
+export async function saveAvatar(buffer: Buffer, userId: number) {
+  const key = `avatars/${userId}-${crypto.randomBytes(8).toString("hex")}.webp`;
+  const avatar = await sharp(buffer)
+    .rotate()
+    .resize(512, 512, { fit: "cover", position: "attention" })
+    .webp({ quality: 84 })
+    .toBuffer();
+
+  if (USE_SUPABASE_STORAGE) {
+    await sbUpload(key, avatar, "image/webp");
+  } else {
+    fs.mkdirSync(path.join(UPLOADS_DIR, "avatars"), { recursive: true });
+    fs.writeFileSync(path.join(UPLOADS_DIR, key), avatar);
+  }
+  return key;
+}
+
+export async function deleteFile(rel: string) {
+  if (!rel) return;
+  if (USE_SUPABASE_STORAGE) { await sbDelete([rel]); return; }
+  try {
+    const p = path.normalize(path.join(UPLOADS_DIR, rel));
+    if (p.startsWith(UPLOADS_DIR) && fs.existsSync(p)) fs.unlinkSync(p);
+  } catch {}
+}
+
 export async function deleteFiles(orig: string, thumb: string) {
   if (USE_SUPABASE_STORAGE) { await sbDelete([orig, thumb]); return; }
   for (const rel of [orig, thumb]) {

@@ -11,7 +11,8 @@ export async function POST(req: NextRequest) {
   const exists = await row("SELECT id FROM users WHERE email=?", em);
   if (exists) return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
   const role = em === ADMIN_EMAIL ? "ADMIN" : "USER";
-  await run("INSERT INTO users (email,password_hash,name,role) VALUES (?,?,?,?)", em, hashPassword(password), name || "", role);
+  const displayName = String(name || "").trim().slice(0, 40);
+  await run("INSERT INTO users (email,password_hash,name,nickname,role) VALUES (?,?,?,?,?)", em, hashPassword(password), displayName, displayName, role);
   const u = await row("SELECT id FROM users WHERE email=?", em);
   const token = await createSession(u.id);
   const res = NextResponse.json({ ok: true, role });

@@ -14,10 +14,16 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const liked = u ? !!(await row("SELECT id FROM likes WHERE user_id=? AND artwork_id=?", u.id, id)) : false;
 
   const related = await rows(
-    `SELECT id, title, character_name, anime_name, thumb, width, height FROM artworks
-     WHERE published=1 AND id != ? AND (character_slug = ? OR anime_slug = ?)
-     ORDER BY CASE WHEN character_slug = ? THEN 0 ELSE 1 END, views DESC LIMIT 12`,
-    id, art.character_slug, art.anime_slug, art.character_slug
+    `SELECT id, title, character_name, character_slug, anime_name, anime_slug, gender, category, thumb, width, height FROM artworks
+     WHERE published=1 AND id != ?
+     ORDER BY CASE
+       WHEN character_slug = ? THEN 0
+       WHEN anime_slug = ? THEN 1
+       WHEN gender != '' AND gender = ? THEN 2
+       WHEN category != '' AND category = ? THEN 3
+       ELSE 4 END,
+       views DESC, id DESC LIMIT 20`,
+    id, art.character_slug, art.anime_slug, art.gender || "", art.category || ""
   );
   const prev = await row("SELECT id FROM artworks WHERE published=1 AND id < ? ORDER BY id DESC LIMIT 1", id);
   const next = await row("SELECT id FROM artworks WHERE published=1 AND id > ? ORDER BY id ASC LIMIT 1", id);

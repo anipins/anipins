@@ -77,6 +77,7 @@ export default function ArtPage({ params }: { params: { id: string } }) {
               <div className="mt-3 flex flex-wrap gap-2 text-sm">
                 <Link href={`/c/${art.character_slug}`} className="chip chip-on">{art.character_name}</Link>
                 <Link href={`/anime/${art.anime_slug}`} className="chip">{art.anime_name}</Link>
+                {art.gender && <span className="chip">{art.gender}</span>}
               </div>
               {art.description && <p className="mt-5 text-sm leading-relaxed text-fog">{art.description}</p>}
               {art.tags && (

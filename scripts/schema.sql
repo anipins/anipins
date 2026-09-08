@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   name TEXT DEFAULT '',
+  nickname TEXT DEFAULT '',
+  avatar TEXT DEFAULT '',
   role TEXT DEFAULT 'USER',
   created_at TEXT DEFAULT (datetime('now'))
 );
@@ -20,6 +22,7 @@ CREATE TABLE IF NOT EXISTS artworks (
   anime_slug TEXT NOT NULL,
   description TEXT DEFAULT '',
   tags TEXT DEFAULT '',
+  gender TEXT DEFAULT '',
   category TEXT DEFAULT '',
   featured INTEGER DEFAULT 0,
   published INTEGER DEFAULT 1,

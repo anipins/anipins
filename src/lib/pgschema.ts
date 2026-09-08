@@ -1,15 +1,19 @@
 export const PG_SCHEMA: string[] = [
   `CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL,
-    name TEXT DEFAULT '', role TEXT DEFAULT 'USER', created_at TIMESTAMPTZ DEFAULT now())`,
+    name TEXT DEFAULT '', nickname TEXT DEFAULT '', avatar TEXT DEFAULT '',
+    role TEXT DEFAULT 'USER', created_at TIMESTAMPTZ DEFAULT now())`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname TEXT DEFAULT ''`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT DEFAULT ''`,
   `CREATE TABLE IF NOT EXISTS sessions (
     token TEXT PRIMARY KEY, user_id INTEGER NOT NULL, expires_at BIGINT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS artworks (
     id SERIAL PRIMARY KEY, title TEXT DEFAULT '', character_name TEXT NOT NULL, character_slug TEXT NOT NULL,
-    anime_name TEXT NOT NULL, anime_slug TEXT NOT NULL, description TEXT DEFAULT '', tags TEXT DEFAULT '',
+    anime_name TEXT NOT NULL, anime_slug TEXT NOT NULL, description TEXT DEFAULT '', tags TEXT DEFAULT '', gender TEXT DEFAULT '',
     category TEXT DEFAULT '', featured INTEGER DEFAULT 0, published INTEGER DEFAULT 1,
     orig TEXT NOT NULL, thumb TEXT NOT NULL, width INTEGER DEFAULT 0, height INTEGER DEFAULT 0,
     views INTEGER DEFAULT 0, downloads INTEGER DEFAULT 0, created_at TIMESTAMPTZ DEFAULT now())`,
+  `ALTER TABLE artworks ADD COLUMN IF NOT EXISTS gender TEXT DEFAULT ''`,
   `CREATE INDEX IF NOT EXISTS idx_art_char ON artworks(character_slug)`,
   `CREATE INDEX IF NOT EXISTS idx_art_anime ON artworks(anime_slug)`,
   `CREATE INDEX IF NOT EXISTS idx_art_pub ON artworks(published)`,

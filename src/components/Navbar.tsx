@@ -109,6 +109,12 @@ export default function Navbar() {
           </a>
           {user ? (
             <>
+              <Link href="/profile" title="Profile" className="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-fog hover:bg-paper/5 hover:text-paper transition-colors">
+                <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-soft text-xs font-semibold text-gold hairline">
+                  {user.avatar ? <img src={`/api/img/${user.avatar}`} alt="" className="h-full w-full object-cover" /> : (user.nickname || user.name || user.email || "A").slice(0, 1).toUpperCase()}
+                </span>
+                <span className="max-w-24 truncate">{user.nickname || user.name || "Profile"}</span>
+              </Link>
               <Link href="/saves" className="rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors">Saves</Link>
               {user.role === "ADMIN" && (
                 <Link href="/admin" className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors">
@@ -149,6 +155,12 @@ export default function Navbar() {
               <a href={IG_URL} target="_blank" rel="noopener noreferrer" className="py-2.5 text-[15px] text-fog hover:text-gold">Instagram — @_anipins_</a>
               {user ? (
                 <>
+                  <Link href="/profile" className="flex items-center gap-3 py-2.5 text-[15px] text-fog hover:text-paper">
+                    <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-soft text-xs font-semibold text-gold hairline">
+                      {user.avatar ? <img src={`/api/img/${user.avatar}`} alt="" className="h-full w-full object-cover" /> : (user.nickname || user.name || user.email || "A").slice(0, 1).toUpperCase()}
+                    </span>
+                    {user.nickname || user.name || "Profile"}
+                  </Link>
                   <Link href="/saves" className="py-2.5 text-[15px] text-fog hover:text-paper">Saves</Link>
                   {user.role === "ADMIN" && <Link href="/admin" className="py-2.5 text-[15px] text-gold">Admin — Owner</Link>}
                   <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }} className="py-2.5 text-left text-[15px] text-fog hover:text-paper">Sign out</button>

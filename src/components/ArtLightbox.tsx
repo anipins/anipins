@@ -14,6 +14,7 @@ export default function ArtLightbox() {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const touch = useRef<number | null>(null);
+  const panel = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const h = (e: Event) => setId((e as CustomEvent).detail.id);
@@ -23,6 +24,10 @@ export default function ArtLightbox() {
 
   useEffect(() => {
     if (id === null) { setData(null); return; }
+    setData(null);
+    setSave(false);
+    setShare(false);
+    panel.current?.scrollTo({ top: 0 });
     fetch(`/api/artworks/${id}`).then(r => r.ok ? r.json() : Promise.reject()).then(d => {
       setData(d); setLiked(d.liked); setLikeCount(d.likeCount);
     }).catch(() => setId(null));
@@ -71,44 +76,68 @@ export default function ArtLightbox() {
           {data?.prevId && <button onClick={e => { e.stopPropagation(); nav("prev"); }} className="absolute left-3 top-1/2 z-10 hidden md:grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-gold hover:text-ink transition-colors">←</button>}
           {data?.nextId && <button onClick={e => { e.stopPropagation(); nav("next"); }} className="absolute right-3 top-1/2 z-10 hidden md:grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-gold hover:text-ink transition-colors">→</button>}
 
-          <motion.div key={art?.id ?? "loading"}
+          <motion.div ref={panel} key={id}
             initial={{ scale: 0.9, y: 24, opacity: 0, rotateX: 4 }}
             animate={{ scale: 1, y: 0, opacity: 1, rotateX: 0 }}
             exit={{ scale: 0.94, y: 14, opacity: 0 }}
             transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
             style={{ transformPerspective: 1100 }}
             onClick={e => e.stopPropagation()}
-            className="grid max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-3xl bg-panel hairline shadow-[0_40px_120px_rgba(0,0,0,0.7)] md:grid-cols-[1.35fr,1fr]">
-            <div className="relative bg-ink flex items-center justify-center max-h-[55vh] md:max-h-[92vh]">
-              {art ? <img src={`/api/img/${art.orig}`} alt={art.title} className="max-h-[55vh] md:max-h-[92vh] w-full object-contain" />
-                : <div className="skeleton h-[50vh] w-full" />}
+            className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-3xl bg-panel hairline shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
+            <div className="grid md:grid-cols-[1.35fr,1fr]">
+              <div className="relative flex max-h-[55vh] items-center justify-center bg-ink md:max-h-[82vh]">
+                {art ? <img src={`/api/img/${art.orig}`} alt={art.title || art.character_name} className="max-h-[55vh] w-full object-contain md:max-h-[82vh]" />
+                  : <div className="skeleton h-[50vh] w-full" />}
+              </div>
+              <div className="flex min-h-80 flex-col p-6 md:p-8">
+                {art && (
+                  <>
+                    <h2 className="font-display text-2xl font-semibold">{art.title || art.character_name}</h2>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Link href={`/c/${art.character_slug}`} onClick={() => setId(null)} className="chip chip-on">{art.character_name}</Link>
+                      <Link href={`/anime/${art.anime_slug}`} onClick={() => setId(null)} className="chip">{art.anime_name}</Link>
+                      {art.gender && <span className="chip">{art.gender}</span>}
+                    </div>
+                    {art.description && <p className="mt-4 text-sm leading-relaxed text-fog">{art.description}</p>}
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      <button onClick={like} className={`btn !px-5 !py-2.5 hairline ${liked ? "border-gold/60 text-gold" : "text-paper/85 hover:border-gold-dim"}`}>
+                        <motion.span animate={liked ? { scale: [1, 1.35, 1] } : {}} transition={{ duration: 0.35 }}>{liked ? "♥" : "♡"}</motion.span>
+                        {likeCount > 0 ? likeCount : "Like"}
+                      </button>
+                      <button onClick={() => setSave(true)} className="btn-primary !px-5 !py-2.5">Save</button>
+                      <a href={`/api/artworks/${art.id}/download`} onClick={() => toast("Download started")} className="btn-ghost !px-5 !py-2.5">Download</a>
+                      <button onClick={() => setShare(true)} className="btn-ghost !px-5 !py-2.5">Share</button>
+                    </div>
+                    <div className="mt-4 flex gap-4 text-xs text-fog">
+                      <span>{art.views} views</span><span>{art.downloads} downloads</span>
+                    </div>
+                    <Link href={`/a/${art.id}`} onClick={() => setId(null)}
+                      className="mt-auto pt-6 text-sm text-gold hover:text-gold-bright transition-colors">Open full page →</Link>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="flex flex-col overflow-y-auto p-6">
-              {art && (
-                <>
-                  <h2 className="font-display text-2xl font-semibold">{art.title || art.character_name}</h2>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Link href={`/c/${art.character_slug}`} onClick={() => setId(null)} className="chip chip-on">{art.character_name}</Link>
-                    <Link href={`/anime/${art.anime_slug}`} onClick={() => setId(null)} className="chip">{art.anime_name}</Link>
-                  </div>
-                  {art.description && <p className="mt-4 text-sm leading-relaxed text-fog">{art.description}</p>}
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    <button onClick={like} className={`btn !px-5 !py-2.5 hairline ${liked ? "border-gold/60 text-gold" : "text-paper/85 hover:border-gold-dim"}`}>
-                      <motion.span animate={liked ? { scale: [1, 1.35, 1] } : {}} transition={{ duration: 0.35 }}>{liked ? "♥" : "♡"}</motion.span>
-                      {likeCount > 0 ? likeCount : "Like"}
+            {data?.related?.length > 0 && (
+              <section className="border-t border-paper/10 p-5 md:p-8">
+                <h3 className="font-display text-xl font-semibold">More like this</h3>
+                <p className="mt-1 text-xs text-fog">Choose another image to keep exploring.</p>
+                <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                  {data.related.map((related: any) => (
+                    <button key={related.id} type="button" onClick={() => setId(related.id)}
+                      className="group overflow-hidden rounded-2xl bg-soft text-left hairline hover:border-gold-dim transition-colors">
+                      <div className="aspect-[3/4] overflow-hidden">
+                        <img src={`/api/img/${related.thumb}`} alt={related.title || related.character_name} loading="lazy"
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      </div>
+                      <div className="p-3">
+                        <p className="truncate text-sm font-medium">{related.character_name}</p>
+                        <p className="truncate text-xs text-fog">{related.anime_name}</p>
+                      </div>
                     </button>
-                    <button onClick={() => setSave(true)} className="btn-primary !px-5 !py-2.5">Save</button>
-                    <a href={`/api/artworks/${art.id}/download`} onClick={() => toast("Download started")} className="btn-ghost !px-5 !py-2.5">Download</a>
-                    <button onClick={() => setShare(true)} className="btn-ghost !px-5 !py-2.5">Share</button>
-                  </div>
-                  <div className="mt-4 flex gap-4 text-xs text-fog">
-                    <span>{art.views} views</span><span>{art.downloads} downloads</span>
-                  </div>
-                  <Link href={`/a/${art.id}`} onClick={() => setId(null)}
-                    className="mt-auto pt-6 text-sm text-gold hover:text-gold-bright transition-colors">Open full page →</Link>
-                </>
-              )}
-            </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </motion.div>
           <AnimatePresence>
             {save && art && <SaveMenu artworkId={art.id} onClose={() => setSave(false)} />}

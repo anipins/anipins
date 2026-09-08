@@ -19,6 +19,11 @@ function sqlite() {
     const d = new Database(path.join(dataDir, "anipins.db"));
     d.pragma("journal_mode = WAL");
     d.exec(fs.readFileSync(path.join(process.cwd(), "scripts", "schema.sql"), "utf8"));
+    const userColumns = d.pragma("table_info(users)").map((c: any) => c.name);
+    if (!userColumns.includes("nickname")) d.exec("ALTER TABLE users ADD COLUMN nickname TEXT DEFAULT ''");
+    if (!userColumns.includes("avatar")) d.exec("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT ''");
+    const artworkColumns = d.pragma("table_info(artworks)").map((c: any) => c.name);
+    if (!artworkColumns.includes("gender")) d.exec("ALTER TABLE artworks ADD COLUMN gender TEXT DEFAULT ''");
     global.__anipins_sqlite = d;
   }
   return global.__anipins_sqlite;

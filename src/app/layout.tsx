@@ -6,6 +6,8 @@ import Footer from "@/components/Footer";
 import Intro from "@/components/Intro";
 import Toaster from "@/components/Toaster";
 import ArtLightbox from "@/components/ArtLightbox";
+import MobileBottomNav from "@/components/MobileBottomNav";
+import PullToRefresh from "@/components/PullToRefresh";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-grotesk" });
@@ -37,8 +39,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Intro />
         <Navbar />
-        <main className="min-h-[70vh]">{children}</main>
+        <PullToRefresh />
+        <main className="min-h-[70vh] pb-20 md:pb-0">{children}</main>
         <Footer />
+        <MobileBottomNav />
         <Toaster />
         <ArtLightbox />
       </body>
