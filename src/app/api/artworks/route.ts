@@ -11,6 +11,8 @@ export async function GET(req: NextRequest) {
   const anime = sp.get("anime") || "";
   const category = sp.get("category") || "";
   const sort = sp.get("sort") || "latest";
+  const rawSeed = parseInt(sp.get("seed") || "1", 10);
+  const seed = Number.isFinite(rawSeed) && rawSeed > 0 ? rawSeed % 2_147_483_647 : 1;
   const featured = sp.get("featured");
 
   let where = "published = 1";
@@ -28,6 +30,11 @@ export async function GET(req: NextRequest) {
   let order = "created_at DESC, id DESC";
   if (sort === "popular") order = "downloads DESC, views DESC";
   if (sort === "trending") order = "views DESC, downloads DESC";
+  if (sort === "random") {
+    const multiplier = (seed * 48_271) % 2_147_483_647 || 1;
+    order = "((CAST(id AS BIGINT) * ?) % 2147483647), id";
+    args.push(multiplier);
+  }
 
   // Listing surfaces use the optimized thumbnail. Full originals are reserved
   // for the artwork detail and download routes so the homepage stays fast.

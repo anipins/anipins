@@ -15,7 +15,7 @@ export default function Home() {
           </div>
           <FilterChips />
         </div>
-        <MasonryFeed />
+        <MasonryFeed randomize />
       </section>
       <TrendingRow />
     </div>
