@@ -13,10 +13,10 @@ export default function MasonryFeed({ query = {} }: { query?: Record<string, str
 
   useEffect(() => { setItems([]); setPage(0); setHasMore(true); setInitial(true); }, [key]);
 
-  const load = useCallback(async (p: number, reset: boolean) => {
+  const load = useCallback(async (p: number, reset: boolean, forceFresh = false) => {
     setLoading(true);
     const sp = new URLSearchParams({ ...query, page: String(p), limit: "20" });
-    const r = await fetch(`/api/artworks?${sp}`);
+    const r = await fetch(`/api/artworks?${sp}`, { cache: forceFresh ? "no-store" : "default" });
     const d = await r.json();
     setItems(prev => reset ? d.items : [...prev, ...d.items]);
     setHasMore(d.hasMore);
@@ -30,7 +30,7 @@ export default function MasonryFeed({ query = {} }: { query?: Record<string, str
     const refresh = () => {
       setPage(0);
       setHasMore(true);
-      load(0, true);
+      load(0, true, true);
     };
     window.addEventListener("anipins:refresh", refresh);
     return () => window.removeEventListener("anipins:refresh", refresh);

@@ -56,9 +56,9 @@ export default function Navbar() {
   };
 
   return (
-    <header className={`fixed top-0 z-50 w-full transition-all duration-500 ${scrolled ? "glass border-b border-paper/10 py-2" : "py-4"}`}>
-      <div className="mx-auto flex max-w-[1600px] items-center gap-4 px-4 md:px-8">
-        <Logo />
+    <header className={`site-navbar fixed top-0 z-50 w-full transition-all duration-500 ${scrolled ? "site-navbar--scrolled glass border-b border-paper/10 pb-2" : "pb-4"}`}>
+      <div className="mx-auto flex max-w-[1600px] items-center gap-2 px-3 sm:gap-4 sm:px-4 md:px-8">
+        <Logo responsive />
         <nav className="hidden lg:flex items-center gap-1 ml-4">
           {LINKS.map(l => (
             <Link key={l.href} href={l.href}
@@ -69,11 +69,11 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div ref={boxRef} className="relative ml-auto w-full max-w-xs md:max-w-sm">
+        <div ref={boxRef} className="relative ml-auto min-w-0 flex-1 md:max-w-sm">
           <form onSubmit={go}>
             <input value={q} onChange={e => setQ(e.target.value)} onFocus={() => setFocus(true)}
               placeholder="Search characters, anime, tags…"
-              className="w-full rounded-full bg-soft/80 hairline px-4 py-2 pl-9 text-sm text-paper placeholder:text-fog/60 outline-none focus:border-gold-dim transition-all" />
+              className="min-h-11 w-full rounded-full bg-soft/80 hairline px-4 py-2.5 pl-9 text-sm text-paper placeholder:text-fog/60 outline-none focus:border-gold-dim transition-all" />
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-fog" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" strokeLinecap="round"/></svg>
           </form>
           <AnimatePresence>
@@ -129,7 +129,7 @@ export default function Navbar() {
           )}
         </div>
 
-        <button onClick={() => setOpen(!open)} className="lg:hidden rounded-full p-2 text-paper" aria-label="Menu">
+        <button onClick={() => setOpen(!open)} className="shrink-0 lg:hidden rounded-full p-2 text-paper" aria-label="Menu">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             {open ? <path d="M6 6l12 12M18 6L6 18"/> : <path d="M4 7h16M4 12h16M4 17h16"/>}
           </svg>

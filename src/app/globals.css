@@ -33,6 +33,13 @@ html { scroll-behavior: smooth; }
 body { @apply bg-ink text-paper font-body antialiased; }
 ::selection { background: #C6A15B; color: #080808; }
 
+.site-navbar { padding-top: max(env(safe-area-inset-top, 0px), 1.75rem); }
+.site-navbar--scrolled { padding-top: max(env(safe-area-inset-top, 0px), 1.5rem); }
+@media (min-width: 768px) {
+  .site-navbar { padding-top: max(env(safe-area-inset-top, 0px), 1.25rem); }
+  .site-navbar--scrolled { padding-top: max(env(safe-area-inset-top, 0px), 1rem); }
+}
+
 .glass { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 .hairline { border: 1px solid var(--hairline); }
 .hairline-t { border-top: 1px solid var(--hairline); }

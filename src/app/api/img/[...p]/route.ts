@@ -9,7 +9,10 @@ const TYPES: Record<string, string> = { ".jpg": "image/jpeg", ".jpeg": "image/jp
 export async function GET(_req: NextRequest, { params }: { params: { p: string[] } }) {
   const rel = params.p.join("/");
   if (USE_SUPABASE_STORAGE) {
-    return NextResponse.redirect(sbPublicUrl(rel), { status: 307 });
+    return NextResponse.redirect(sbPublicUrl(rel), {
+      status: 308,
+      headers: { "Cache-Control": "public, max-age=31536000, immutable" },
+    });
   }
   const file = path.normalize(path.join(UPLOADS_DIR, rel));
   if (!file.startsWith(UPLOADS_DIR) || !fs.existsSync(file)) {

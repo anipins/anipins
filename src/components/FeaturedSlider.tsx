@@ -1,9 +1,38 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { openArtwork } from "./ArtCard";
 import { toast } from "./Toaster";
+
+function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: boolean; sizes: string }) {
+  const [ready, setReady] = useState(false);
+  const src = `/api/img/${art.thumb}`;
+
+  return (
+    <div className="absolute inset-0 overflow-hidden bg-black">
+      <Image
+        src={src}
+        alt=""
+        fill
+        sizes={sizes}
+        priority={priority}
+        aria-hidden="true"
+        className="scale-110 object-cover opacity-35 blur-2xl"
+      />
+      <Image
+        src={src}
+        alt={art.title || art.character_name}
+        fill
+        sizes={sizes}
+        priority={priority}
+        onLoad={() => setReady(true)}
+        className={`object-contain transition-opacity duration-300 ${ready ? "opacity-100" : "opacity-0"}`}
+      />
+    </div>
+  );
+}
 
 export default function FeaturedSlider() {
   const [arts, setArts] = useState<any[]>([]);
@@ -42,11 +71,11 @@ export default function FeaturedSlider() {
         <div className="h-px flex-1 bg-white/10" />
         <span className="font-display text-sm text-fog tabular-nums">{String(idx + 1).padStart(2, "0")} / {String(arts.length).padStart(2, "0")}</span>
       </div>
-      <div className="relative flex items-stretch gap-4 h-[380px] md:h-[480px]">
+      <div className="relative flex h-[390px] items-stretch gap-4 sm:h-[430px] md:h-[500px] lg:h-[540px]">
         {[prevA, nextA].map((side, i) => (
           <button key={i} onClick={() => { setDir(i === 0 ? -1 : 1); setIdx(arts.indexOf(side)); }}
             className={`hidden lg:block relative w-[12%] overflow-hidden rounded-3xl opacity-40 hover:opacity-70 transition-opacity duration-300 ${i === 0 ? "order-first" : "order-last"}`}>
-            <img src={`/api/img/${side.thumb}`} alt="" className="h-full w-full object-cover" />
+            <Image src={`/api/img/${side.thumb}`} alt="" fill sizes="12vw" className="object-cover" />
           </button>
         ))}
         <div className="relative flex-1 overflow-hidden rounded-3xl hairline">
@@ -62,7 +91,7 @@ export default function FeaturedSlider() {
                 else if (info.offset.x > 70) { setDir(-1); setIdx(i => (i - 1 + arts.length) % arts.length); }
               }}
               className="absolute inset-0 cursor-grab active:cursor-grabbing">
-              <img src={`/api/img/${a.orig || a.thumb}`} alt={a.character_name} className="h-full w-full object-cover" draggable={false} />
+              <FeaturedImage art={a} priority sizes="(max-width: 1023px) 100vw, 76vw" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
               <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }}
                 className="absolute inset-x-0 bottom-0 p-6 md:p-9">
@@ -78,8 +107,10 @@ export default function FeaturedSlider() {
           </AnimatePresence>
           <div className="absolute right-5 top-5 flex gap-2">
             <button onClick={() => { setDir(-1); setIdx(i => (i - 1 + arts.length) % arts.length); }}
+              aria-label="Previous featured artwork"
               className="grid h-10 w-10 place-items-center rounded-full bg-black/40 backdrop-blur hover:bg-gold hover:text-ink transition-colors">←</button>
             <button onClick={() => { setDir(1); setIdx(i => (i + 1) % arts.length); }}
+              aria-label="Next featured artwork"
               className="grid h-10 w-10 place-items-center rounded-full bg-black/40 backdrop-blur hover:bg-gold hover:text-ink transition-colors">→</button>
           </div>
         </div>
@@ -87,6 +118,7 @@ export default function FeaturedSlider() {
       <div className="mt-4 flex justify-center gap-1.5">
         {arts.map((_, i) => (
           <button key={i} onClick={() => { setDir(i > idx ? 1 : -1); setIdx(i); }}
+            aria-label={`Show featured artwork ${i + 1}`}
             className={`h-1 rounded-full transition-all duration-400 ${i === idx ? "w-7 bg-gold" : "w-2.5 bg-white/20 hover:bg-white/40"}`} />
         ))}
       </div>

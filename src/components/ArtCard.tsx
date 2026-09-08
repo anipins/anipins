@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
@@ -14,6 +15,7 @@ export function openArtwork(id: number) {
 export default function ArtCard({ art, index = 0 }: { art: any; index?: number }) {
   const [save, setSave] = useState(false);
   const [share, setShare] = useState(false);
+  const [imageReady, setImageReady] = useState(false);
   const ratio = art.width && art.height ? art.height / art.width : 1.3;
 
   return (
@@ -26,9 +28,16 @@ export default function ArtCard({ art, index = 0 }: { art: any; index?: number }
       >
         <Tilt max={3.5} className="group relative overflow-hidden rounded-2xl bg-soft hairline hover:border-gold-dim transition-colors duration-300">
           <button onClick={() => openArtwork(art.id)} className="block w-full text-left cursor-zoom-in">
-            <div style={{ aspectRatio: `1 / ${ratio}` }} className="w-full">
-              <img src={`/api/img/${art.thumb}`} alt={art.title || art.character_name} loading="lazy"
-                className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]" />
+            <div style={{ aspectRatio: `1 / ${ratio}` }} className={`relative w-full overflow-hidden bg-soft ${imageReady ? "" : "skeleton"}`}>
+              <Image
+                src={`/api/img/${art.thumb}`}
+                alt={art.title || art.character_name}
+                fill
+                sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1439px) 25vw, 20vw"
+                priority={index < 4}
+                onLoad={() => setImageReady(true)}
+                className={`object-cover transition-[opacity,transform] duration-500 ease-out group-hover:scale-[1.04] ${imageReady ? "opacity-100" : "opacity-0"}`}
+              />
             </div>
           </button>
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
