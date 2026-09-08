@@ -31,7 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="mx-auto flex max-w-[1560px] gap-0 px-0 md:px-6 pt-20 md:pt-24 min-h-screen">
-      <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-white/[0.07] py-8 pr-5">
+      <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-paper/[0.07] py-8 pr-5">
         <div className="flex items-center gap-3 px-3">
           <img src="/brand/ap-symbol.svg" alt="" className="h-10 w-10 rounded-xl shadow-[0_0_24px_rgba(198,161,91,0.15)]" />
           <div>
@@ -45,7 +45,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             const on = path === n.href;
             return (
               <Link key={n.href} href={n.href}
-                className={`relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition-all duration-200 ${on ? "bg-gradient-to-r from-gold/[0.14] to-transparent text-gold" : "text-fog hover:text-paper hover:bg-white/[0.04]"}`}>
+                className={`relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition-all duration-200 ${on ? "bg-gradient-to-r from-gold/[0.14] to-transparent text-gold" : "text-fog hover:text-paper hover:bg-paper/[0.04]"}`}>
                 {on && <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep" />}
                 <svg viewBox="0 0 24 24" className="h-[17px] w-[17px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={n.d} /></svg>
                 {n.label}
@@ -65,7 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         )}
         <div className="mt-auto px-3 pt-6">
-          <Link href="/" className="mb-2 flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm text-fog hover:text-paper hover:bg-white/[0.04] transition-colors">
+          <Link href="/" className="mb-2 flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm text-fog hover:text-paper hover:bg-paper/[0.04] transition-colors">
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
             Back to website
           </Link>

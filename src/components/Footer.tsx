@@ -3,7 +3,7 @@ const IG_URL = "https://www.instagram.com/_anipins_?igsi=dzZzem42bnBha3Y=";
 
 export default function Footer() {
   return (
-    <footer className="mt-24 border-t border-white/10">
+    <footer className="mt-24 border-t border-paper/10">
       <div className="mx-auto max-w-[1600px] px-6 md:px-8 py-14">
         <div className="grid gap-10 md:grid-cols-3">
           <div>

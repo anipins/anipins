@@ -8,6 +8,7 @@ export default function AdminUpload() {
   const [previews, setPreviews] = useState<string[]>([]);
   const [drag, setDrag] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [uploadedCount, setUploadedCount] = useState(0);
   const [msg, setMsg] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -31,15 +32,36 @@ export default function AdminUpload() {
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!files.length) { setMsg("Add at least one image."); return; }
-    setBusy(true); setMsg("");
-    const fd = new FormData(e.currentTarget);
-    files.forEach(f => fd.append("files", f));
-    const r = await fetch("/api/admin/upload", { method: "POST", body: fd });
-    const d = await r.json();
+    setBusy(true); setUploadedCount(0); setMsg("");
+    const fields = new FormData(e.currentTarget);
+    let completed = 0;
+
+    try {
+      for (const file of files) {
+        const fd = new FormData();
+        fields.forEach((value, key) => fd.append(key, value));
+        fd.append("files", file);
+
+        const r = await fetch("/api/admin/upload", { method: "POST", body: fd });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || `Upload failed for ${file.name}`);
+        completed += d.ids?.length || 1;
+        setUploadedCount(completed);
+      }
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "Upload failed";
+      setMsg(completed > 0 ? `Published ${completed} of ${files.length}. ${reason}` : reason);
+      if (completed > 0) {
+        setFiles(current => current.slice(completed));
+        setPreviews(current => current.slice(completed));
+      }
+      setBusy(false);
+      return;
+    }
+
     setBusy(false);
-    if (!r.ok) { setMsg(d.error || "Upload failed"); return; }
-    setMsg(`✓ Published ${d.ids.length} artwork${d.ids.length > 1 ? "s" : ""}. Live everywhere now.`);
-    toast("Artwork published successfully");
+    setMsg(`✓ Published ${completed} artwork${completed > 1 ? "s" : ""}. Live everywhere now.`);
+    toast(`${completed} artwork${completed > 1 ? "s" : ""} published successfully`);
     setFiles([]); setPreviews([]);
     formRef.current?.reset();
     router.refresh();
@@ -54,10 +76,10 @@ export default function AdminUpload() {
           onDragLeave={() => setDrag(false)}
           onDrop={e => { e.preventDefault(); setDrag(false); addFiles(e.dataTransfer.files); }}
           onClick={() => inputRef.current?.click()}
-          className={`grid min-h-48 cursor-pointer place-items-center rounded-2xl border-2 border-dashed p-8 text-center transition-colors ${drag ? "border-paper bg-white/5" : "border-white/15 hover:border-white/30"}`}>
+          className={`grid min-h-48 cursor-pointer place-items-center rounded-2xl border-2 border-dashed p-8 text-center transition-colors ${drag ? "border-paper bg-paper/5" : "border-paper/15 hover:border-paper/30"}`}>
           <div>
             <p className="text-sm">Drag & drop images here, or click to browse</p>
-            <p className="mt-1 text-xs text-fog">Single or batch upload · JPG / PNG / WebP</p>
+            <p className="mt-1 text-xs text-fog">Select one or multiple images · JPG / PNG / WebP</p>
           </div>
           <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={e => e.target.files && addFiles(e.target.files)} />
         </div>
@@ -99,7 +121,9 @@ export default function AdminUpload() {
           <input type="checkbox" name="published" value="1" defaultChecked className="h-4 w-4 accent-white" /> Publish immediately
         </label>
         {msg && <p className={`text-sm ${msg.startsWith("✓") ? "text-green-400" : "text-red-400"}`}>{msg}</p>}
-        <button disabled={busy} className="btn-primary w-full disabled:opacity-50">{busy ? "Uploading…" : "Publish"}</button>
+        <button disabled={busy} className="btn-primary w-full disabled:opacity-50">
+          {busy ? `Uploading ${Math.min(uploadedCount + 1, files.length)} of ${files.length}…` : `Publish${files.length > 1 ? ` ${files.length} artworks` : ""}`}
+        </button>
       </div>
     </form>
   );

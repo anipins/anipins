@@ -4,10 +4,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Logo from "./Logo";
+import ThemeToggle from "./ThemeToggle";
 
 const IG_URL = "https://www.instagram.com/_anipins_?igsi=dzZzem42bnBha3Y=";
-const APP_URL = "https://anipins-mobile.onhercules.app";
+const APP_URL = "/downloads/AniPins.apk";
 const LINKS = [
+  { href: "/", label: "Home" },
   { href: "/explore", label: "Explore" },
   { href: "/characters", label: "Characters" },
   { href: "/anime", label: "Anime" },
@@ -54,13 +56,13 @@ export default function Navbar() {
   };
 
   return (
-    <header className={`fixed top-0 z-50 w-full transition-all duration-500 ${scrolled ? "glass border-b border-white/10 py-2" : "py-4"}`}>
+    <header className={`fixed top-0 z-50 w-full transition-all duration-500 ${scrolled ? "glass border-b border-paper/10 py-2" : "py-4"}`}>
       <div className="mx-auto flex max-w-[1600px] items-center gap-4 px-4 md:px-8">
         <Logo />
         <nav className="hidden lg:flex items-center gap-1 ml-4">
           {LINKS.map(l => (
             <Link key={l.href} href={l.href}
-              className={`relative rounded-full px-4 py-2 text-sm transition-colors ${path === l.href ? "text-gold" : "text-fog hover:text-paper hover:bg-white/5"}`}>
+              className={`relative rounded-full px-4 py-2 text-sm transition-colors ${path === l.href ? "text-gold" : "text-fog hover:text-paper hover:bg-paper/5"}`}>
               {l.label}
               {path === l.href && <span className="absolute inset-x-4 -bottom-0.5 h-px bg-gold/70" />}
             </Link>
@@ -81,7 +83,7 @@ export default function Navbar() {
                 className="absolute top-full mt-2 w-full overflow-hidden rounded-2xl glass hairline shadow-2xl">
                 {sugs.map((s, i) => (
                   <button key={i} onClick={() => { router.push(s.href); setFocus(false); setQ(""); }}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-white/5">
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-paper/5">
                     <span className="text-[10px] uppercase tracking-wider text-gold/80 w-16 shrink-0">{s.type}</span>
                     <span>{s.label}</span>
                   </button>
@@ -94,22 +96,22 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-2 shrink-0">
           <a
   href={APP_URL}
-  target="_blank"
-  rel="noopener noreferrer"
+  download="AniPins.apk"
   title="Download AniPins App"
-  className="inline-flex items-center gap-2 rounded-full hairline px-4 py-2 text-sm font-medium text-gold hover:text-paper hover:border-gold-dim hover:bg-white/5 transition-colors"
+  className="inline-flex items-center gap-2 rounded-full hairline px-4 py-2 text-sm font-medium text-gold hover:text-paper hover:border-gold-dim hover:bg-paper/5 transition-colors"
 >
   Download App
 </a>
+          <ThemeToggle />
           <a href={IG_URL} target="_blank" rel="noopener noreferrer" title="Instagram — @_anipins_"
-            className="rounded-full p-2.5 text-fog hover:text-gold hover:bg-white/5 transition-colors">
+            className="rounded-full p-2.5 text-fog hover:text-gold hover:bg-paper/5 transition-colors">
             <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>
           </a>
           {user ? (
             <>
-              <Link href="/saves" className="rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-white/5 transition-colors">Saves</Link>
+              <Link href="/saves" className="rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors">Saves</Link>
               {user.role === "ADMIN" && (
-                <Link href="/admin" className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-white/5 transition-colors">
+                <Link href="/admin" className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors">
                   Admin <span className="badge-gold !px-2 !py-0.5">Owner</span>
                 </Link>
               )}
@@ -131,19 +133,19 @@ export default function Navbar() {
       <AnimatePresence>
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }} className="lg:hidden overflow-hidden glass border-b border-white/10">
+            transition={{ duration: 0.3, ease: "easeInOut" }} className="lg:hidden overflow-hidden glass border-b border-paper/10">
             <div className="flex flex-col px-6 py-4 gap-1">
               {LINKS.map(l => (
                 <Link key={l.href} href={l.href} className={`py-2.5 text-[15px] ${path === l.href ? "text-gold" : "text-fog hover:text-paper"}`}>{l.label}</Link>
               ))}
              <a
   href={APP_URL}
-  target="_blank"
-  rel="noopener noreferrer"
+  download="AniPins.apk"
   className="py-2.5 text-[15px] text-gold font-medium hover:text-paper"
 >
   Download App
 </a>
+              <ThemeToggle mobile />
               <a href={IG_URL} target="_blank" rel="noopener noreferrer" className="py-2.5 text-[15px] text-fog hover:text-gold">Instagram — @_anipins_</a>
               {user ? (
                 <>
