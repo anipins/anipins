@@ -8,8 +8,8 @@ import ShareMenu from "./ShareMenu";
 import Tilt from "./Tilt";
 import { toast } from "./Toaster";
 
-export function openArtwork(id: number) {
-  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("anipins:open-art", { detail: { id } }));
+export function openArtwork(id: number, art?: any) {
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("anipins:open-art", { detail: { id, art } }));
 }
 
 export default function ArtCard({ art, index = 0, priority }: { art: any; index?: number; priority?: boolean }) {
@@ -27,7 +27,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
         transition={{ duration: 0.5, delay: Math.min(index % 8, 5) * 0.05, ease: [0.22, 1, 0.36, 1] }}
       >
         <Tilt max={3.5} className="group relative overflow-hidden rounded-2xl bg-soft hairline hover:border-gold-dim transition-colors duration-300">
-          <button onClick={() => openArtwork(art.id)} className="block w-full text-left cursor-zoom-in">
+          <button onClick={() => openArtwork(art.id, art)} className="block w-full text-left cursor-zoom-in">
             <div style={{ aspectRatio: `1 / ${ratio}` }} className={`relative w-full overflow-hidden bg-soft ${imageReady ? "" : "skeleton"}`}>
               <Image
                 src={`/api/img/${art.thumb}`}

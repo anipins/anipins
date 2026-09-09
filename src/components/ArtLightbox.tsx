@@ -13,6 +13,7 @@ import ReportArtwork from "./ReportArtwork";
 export default function ArtLightbox() {
   const [id, setId] = useState<number | null>(null);
   const [data, setData] = useState<any>(null);
+  const [preview, setPreview] = useState<any>(null);
   const [save, setSave] = useState(false);
   const [share, setShare] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -21,25 +22,36 @@ export default function ArtLightbox() {
   const panel = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const h = (e: Event) => setId((e as CustomEvent).detail.id);
+    const h = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setPreview(detail.art || null);
+      setId(detail.id);
+    };
     window.addEventListener("anipins:open-art", h);
     return () => window.removeEventListener("anipins:open-art", h);
   }, []);
 
   useEffect(() => {
-    if (id === null) { setData(null); return; }
+    if (id === null) { setData(null); setPreview(null); return; }
+    const controller = new AbortController();
     setData(null);
+    setLiked(false);
+    setLikeCount(0);
     setSave(false);
     setShare(false);
     panel.current?.scrollTo({ top: 0 });
-    fetch(`/api/artworks/${id}`).then(r => r.ok ? r.json() : Promise.reject()).then(d => {
+    fetch(`/api/artworks/${id}`, { signal: controller.signal }).then(r => r.ok ? r.json() : Promise.reject()).then(d => {
       setData(d); setLiked(d.liked); setLikeCount(d.likeCount);
-    }).catch(() => setId(null));
+    }).catch(error => { if (error?.name !== "AbortError") setId(null); });
+    return () => controller.abort();
   }, [id]);
 
   const nav = useCallback((dir: "prev" | "next") => {
     const nid = dir === "prev" ? data?.prevId : data?.nextId;
-    if (nid) setId(nid);
+    if (nid) {
+      setPreview(data?.related?.find((item: any) => item.id === nid) || null);
+      setId(nid);
+    }
   }, [data]);
 
   useEffect(() => {
@@ -62,7 +74,9 @@ export default function ArtLightbox() {
     if (d.liked) toast("Added to likes");
   };
 
-  const art = data?.art;
+  const art = data?.art || preview;
+  const fullImage = data?.art?.orig ? `/api/img/${data.art.orig}` : art?.thumb ? `/api/img/${art.thumb}` : "";
+  const previewImage = data?.art?.orig && art?.thumb ? `/api/img/${art.thumb}` : undefined;
   return (
     <AnimatePresence>
       {id !== null && (
@@ -90,7 +104,7 @@ export default function ArtLightbox() {
             className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-3xl bg-panel hairline shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
             <div className="grid md:grid-cols-[1.35fr,1fr]">
               <div className="relative flex max-h-[55vh] items-center justify-center bg-ink md:max-h-[82vh]">
-                {art ? <ZoomableArtwork src={`/api/img/${art.orig}`} previewSrc={`/api/img/${art.thumb}`} alt={art.title || art.character_name} onSwipe={nav} className="max-h-[55vh] w-full md:max-h-[82vh]" />
+                {art && fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} className="max-h-[55vh] w-full md:max-h-[82vh]" />
                   : <div className="skeleton h-[50vh] w-full" />}
               </div>
               <div className="flex min-h-80 flex-col p-6 md:p-8">
@@ -134,7 +148,7 @@ export default function ArtLightbox() {
                 <p className="mt-1 text-xs text-fog">Fresh picks from every series—choose any image to continue.</p>
                 <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                   {data.related.map((related: any) => (
-                    <button key={related.id} type="button" onClick={() => setId(related.id)}
+                    <button key={related.id} type="button" onClick={() => { setPreview(related); setId(related.id); }}
                       className="group overflow-hidden rounded-2xl bg-soft text-left hairline hover:border-gold-dim transition-colors">
                       <div className="aspect-[3/4] overflow-hidden">
                         <img src={`/api/img/${related.thumb}`} alt={related.title || related.character_name} loading="lazy"
