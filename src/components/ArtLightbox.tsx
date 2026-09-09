@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import SaveMenu from "./SaveMenu";
 import ShareMenu from "./ShareMenu";
 import { toast } from "./Toaster";
+import FollowButton from "./FollowButton";
 
 export default function ArtLightbox() {
   const [id, setId] = useState<number | null>(null);
@@ -32,6 +33,14 @@ export default function ArtLightbox() {
       setData(d); setLiked(d.liked); setLikeCount(d.likeCount);
     }).catch(() => setId(null));
   }, [id]);
+
+  useEffect(() => {
+    if (!data?.related?.length) return;
+    data.related.slice(0, 3).forEach((related: any) => {
+      const image = new window.Image();
+      image.src = `/api/img/${related.orig || related.thumb}`;
+    });
+  }, [data]);
 
   const nav = useCallback((dir: "prev" | "next") => {
     const nid = dir === "prev" ? data?.prevId : data?.nextId;
@@ -97,6 +106,10 @@ export default function ArtLightbox() {
                       <Link href={`/c/${art.character_slug}`} onClick={() => setId(null)} className="chip chip-on">{art.character_name}</Link>
                       <Link href={`/anime/${art.anime_slug}`} onClick={() => setId(null)} className="chip">{art.anime_name}</Link>
                       {art.gender && <span className="chip">{art.gender}</span>}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <FollowButton kind="character" value={art.character_slug} label={art.character_name} />
+                      <FollowButton kind="anime" value={art.anime_slug} label={art.anime_name} />
                     </div>
                     {art.description && <p className="mt-4 text-sm leading-relaxed text-fog">{art.description}</p>}
                     <div className="mt-5 flex flex-wrap gap-2">

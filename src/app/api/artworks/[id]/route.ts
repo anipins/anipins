@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { row, rows, run } from "@/lib/db";
 import { getUser } from "@/lib/auth";
+import { recordActivity } from "@/lib/activity";
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -10,11 +11,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   await run("UPDATE artworks SET views = views + 1 WHERE id=?", id);
 
   const u = await getUser();
+  if (u) await recordActivity(u.id, id, "view");
   const lc = await row("SELECT COUNT(*) AS c FROM likes WHERE artwork_id=?", id);
   const liked = u ? !!(await row("SELECT id FROM likes WHERE user_id=? AND artwork_id=?", u.id, id)) : false;
 
   const related = await rows(
-    `SELECT id, title, character_name, character_slug, anime_name, anime_slug, gender, category, thumb, width, height FROM artworks
+    `SELECT id, title, character_name, character_slug, anime_name, anime_slug, gender, category, orig, thumb, width, height FROM artworks
      WHERE published=1 AND id != ?
      ORDER BY CASE
        WHEN character_slug = ? THEN 0

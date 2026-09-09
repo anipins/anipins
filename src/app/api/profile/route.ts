@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
-import { row, run } from "@/lib/db";
-import { deleteFile, saveAvatar } from "@/lib/media";
+import { row, rows, run } from "@/lib/db";
+import { deleteFile, saveAvatar, saveCover } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -18,7 +18,18 @@ export async function GET() {
       (SELECT COUNT(*) FROM collections WHERE user_id=?) AS collection_count`,
     user.id, user.id, user.id
   );
-  return NextResponse.json({ user, stats });
+  const collections = await rows(
+    `SELECT c.id, c.name, COUNT(s.id) AS count,
+      (SELECT a.thumb FROM saves sx JOIN artworks a ON a.id=sx.artwork_id WHERE sx.collection_id=c.id ORDER BY sx.id DESC LIMIT 1) AS cover
+     FROM collections c LEFT JOIN saves s ON s.collection_id=c.id WHERE c.user_id=? GROUP BY c.id, c.name ORDER BY c.id DESC LIMIT 12`,
+    user.id,
+  );
+  const liked = await rows(
+    `SELECT a.id, a.title, a.character_name, a.anime_name, a.thumb, a.width, a.height
+     FROM likes l JOIN artworks a ON a.id=l.artwork_id WHERE l.user_id=? AND a.published=1 ORDER BY l.id DESC LIMIT 12`,
+    user.id,
+  );
+  return NextResponse.json({ user, stats, collections, liked });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -27,9 +38,12 @@ export async function PATCH(req: NextRequest) {
 
   const form = await req.formData();
   const nickname = String(form.get("nickname") || "").trim();
+  const bio = String(form.get("bio") || "").trim();
+  const isPublic = form.get("isPublic") === "1" ? 1 : 0;
   if (nickname.length < 2 || nickname.length > 40) {
     return NextResponse.json({ error: "Nickname must be between 2 and 40 characters." }, { status: 400 });
   }
+  if (bio.length > 240) return NextResponse.json({ error: "Bio must be 240 characters or fewer." }, { status: 400 });
 
   let avatar = user.avatar || "";
   const file = form.get("avatar");
@@ -46,6 +60,18 @@ export async function PATCH(req: NextRequest) {
     if (previousAvatar) await deleteFile(previousAvatar);
   }
 
-  await run("UPDATE users SET nickname=?, avatar=? WHERE id=?", nickname, avatar, user.id);
-  return NextResponse.json({ ok: true, user: { ...user, nickname, avatar } });
+  let cover = user.cover || "";
+  const coverFile = form.get("cover");
+  if (coverFile instanceof File && coverFile.size > 0) {
+    if (!coverFile.type.startsWith("image/") || coverFile.size > 12 * 1024 * 1024) {
+      return NextResponse.json({ error: "Cover must be an image smaller than 12 MB." }, { status: 400 });
+    }
+    const nextCover = await saveCover(Buffer.from(await coverFile.arrayBuffer()), user.id);
+    const previousCover = cover;
+    cover = nextCover;
+    if (previousCover) await deleteFile(previousCover);
+  }
+
+  await run("UPDATE users SET nickname=?, avatar=?, cover=?, bio=?, is_public=? WHERE id=?", nickname, avatar, cover, bio, isPublic, user.id);
+  return NextResponse.json({ ok: true, user: { ...user, nickname, avatar, cover, bio, is_public: isPublic } });
 }

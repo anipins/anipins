@@ -7,6 +7,7 @@ import SaveMenu from "@/components/SaveMenu";
 import ShareMenu from "@/components/ShareMenu";
 import ArtCard from "@/components/ArtCard";
 import { toast } from "@/components/Toaster";
+import FollowButton from "@/components/FollowButton";
 
 const IG_URL = "https://www.instagram.com/_anipins_?igsi=dzZzem42bnBha3Y=";
 
@@ -24,6 +25,11 @@ export default function ArtPage({ params }: { params: { id: string } }) {
     setData(null);
     fetch(`/api/artworks/${params.id}`).then(r => r.ok ? r.json() : Promise.reject()).then((d) => { setData(d); setLiked(!!d.liked); setLikeCount(d.likeCount || 0); }).catch(() => setNotFound(true));
   }, [params.id]);
+
+  useEffect(() => {
+    if (!data?.related?.length) return;
+    data.related.slice(0, 3).forEach((related: any) => { const image = new window.Image(); image.src = `/api/img/${related.orig || related.thumb}`; });
+  }, [data]);
 
   const nav = useCallback((dir: "prev" | "next") => {
     const id = dir === "prev" ? data?.prevId : data?.nextId;
@@ -78,6 +84,10 @@ export default function ArtPage({ params }: { params: { id: string } }) {
                 <Link href={`/c/${art.character_slug}`} className="chip chip-on">{art.character_name}</Link>
                 <Link href={`/anime/${art.anime_slug}`} className="chip">{art.anime_name}</Link>
                 {art.gender && <span className="chip">{art.gender}</span>}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <FollowButton kind="character" value={art.character_slug} label={art.character_name} />
+                <FollowButton kind="anime" value={art.anime_slug} label={art.anime_name} />
               </div>
               {art.description && <p className="mt-5 text-sm leading-relaxed text-fog">{art.description}</p>}
               {art.tags && (

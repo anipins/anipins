@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { row, run } from "@/lib/db";
 import { getUser } from "@/lib/auth";
+import { recordActivity } from "@/lib/activity";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
@@ -22,6 +23,9 @@ export async function POST(req: NextRequest) {
     cid = def.id;
   }
   const exists = await row("SELECT id FROM saves WHERE collection_id=? AND artwork_id=?", cid, artworkId);
-  if (!exists) await run("INSERT INTO saves (user_id, collection_id, artwork_id) VALUES (?,?,?)", u.id, cid, artworkId);
+  if (!exists) {
+    await run("INSERT INTO saves (user_id, collection_id, artwork_id) VALUES (?,?,?)", u.id, cid, artworkId);
+    await recordActivity(u.id, artworkId, "save", 2);
+  }
   return NextResponse.json({ ok: true, saved: true });
 }

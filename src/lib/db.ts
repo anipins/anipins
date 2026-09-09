@@ -22,8 +22,13 @@ function sqlite() {
     const userColumns = d.pragma("table_info(users)").map((c: any) => c.name);
     if (!userColumns.includes("nickname")) d.exec("ALTER TABLE users ADD COLUMN nickname TEXT DEFAULT ''");
     if (!userColumns.includes("avatar")) d.exec("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT ''");
+    if (!userColumns.includes("cover")) d.exec("ALTER TABLE users ADD COLUMN cover TEXT DEFAULT ''");
+    if (!userColumns.includes("bio")) d.exec("ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ''");
+    if (!userColumns.includes("is_public")) d.exec("ALTER TABLE users ADD COLUMN is_public INTEGER DEFAULT 1");
     const artworkColumns = d.pragma("table_info(artworks)").map((c: any) => c.name);
     if (!artworkColumns.includes("gender")) d.exec("ALTER TABLE artworks ADD COLUMN gender TEXT DEFAULT ''");
+    if (!artworkColumns.includes("content_hash")) d.exec("ALTER TABLE artworks ADD COLUMN content_hash TEXT DEFAULT ''");
+    if (!artworkColumns.includes("perceptual_hash")) d.exec("ALTER TABLE artworks ADD COLUMN perceptual_hash TEXT DEFAULT ''");
     global.__anipins_sqlite = d;
   }
   return global.__anipins_sqlite;

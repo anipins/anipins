@@ -10,12 +10,12 @@ export default function Home() {
       <section className="mx-auto max-w-[1600px] px-4 md:px-8 pt-14">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <h2 className="font-display text-2xl font-semibold md:text-3xl">The Feed</h2>
-            <p className="mt-1 text-sm text-fog">Fresh artwork, endlessly.</p>
+            <h2 className="font-display text-2xl font-semibold md:text-3xl">For You</h2>
+            <p className="mt-1 text-sm text-fog">Learns from what you open, like, save and download.</p>
           </div>
           <FilterChips />
         </div>
-        <MasonryFeed randomize />
+        <MasonryFeed query={{ sort: "for-you" }} randomize />
       </section>
       <TrendingRow />
     </div>

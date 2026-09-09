@@ -42,8 +42,17 @@ export default function AdminUpload() {
         fields.forEach((value, key) => fd.append(key, value));
         fd.append("files", file);
 
-        const r = await fetch("/api/admin/upload", { method: "POST", body: fd });
-        const d = await r.json();
+        let r = await fetch("/api/admin/upload", { method: "POST", body: fd });
+        let d = await r.json();
+        if (r.status === 409 && d.canOverride) {
+          const match = d.duplicates?.[0]?.artwork;
+          const detail = match ? `It looks like #${match.id}, ${match.character_name} from ${match.anime_name}.` : "It matches another image in this batch.";
+          if (window.confirm(`Possible duplicate: ${file.name}\n\n${detail}\n\nUpload it anyway?`)) {
+            fd.set("allowDuplicate", "1");
+            r = await fetch("/api/admin/upload", { method: "POST", body: fd });
+            d = await r.json();
+          }
+        }
         if (!r.ok) throw new Error(d.error || `Upload failed for ${file.name}`);
         completed += d.ids?.length || 1;
         setUploadedCount(completed);

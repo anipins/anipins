@@ -71,6 +71,39 @@ export async function saveAvatar(buffer: Buffer, userId: number) {
   return key;
 }
 
+export async function saveCover(buffer: Buffer, userId: number) {
+  const key = `covers/${userId}-${crypto.randomBytes(8).toString("hex")}.webp`;
+  const cover = await sharp(buffer).rotate().resize(1600, 600, { fit: "cover", position: "attention" }).webp({ quality: 82 }).toBuffer();
+  if (USE_SUPABASE_STORAGE) await sbUpload(key, cover, "image/webp");
+  else {
+    fs.mkdirSync(path.join(UPLOADS_DIR, "covers"), { recursive: true });
+    fs.writeFileSync(path.join(UPLOADS_DIR, key), cover);
+  }
+  return key;
+}
+
+export async function fingerprintImage(buffer: Buffer) {
+  const contentHash = crypto.createHash("sha256").update(buffer).digest("hex");
+  const { data } = await sharp(buffer).rotate().grayscale().resize(9, 8, { fit: "fill" }).raw().toBuffer({ resolveWithObject: true });
+  let bits = "";
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) bits += data[y * 9 + x] > data[y * 9 + x + 1] ? "1" : "0";
+  }
+  let perceptualHash = "";
+  for (let i = 0; i < bits.length; i += 4) perceptualHash += parseInt(bits.slice(i, i + 4), 2).toString(16);
+  return { contentHash, perceptualHash };
+}
+
+export function hashDistance(a: string, b: string) {
+  if (!a || !b || a.length !== b.length) return 999;
+  let distance = 0;
+  for (let i = 0; i < a.length; i++) {
+    let n = parseInt(a[i], 16) ^ parseInt(b[i], 16);
+    while (n) { distance += n & 1; n >>>= 1; }
+  }
+  return distance;
+}
+
 export async function deleteFile(rel: string) {
   if (!rel) return;
   if (USE_SUPABASE_STORAGE) { await sbDelete([rel]); return; }

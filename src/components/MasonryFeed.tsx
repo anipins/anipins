@@ -22,7 +22,7 @@ export default function MasonryFeed({ query = {}, randomize = false }: { query?:
     setLoading(true);
     const sp = new URLSearchParams({ ...query, page: String(p), limit: "20" });
     if (randomize) {
-      sp.set("sort", "random");
+      if (!sp.has("sort")) sp.set("sort", "random");
       sp.set("seed", String(randomSeed.current));
     }
     const r = await fetch(`/api/artworks?${sp}`, { cache: forceFresh ? "no-store" : "default" });

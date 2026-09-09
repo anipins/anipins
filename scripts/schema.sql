@@ -5,6 +5,9 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT DEFAULT '',
   nickname TEXT DEFAULT '',
   avatar TEXT DEFAULT '',
+  cover TEXT DEFAULT '',
+  bio TEXT DEFAULT '',
+  is_public INTEGER DEFAULT 1,
   role TEXT DEFAULT 'USER',
   created_at TEXT DEFAULT (datetime('now'))
 );
@@ -32,11 +35,15 @@ CREATE TABLE IF NOT EXISTS artworks (
   height INTEGER DEFAULT 0,
   views INTEGER DEFAULT 0,
   downloads INTEGER DEFAULT 0,
+  content_hash TEXT DEFAULT '',
+  perceptual_hash TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_art_char ON artworks(character_slug);
 CREATE INDEX IF NOT EXISTS idx_art_anime ON artworks(anime_slug);
 CREATE INDEX IF NOT EXISTS idx_art_pub ON artworks(published);
+CREATE INDEX IF NOT EXISTS idx_art_content_hash ON artworks(content_hash);
+CREATE INDEX IF NOT EXISTS idx_art_perceptual_hash ON artworks(perceptual_hash);
 CREATE TABLE IF NOT EXISTS collections (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
@@ -63,6 +70,39 @@ CREATE TABLE IF NOT EXISTS likes (
   created_at TEXT DEFAULT (datetime('now')),
   UNIQUE(user_id, artwork_id)
 );
+CREATE TABLE IF NOT EXISTS interactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  artwork_id INTEGER NOT NULL,
+  kind TEXT NOT NULL,
+  strength INTEGER DEFAULT 1,
+  updated_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(user_id, artwork_id, kind)
+);
+CREATE INDEX IF NOT EXISTS idx_interactions_user ON interactions(user_id, updated_at);
+CREATE INDEX IF NOT EXISTS idx_interactions_artwork ON interactions(artwork_id);
+CREATE TABLE IF NOT EXISTS follows (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  kind TEXT NOT NULL,
+  value TEXT NOT NULL,
+  label TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(user_id, kind, value)
+);
+CREATE INDEX IF NOT EXISTS idx_follows_target ON follows(kind, value);
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  artwork_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT DEFAULT '',
+  read_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(user_id, artwork_id)
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at, id);
+CREATE INDEX IF NOT EXISTS idx_notifications_artwork ON notifications(artwork_id);
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
 INSERT OR IGNORE INTO settings (key, value) VALUES
  ('site_name','AniPins'),
