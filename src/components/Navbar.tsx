@@ -131,7 +131,10 @@ export default function Navbar() {
                 className="rounded-full hairline px-4 py-2 text-sm text-fog hover:text-paper hover:border-gold-dim transition-colors">Sign out</button>
             </>
           ) : (
-            <Link href="/login" className="rounded-full bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold-bright transition-colors">Sign in</Link>
+            <>
+              <Link href="/login" className="rounded-full px-3 py-2 text-sm text-fog hover:bg-paper/5 hover:text-paper transition-colors">Sign in</Link>
+              <Link href="/login" className="rounded-full bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold-bright transition-colors">Admin Login</Link>
+            </>
           )}
         </div>
 
@@ -175,7 +178,10 @@ export default function Navbar() {
                   <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }} className="py-2.5 text-left text-[15px] text-fog hover:text-paper">Sign out</button>
                 </>
               ) : (
-                <Link href="/login" className="py-2.5 text-[15px] text-gold font-medium">Sign in</Link>
+                <>
+                  <Link href="/login" className="py-2.5 text-[15px] text-fog hover:text-paper">User sign in</Link>
+                  <Link href="/login" className="py-2.5 text-[15px] font-medium text-gold">Admin Login</Link>
+                </>
               )}
             </div>
           </motion.div>
