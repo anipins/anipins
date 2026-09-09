@@ -8,6 +8,8 @@ import Toaster from "@/components/Toaster";
 import ArtLightbox from "@/components/ArtLightbox";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import PullToRefresh from "@/components/PullToRefresh";
+import AppUpdateBanner from "@/components/AppUpdateBanner";
+import ClientTelemetry from "@/components/ClientTelemetry";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-grotesk" });
@@ -45,6 +47,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <MobileBottomNav />
         <Toaster />
         <ArtLightbox />
+        <AppUpdateBanner />
+        <ClientTelemetry />
       </body>
     </html>
   );

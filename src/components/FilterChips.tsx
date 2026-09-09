@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
 const CHIPS = [
+  { label: "Following", href: "/following" },
   { label: "Trending", href: "/explore?sort=trending" },
   { label: "Latest", href: "/explore?sort=latest" },
   { label: "Popular", href: "/explore?sort=popular" },

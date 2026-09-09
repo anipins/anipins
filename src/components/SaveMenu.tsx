@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "./Toaster";
+import { haptic, rememberArtwork } from "@/lib/native";
 
 export default function SaveMenu({ artworkId, onClose }: { artworkId: number; onClose: () => void }) {
   const [cols, setCols] = useState<any[]>([]);
@@ -20,7 +21,7 @@ export default function SaveMenu({ artworkId, onClose }: { artworkId: number; on
     const r = await fetch("/api/saves", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artworkId, collectionId }) });
     setBusy(false);
     if (r.status === 401) { router.push("/login"); return; }
-    toast("Saved to collection");
+    haptic("success"); rememberArtwork(artworkId, "saved"); toast("Saved to collection");
     onClose();
   };
 

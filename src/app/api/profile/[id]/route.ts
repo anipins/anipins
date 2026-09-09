@@ -11,9 +11,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const profile = await row("SELECT id, nickname, name, avatar, cover, bio, is_public, created_at FROM users WHERE id=?", id);
   if (!profile || (!profile.is_public && viewer?.id !== id)) return NextResponse.json({ error: "This profile is private." }, { status: 404 });
   const collections = await rows(
-    `SELECT c.id, c.name, COUNT(s.id) AS count,
+    `SELECT c.id, c.name, c.is_private, COUNT(s.id) AS count,
       (SELECT a.thumb FROM saves sx JOIN artworks a ON a.id=sx.artwork_id WHERE sx.collection_id=c.id ORDER BY sx.id DESC LIMIT 1) AS cover
-     FROM collections c LEFT JOIN saves s ON s.collection_id=c.id WHERE c.user_id=? GROUP BY c.id, c.name ORDER BY c.id DESC LIMIT 12`, id,
+     FROM collections c LEFT JOIN saves s ON s.collection_id=c.id WHERE c.user_id=? AND (c.is_private=0 OR ?=?) GROUP BY c.id, c.name, c.is_private ORDER BY c.id DESC LIMIT 12`, id, viewer?.id || 0, id,
   );
   const liked = await rows(
     `SELECT a.id, a.title, a.character_name, a.anime_name, a.thumb, a.width, a.height

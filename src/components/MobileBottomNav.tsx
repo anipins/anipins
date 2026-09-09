@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const ITEMS = [
   { href: "/", label: "Home", icon: <path d="M3 10.8 12 3l9 7.8V21h-6v-6H9v6H3z" strokeLinejoin="round" /> },
-  { href: "/explore", label: "Explore", icon: <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" strokeLinecap="round" /></> },
+  { href: "/following", label: "Following", icon: <><path d="M12 20S4 15.4 4 9.5A4.5 4.5 0 0 1 12 6.7a4.5 4.5 0 0 1 8 2.8C20 15.4 12 20 12 20Z" strokeLinejoin="round" /></> },
   { href: "/saves", label: "Saves", icon: <path d="M6 3h12v18l-6-4.5L6 21z" strokeLinejoin="round" /> },
   { href: "/profile", label: "Profile", icon: <><circle cx="12" cy="8" r="4" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0" strokeLinecap="round" /></> },
 ] as const;

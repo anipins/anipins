@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
   const character = sp.get("character") || "";
   const anime = sp.get("anime") || "";
   const category = sp.get("category") || "";
+  const gender = sp.get("gender") || "";
   const sort = sp.get("sort") || "latest";
   const rawSeed = parseInt(sp.get("seed") || "1", 10);
   const seed = Number.isFinite(rawSeed) && rawSeed > 0 ? rawSeed % 2_147_483_647 : 1;
@@ -26,9 +27,24 @@ export async function GET(req: NextRequest) {
   if (character) { where += " AND character_slug = ?"; args.push(character); }
   if (anime) { where += " AND anime_slug = ?"; args.push(anime); }
   if (category) { where += " AND category = ?"; args.push(category); }
+  if (gender) { where += " AND lower(gender) = ?"; args.push(gender.toLowerCase()); }
   if (featured === "1") { where += " AND featured = 1"; }
 
   const cols = "id, title, character_name, character_slug, anime_name, anime_slug, tags, gender, category, featured, thumb, width, height, views, downloads";
+  if (sort === "following") {
+    const user = await getUser();
+    if (!user) return NextResponse.json({ items: [], hasMore: false, guest: true }, { headers: { "Cache-Control": "private, no-store" } });
+    const followed = await rows("SELECT kind, value FROM follows WHERE user_id=?", user.id);
+    if (!followed.length) return NextResponse.json({ items: [], hasMore: false, emptyFollows: true }, { headers: { "Cache-Control": "private, no-store" } });
+    const characterValues = followed.filter((f: any) => f.kind === "character").map((f: any) => f.value);
+    const animeValues = followed.filter((f: any) => f.kind === "anime").map((f: any) => f.value);
+    const clauses: string[] = [];
+    const followArgs: any[] = [];
+    if (characterValues.length) { clauses.push(`character_slug IN (${characterValues.map(() => "?").join(",")})`); followArgs.push(...characterValues); }
+    if (animeValues.length) { clauses.push(`anime_slug IN (${animeValues.map(() => "?").join(",")})`); followArgs.push(...animeValues); }
+    const items = await rows(`SELECT ${cols} FROM artworks WHERE published=1 AND (${clauses.join(" OR ")}) ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`, ...followArgs, limit + 1, page * limit);
+    return NextResponse.json({ items: items.slice(0, limit), hasMore: items.length > limit }, { headers: { "Cache-Control": "private, no-store" } });
+  }
   if (sort === "for-you") {
     const user = await getUser();
     if (user) {

@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
   cover TEXT DEFAULT '',
   bio TEXT DEFAULT '',
   is_public INTEGER DEFAULT 1,
+  notify_following INTEGER DEFAULT 1,
+  notify_updates INTEGER DEFAULT 1,
   role TEXT DEFAULT 'USER',
   created_at TEXT DEFAULT (datetime('now'))
 );
@@ -37,6 +39,8 @@ CREATE TABLE IF NOT EXISTS artworks (
   downloads INTEGER DEFAULT 0,
   content_hash TEXT DEFAULT '',
   perceptual_hash TEXT DEFAULT '',
+  creator_name TEXT DEFAULT '',
+  source_url TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_art_char ON artworks(character_slug);
@@ -48,6 +52,7 @@ CREATE TABLE IF NOT EXISTS collections (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
   name TEXT NOT NULL,
+  is_private INTEGER DEFAULT 1,
   created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS saves (
@@ -69,6 +74,32 @@ CREATE TABLE IF NOT EXISTS likes (
   artwork_id INTEGER NOT NULL,
   created_at TEXT DEFAULT (datetime('now')),
   UNIQUE(user_id, artwork_id)
+);
+CREATE TABLE IF NOT EXISTS content_reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  artwork_id INTEGER NOT NULL,
+  reason TEXT NOT NULL,
+  details TEXT DEFAULT '',
+  status TEXT DEFAULT 'OPEN',
+  created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_content_reports_artwork ON content_reports(artwork_id, status);
+CREATE TABLE IF NOT EXISTS push_devices (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  token TEXT UNIQUE NOT NULL,
+  platform TEXT DEFAULT 'android',
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_push_devices_user ON push_devices(user_id);
+CREATE TABLE IF NOT EXISTS telemetry (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL,
+  path TEXT DEFAULT '',
+  value INTEGER DEFAULT 0,
+  detail TEXT DEFAULT '',
+  created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS interactions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

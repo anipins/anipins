@@ -25,10 +25,16 @@ function sqlite() {
     if (!userColumns.includes("cover")) d.exec("ALTER TABLE users ADD COLUMN cover TEXT DEFAULT ''");
     if (!userColumns.includes("bio")) d.exec("ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ''");
     if (!userColumns.includes("is_public")) d.exec("ALTER TABLE users ADD COLUMN is_public INTEGER DEFAULT 1");
+    if (!userColumns.includes("notify_following")) d.exec("ALTER TABLE users ADD COLUMN notify_following INTEGER DEFAULT 1");
+    if (!userColumns.includes("notify_updates")) d.exec("ALTER TABLE users ADD COLUMN notify_updates INTEGER DEFAULT 1");
     const artworkColumns = d.pragma("table_info(artworks)").map((c: any) => c.name);
     if (!artworkColumns.includes("gender")) d.exec("ALTER TABLE artworks ADD COLUMN gender TEXT DEFAULT ''");
     if (!artworkColumns.includes("content_hash")) d.exec("ALTER TABLE artworks ADD COLUMN content_hash TEXT DEFAULT ''");
     if (!artworkColumns.includes("perceptual_hash")) d.exec("ALTER TABLE artworks ADD COLUMN perceptual_hash TEXT DEFAULT ''");
+    if (!artworkColumns.includes("creator_name")) d.exec("ALTER TABLE artworks ADD COLUMN creator_name TEXT DEFAULT ''");
+    if (!artworkColumns.includes("source_url")) d.exec("ALTER TABLE artworks ADD COLUMN source_url TEXT DEFAULT ''");
+    const collectionColumns = d.pragma("table_info(collections)").map((c: any) => c.name);
+    if (!collectionColumns.includes("is_private")) d.exec("ALTER TABLE collections ADD COLUMN is_private INTEGER DEFAULT 1");
     global.__anipins_sqlite = d;
   }
   return global.__anipins_sqlite;

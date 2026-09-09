@@ -8,6 +8,9 @@ import ShareMenu from "@/components/ShareMenu";
 import ArtCard from "@/components/ArtCard";
 import { toast } from "@/components/Toaster";
 import FollowButton from "@/components/FollowButton";
+import ZoomableArtwork from "@/components/ZoomableArtwork";
+import DownloadButton from "@/components/DownloadButton";
+import ReportArtwork from "@/components/ReportArtwork";
 
 const IG_URL = "https://www.instagram.com/_anipins_?igsi=dzZzem42bnBha3Y=";
 
@@ -65,9 +68,7 @@ export default function ArtPage({ params }: { params: { id: string } }) {
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="grid gap-8 lg:grid-cols-[1.15fr,1fr]">
             <div className="relative">
               <div className="overflow-hidden rounded-3xl hairline bg-soft">
-                <motion.img key={art.orig} initial={{ scale: 1.04, opacity: 0.4 }} animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  src={`/api/img/${art.orig}`} alt={art.title} className="w-full object-contain max-h-[80vh] mx-auto" />
+                <ZoomableArtwork src={`/api/img/${art.orig}`} alt={art.title || art.character_name} onSwipe={nav} className="mx-auto max-h-[80vh] w-full" />
               </div>
               <div className="mt-4 flex items-center justify-between">
                 <button onClick={() => nav("prev")} disabled={!data.prevId}
@@ -90,6 +91,7 @@ export default function ArtPage({ params }: { params: { id: string } }) {
                 <FollowButton kind="anime" value={art.anime_slug} label={art.anime_name} />
               </div>
               {art.description && <p className="mt-5 text-sm leading-relaxed text-fog">{art.description}</p>}
+              {(art.creator_name || art.source_url) && <div className="mt-5 rounded-2xl bg-soft p-4 text-sm hairline"><p className="text-xs uppercase tracking-widest text-fog">Creator & source</p><p className="mt-1">{art.creator_name || "Original creator"}</p>{art.source_url && <a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="mt-1 block truncate text-gold hover:underline">Visit original source ↗</a>}</div>}
               {art.tags && (
                 <div className="mt-5 flex flex-wrap gap-2">
                   {String(art.tags).split(",").map((t: string) => t.trim()).filter(Boolean).map((t: string) => (
@@ -104,7 +106,7 @@ export default function ArtPage({ params }: { params: { id: string } }) {
                   const d = await r.json(); setLiked(d.liked); setLikeCount(d.count);
                 }} className={`btn hairline !px-5 !py-3 ${liked ? "border-gold/60 text-gold" : "text-paper/85 hover:border-gold-dim"}`}>{liked ? "\u2665" : "\u2661"} {likeCount > 0 ? likeCount : "Like"}</button>
                 <button onClick={() => setSave(true)} className="btn-primary">Save</button>
-                <a href={`/api/artworks/${art.id}/download`} onClick={() => toast("Download started")} className="btn-ghost">Download</a>
+                <DownloadButton artworkId={art.id} />
                 <button onClick={() => setShare(true)} className="btn-ghost">Share</button>
                 <a href={IG_URL} target="_blank" rel="noopener noreferrer" className="btn-ghost" title="@_anipins_">Instagram</a>
               </div>
@@ -112,6 +114,9 @@ export default function ArtPage({ params }: { params: { id: string } }) {
                 <span>{art.views} views</span><span>{art.downloads} downloads</span>
                 {art.category && <span>{art.category}</span>}
               </div>
+              {(art.creator_name || art.source_url) && <div className="mt-5 rounded-2xl bg-soft p-4 text-sm text-fog"><span>Artwork credit: </span>{art.source_url?<a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold underline underline-offset-4">{art.creator_name||"Original source"}</a>:art.creator_name}</div>}
+              <div className="mt-4"><ReportArtwork artworkId={art.id}/></div>
+              <div className="mt-5"><ReportArtwork artworkId={art.id} /></div>
             </div>
           </motion.div>
         </AnimatePresence>

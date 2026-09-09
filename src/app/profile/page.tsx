@@ -68,7 +68,7 @@ export default function ProfilePage() {
           <div><label className="label">Nickname</label><input className="input" value={nickname} minLength={2} maxLength={40} required onChange={e => setNickname(e.target.value)} /></div>
           <div><label className="label">Profile visibility</label><button type="button" onClick={() => setIsPublic(v => !v)} className="input flex items-center justify-between text-left"><span>{isPublic ? "Public profile" : "Private profile"}</span><span className={`h-6 w-11 rounded-full p-1 transition-colors ${isPublic ? "bg-gold" : "bg-paper/15"}`}><span className={`block h-4 w-4 rounded-full bg-white transition-transform ${isPublic ? "translate-x-5" : ""}`} /></span></button></div>
           <div className="md:col-span-2"><label className="label">Bio <span className="text-fog">({bio.length}/240)</span></label><textarea className="input resize-none" rows={3} maxLength={240} value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell other anime fans about yourself…" /></div>
-          <div className="flex flex-wrap gap-3 md:col-span-2"><button disabled={busy} className="btn-primary disabled:opacity-50">{busy ? "Saving…" : "Save profile"}</button><Link href="/saves" className="btn-ghost">Manage collections</Link></div>
+          <div className="flex flex-wrap gap-3 md:col-span-2"><button disabled={busy} className="btn-primary disabled:opacity-50">{busy ? "Saving…" : "Save profile"}</button><Link href="/saves" className="btn-ghost">Manage collections</Link><Link href="/offline" className="btn-ghost">Offline library</Link><Link href="/settings" className="btn-ghost">Settings & privacy</Link></div>
         </form>
       </div>
     </motion.div>

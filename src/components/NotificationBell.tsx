@@ -2,8 +2,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-declare global { interface Window { AniPinsAndroid?: { showNotification?: (title: string, body: string, url: string) => void } } }
-
 export default function NotificationBell() {
   const [data, setData] = useState<any>({ notifications: [], unread: 0, guest: true });
   const [open, setOpen] = useState(false);

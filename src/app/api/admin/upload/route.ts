@@ -20,6 +20,8 @@ export async function POST(req: NextRequest) {
 
   const title = String(form.get("title") || "").trim();
   const description = String(form.get("description") || "").trim();
+  const creator = String(form.get("creator") || "").trim().slice(0, 120);
+  const sourceUrl = String(form.get("sourceUrl") || "").trim().slice(0, 1000);
   const tags = String(form.get("tags") || "").trim();
   const gender = String(form.get("gender") || "").trim();
   const category = String(form.get("category") || "").trim();
@@ -49,9 +51,9 @@ export async function POST(req: NextRequest) {
   for (const item of prepared) {
     const m = await saveImage(item.buffer, item.file.name);
     await run(
-      `INSERT INTO artworks (title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, featured, published, orig, thumb, width, height, content_hash, perceptual_hash)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      title || character, character, slugify(character), anime, slugify(anime), description, tags, gender, category, featured, published, m.orig, m.thumb, m.width, m.height, item.fingerprint.contentHash, item.fingerprint.perceptualHash);
+      `INSERT INTO artworks (title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, featured, published, orig, thumb, width, height, content_hash, perceptual_hash, creator_name, source_url)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      title || character, character, slugify(character), anime, slugify(anime), description, tags, gender, category, featured, published, m.orig, m.thumb, m.width, m.height, item.fingerprint.contentHash, item.fingerprint.perceptualHash, creator, sourceUrl);
     const r = await row("SELECT id FROM artworks WHERE orig=?", m.orig);
     ids.push(r.id);
     if (published) await notifyFollowers(r.id, slugify(character), character, slugify(anime), anime);

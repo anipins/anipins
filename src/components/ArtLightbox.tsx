@@ -6,6 +6,9 @@ import SaveMenu from "./SaveMenu";
 import ShareMenu from "./ShareMenu";
 import { toast } from "./Toaster";
 import FollowButton from "./FollowButton";
+import ZoomableArtwork from "./ZoomableArtwork";
+import DownloadButton from "./DownloadButton";
+import ReportArtwork from "./ReportArtwork";
 
 export default function ArtLightbox() {
   const [id, setId] = useState<number | null>(null);
@@ -95,7 +98,7 @@ export default function ArtLightbox() {
             className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-3xl bg-panel hairline shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
             <div className="grid md:grid-cols-[1.35fr,1fr]">
               <div className="relative flex max-h-[55vh] items-center justify-center bg-ink md:max-h-[82vh]">
-                {art ? <img src={`/api/img/${art.orig}`} alt={art.title || art.character_name} className="max-h-[55vh] w-full object-contain md:max-h-[82vh]" />
+                {art ? <ZoomableArtwork src={`/api/img/${art.orig}`} alt={art.title || art.character_name} onSwipe={nav} className="max-h-[55vh] w-full md:max-h-[82vh]" />
                   : <div className="skeleton h-[50vh] w-full" />}
               </div>
               <div className="flex min-h-80 flex-col p-6 md:p-8">
@@ -112,20 +115,23 @@ export default function ArtLightbox() {
                       <FollowButton kind="anime" value={art.anime_slug} label={art.anime_name} />
                     </div>
                     {art.description && <p className="mt-4 text-sm leading-relaxed text-fog">{art.description}</p>}
+                    {(art.creator_name || art.source_url) && <p className="mt-4 text-xs text-fog">By {art.creator_name || "the original creator"}{art.source_url && <> · <a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold hover:underline">Source ↗</a></>}</p>}
                     <div className="mt-5 flex flex-wrap gap-2">
                       <button onClick={like} className={`btn !px-5 !py-2.5 hairline ${liked ? "border-gold/60 text-gold" : "text-paper/85 hover:border-gold-dim"}`}>
                         <motion.span animate={liked ? { scale: [1, 1.35, 1] } : {}} transition={{ duration: 0.35 }}>{liked ? "♥" : "♡"}</motion.span>
                         {likeCount > 0 ? likeCount : "Like"}
                       </button>
                       <button onClick={() => setSave(true)} className="btn-primary !px-5 !py-2.5">Save</button>
-                      <a href={`/api/artworks/${art.id}/download`} onClick={() => toast("Download started")} className="btn-ghost !px-5 !py-2.5">Download</a>
+                      <DownloadButton artworkId={art.id} className="btn-ghost !px-5 !py-2.5" />
                       <button onClick={() => setShare(true)} className="btn-ghost !px-5 !py-2.5">Share</button>
                     </div>
                     <div className="mt-4 flex gap-4 text-xs text-fog">
                       <span>{art.views} views</span><span>{art.downloads} downloads</span>
                     </div>
+                    {(art.creator_name || art.source_url) && <div className="mt-4 rounded-xl bg-soft p-3 text-xs text-fog"><span>Artwork credit: </span>{art.source_url?<a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold underline underline-offset-4">{art.creator_name||"Original source"}</a>:art.creator_name}</div>}
                     <Link href={`/a/${art.id}`} onClick={() => setId(null)}
                       className="mt-auto pt-6 text-sm text-gold hover:text-gold-bright transition-colors">Open full page →</Link>
+                    <div className="mt-3"><ReportArtwork artworkId={art.id} /></div>
                   </>
                 )}
               </div>

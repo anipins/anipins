@@ -113,6 +113,7 @@ export default function AdminUpload() {
         </div>
         <div><label className="label">Tags</label><input name="tags" className="input" placeholder="comma,separated,tags" /></div>
         <div><label className="label">Description</label><textarea name="description" rows={3} className="input resize-none" placeholder="Short description…" /></div>
+        <div className="grid gap-4 sm:grid-cols-2"><div><label className="label">Creator / Artist</label><input name="creator" className="input" placeholder="Artist name or handle" /></div><div><label className="label">Original source URL</label><input name="sourceUrl" type="url" className="input" placeholder="https://artist-source…" /></div></div>
         <div><label className="label">Category</label>
           <select name="category" className="input">
             <option value="">None</option>

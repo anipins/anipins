@@ -19,9 +19,9 @@ export async function GET() {
     user.id, user.id, user.id
   );
   const collections = await rows(
-    `SELECT c.id, c.name, COUNT(s.id) AS count,
+    `SELECT c.id, c.name, c.is_private, COUNT(s.id) AS count,
       (SELECT a.thumb FROM saves sx JOIN artworks a ON a.id=sx.artwork_id WHERE sx.collection_id=c.id ORDER BY sx.id DESC LIMIT 1) AS cover
-     FROM collections c LEFT JOIN saves s ON s.collection_id=c.id WHERE c.user_id=? GROUP BY c.id, c.name ORDER BY c.id DESC LIMIT 12`,
+     FROM collections c LEFT JOIN saves s ON s.collection_id=c.id WHERE c.user_id=? GROUP BY c.id, c.name, c.is_private ORDER BY c.id DESC LIMIT 12`,
     user.id,
   );
   const liked = await rows(

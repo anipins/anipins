@@ -36,7 +36,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const fields: string[] = [];
   const args: any[] = [];
-  const map: Record<string, string> = { title: "title", description: "description", tags: "tags", category: "category" };
+  const map: Record<string, string> = { title: "title", description: "description", tags: "tags", category: "category", gender: "gender", creator: "creator_name", sourceUrl: "source_url" };
   for (const k of Object.keys(map)) if (body[k] !== undefined) { fields.push(`${map[k]}=?`); args.push(String(body[k])); }
   if (body.character !== undefined) { fields.push("character_name=?", "character_slug=?"); args.push(String(body.character), slugify(String(body.character))); }
   if (body.anime !== undefined) { fields.push("anime_name=?", "anime_slug=?"); args.push(String(body.anime), slugify(String(body.anime))); }

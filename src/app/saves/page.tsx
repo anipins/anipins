@@ -8,6 +8,7 @@ export default function Saves() {
   const [cols, setCols] = useState<any[] | null>(null);
   const [guest, setGuest] = useState(false);
   const [name, setName] = useState("");
+  const [isPrivate, setIsPrivate] = useState(true);
   const router = useRouter();
 
   const load = () => fetch("/api/collections").then(r => r.json()).then(d => { setCols(d.collections || []); setGuest(!!d.guest); });
@@ -15,9 +16,10 @@ export default function Saves() {
 
   const create = async () => {
     if (!name.trim()) return;
-    await fetch("/api/collections", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+    await fetch("/api/collections", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, isPrivate }) });
     setName(""); load();
   };
+  const togglePrivacy = async (id: number, next: boolean) => { await fetch(`/api/collections/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isPrivate: next }) }); load(); };
   const del = async (id: number) => {
     if (!confirm("Delete this collection? Saved artworks inside will be removed from it.")) return;
     await fetch(`/api/collections/${id}`, { method: "DELETE" }); load();
@@ -38,10 +40,11 @@ export default function Saves() {
           <h1 className="font-display text-3xl font-semibold md:text-4xl">Collections</h1>
           <p className="mt-1 text-sm text-fog">Your saved artwork, organised your way.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && create()}
             placeholder="e.g. Drawing References" className="input !w-60 !py-2.5" />
           <button onClick={create} className="btn-primary !py-2.5">Create</button>
+          <label className="flex items-center gap-2 text-xs text-fog"><input type="checkbox" checked={isPrivate} onChange={e=>setIsPrivate(e.target.checked)} className="accent-gold" />Private</label>
         </div>
       </div>
       <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -57,9 +60,10 @@ export default function Saves() {
                 </div>
                 <div className="p-4">
                   <p className="font-medium">{c.name}</p>
-                  <p className="text-xs text-fog">{c.count} saved</p>
+                  <p className="text-xs text-fog">{c.count} saved · {c.is_private ? "Private" : "Public"}</p>
                 </div>
               </Link>
+              <button onClick={() => togglePrivacy(c.id, !c.is_private)} title={c.is_private ? "Make public" : "Make private"} className="absolute bottom-3 right-3 rounded-full bg-black/60 px-3 py-1.5 text-[10px] text-white backdrop-blur hover:bg-gold hover:text-ink">{c.is_private ? "Private" : "Public"}</button>
               <button onClick={() => del(c.id)} title="Delete collection"
                 className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/60 opacity-0 backdrop-blur transition-opacity group-hover:opacity-100 hover:bg-red-500/70">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>

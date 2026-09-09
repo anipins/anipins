@@ -22,3 +22,11 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   await run("DELETE FROM collections WHERE id=? AND user_id=?", id, u.id);
   return NextResponse.json({ ok: true });
 }
+
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const u = await getUser();
+  if (!u) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const id = parseInt(params.id); const body = await req.json();
+  await run("UPDATE collections SET is_private=? WHERE id=? AND user_id=?", body.isPrivate ? 1 : 0, id, u.id);
+  return NextResponse.json({ ok: true });
+}

@@ -12,6 +12,7 @@ const APP_URL = "/downloads/AniPins.apk";
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/explore", label: "Explore" },
+  { href: "/following", label: "Following" },
   { href: "/characters", label: "Characters" },
   { href: "/anime", label: "Anime" },
   { href: "/trending", label: "Trending" },
@@ -23,6 +24,7 @@ export default function Navbar() {
   const [q, setQ] = useState("");
   const [sugs, setSugs] = useState<any[]>([]);
   const [focus, setFocus] = useState(false);
+  const [recent, setRecent] = useState<string[]>([]);
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
   const path = usePathname();
@@ -35,10 +37,10 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => { fetch("/api/auth/me").then(r => r.json()).then(d => setUser(d.user)).catch(() => {}); }, [path]);
+  useEffect(() => { try { setRecent(JSON.parse(localStorage.getItem("anipins-recent-searches") || "[]")); } catch {} }, []);
   useEffect(() => { setOpen(false); setFocus(false); }, [path]);
 
   useEffect(() => {
-    if (!q.trim()) { setSugs([]); return; }
     const t = setTimeout(() => {
       fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`).then(r => r.json()).then(d => setSugs(d.suggestions || []));
     }, 180);
@@ -53,7 +55,7 @@ export default function Navbar() {
 
   const go = (e: React.FormEvent) => {
     e.preventDefault();
-    if (q.trim()) { router.push(`/search?q=${encodeURIComponent(q.trim())}`); setFocus(false); }
+    if (q.trim()) { const term=q.trim(); const next=[term,...recent.filter(x=>x.toLowerCase()!==term.toLowerCase())].slice(0,6); setRecent(next); localStorage.setItem("anipins-recent-searches",JSON.stringify(next)); router.push(`/search?q=${encodeURIComponent(term)}`); setFocus(false); }
   };
 
   return (
@@ -78,10 +80,12 @@ export default function Navbar() {
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-fog" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" strokeLinecap="round"/></svg>
           </form>
           <AnimatePresence>
-            {focus && sugs.length > 0 && (
+            {focus && (sugs.length > 0 || recent.length > 0) && (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
                 transition={{ duration: 0.18 }}
                 className="absolute top-full mt-2 w-full overflow-hidden rounded-2xl glass hairline shadow-2xl">
+                {!q.trim() && recent.length > 0 && <div className="border-b border-paper/10 px-4 py-2 text-[10px] uppercase tracking-widest text-fog">Recent searches</div>}
+                {!q.trim() && recent.map((term, i) => <button key={`r-${i}`} onClick={()=>{setQ(term);router.push(`/search?q=${encodeURIComponent(term)}`);setFocus(false);}} className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-paper/5"><span className="w-16 shrink-0 text-[10px] uppercase tracking-wider text-fog">Recent</span><span>{term}</span></button>)}
                 {sugs.map((s, i) => (
                   <button key={i} onClick={() => { router.push(s.href); setFocus(false); setQ(""); }}
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-paper/5">
@@ -165,6 +169,8 @@ export default function Navbar() {
                     {user.nickname || user.name || "Profile"}
                   </Link>
                   <Link href="/saves" className="py-2.5 text-[15px] text-fog hover:text-paper">Saves</Link>
+                  <Link href="/offline" className="py-2.5 text-[15px] text-fog hover:text-paper">Offline library</Link>
+                  <Link href="/settings" className="py-2.5 text-[15px] text-fog hover:text-paper">Settings</Link>
                   {user.role === "ADMIN" && <Link href="/admin" className="py-2.5 text-[15px] text-gold">Admin — Owner</Link>}
                   <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }} className="py-2.5 text-left text-[15px] text-fog hover:text-paper">Sign out</button>
                 </>

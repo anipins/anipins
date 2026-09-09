@@ -1,0 +1,9 @@
+"use client";
+import { useState } from "react";
+import { toast } from "./Toaster";
+
+export default function ReportArtwork({ artworkId }: { artworkId: number }) {
+  const [open, setOpen] = useState(false), [reason, setReason] = useState("wrong-info"), [details, setDetails] = useState("");
+  const submit = async () => { const r = await fetch("/api/reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artworkId, reason, details }) }); const d=await r.json(); if(r.ok){toast("Report received. Thank you.");setOpen(false);setDetails("");}else toast(d.error||"Could not send report","err"); };
+  return <>{<button onClick={()=>setOpen(true)} className="text-xs text-fog underline decoration-paper/20 underline-offset-4 hover:text-paper">Report artwork</button>}{open&&<div className="fixed inset-0 z-[100] grid place-items-center bg-black/75 p-4" onClick={()=>setOpen(false)}><div className="w-full max-w-md rounded-3xl bg-panel p-6 hairline" onClick={e=>e.stopPropagation()}><h3 className="font-display text-xl font-semibold">Report artwork</h3><p className="mt-1 text-sm text-fog">Help keep AniPins accurate and safe.</p><select value={reason} onChange={e=>setReason(e.target.value)} className="input mt-5"><option value="wrong-info">Wrong character or series</option><option value="duplicate">Duplicate artwork</option><option value="broken">Broken image</option><option value="copyright">Copyright concern</option><option value="inappropriate">Inappropriate content</option><option value="other">Other</option></select><textarea value={details} onChange={e=>setDetails(e.target.value)} maxLength={500} rows={4} className="input mt-3 resize-none" placeholder="Optional details…"/><div className="mt-5 flex justify-end gap-2"><button onClick={()=>setOpen(false)} className="btn-ghost !py-2.5">Cancel</button><button onClick={submit} className="btn-primary !py-2.5">Send report</button></div></div></div>}</>;
+}

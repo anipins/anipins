@@ -2,6 +2,8 @@
 
 Premium platform for discovering, saving, sharing and downloading high-quality anime character artwork.
 
+Includes personalized and following feeds, profiles, private/public collections, offline device history, artwork attribution and reports, improved search, notification preferences, and native Android integration.
+
 ## Stack
 Next.js 14 (App Router) · TypeScript · Tailwind CSS · Framer Motion · SQLite (better-sqlite3) · sharp (image processing)
 
