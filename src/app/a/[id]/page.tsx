@@ -29,11 +29,6 @@ export default function ArtPage({ params }: { params: { id: string } }) {
     fetch(`/api/artworks/${params.id}`).then(r => r.ok ? r.json() : Promise.reject()).then((d) => { setData(d); setLiked(!!d.liked); setLikeCount(d.likeCount || 0); }).catch(() => setNotFound(true));
   }, [params.id]);
 
-  useEffect(() => {
-    if (!data?.related?.length) return;
-    data.related.slice(0, 1).forEach((related: any) => { const image = new window.Image(); image.src = `/api/img/${related.orig || related.thumb}`; });
-  }, [data]);
-
   const nav = useCallback((dir: "prev" | "next") => {
     const id = dir === "prev" ? data?.prevId : data?.nextId;
     if (id) router.push(`/a/${id}`);
@@ -68,7 +63,7 @@ export default function ArtPage({ params }: { params: { id: string } }) {
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="grid gap-8 lg:grid-cols-[1.15fr,1fr]">
             <div className="relative">
               <div className="overflow-hidden rounded-3xl hairline bg-soft">
-                <ZoomableArtwork src={`/api/img/${art.orig}`} alt={art.title || art.character_name} onSwipe={nav} className="mx-auto max-h-[80vh] w-full" />
+                <ZoomableArtwork src={`/api/img/${art.orig}`} previewSrc={`/api/img/${art.thumb}`} alt={art.title || art.character_name} onSwipe={nav} className="mx-auto max-h-[80vh] w-full" />
               </div>
               <div className="mt-4 flex items-center justify-between">
                 <button onClick={() => nav("prev")} disabled={!data.prevId}
@@ -115,7 +110,6 @@ export default function ArtPage({ params }: { params: { id: string } }) {
                 {art.category && <span>{art.category}</span>}
               </div>
               {(art.creator_name || art.source_url) && <div className="mt-5 rounded-2xl bg-soft p-4 text-sm text-fog"><span>Artwork credit: </span>{art.source_url?<a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold underline underline-offset-4">{art.creator_name||"Original source"}</a>:art.creator_name}</div>}
-              <div className="mt-4"><ReportArtwork artworkId={art.id}/></div>
               <div className="mt-5"><ReportArtwork artworkId={art.id} /></div>
             </div>
           </motion.div>
@@ -124,9 +118,10 @@ export default function ArtPage({ params }: { params: { id: string } }) {
 
       {data?.related?.length > 0 && (
         <div className="mt-20">
-          <h2 className="font-display text-2xl font-semibold">More like this</h2>
+          <h2 className="font-display text-2xl font-semibold">More to explore</h2>
+          <p className="mt-1 text-sm text-fog">Fresh discoveries from every series across AniPins.</p>
           <div className="masonry mt-6">
-            {data.related.map((a: any, i: number) => <ArtCard key={a.id} art={a} index={i} />)}
+            {data.related.map((a: any, i: number) => <ArtCard key={a.id} art={a} index={i} priority={false} />)}
           </div>
         </div>
       )}

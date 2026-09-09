@@ -12,7 +12,7 @@ export function openArtwork(id: number) {
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("anipins:open-art", { detail: { id } }));
 }
 
-export default function ArtCard({ art, index = 0 }: { art: any; index?: number }) {
+export default function ArtCard({ art, index = 0, priority }: { art: any; index?: number; priority?: boolean }) {
   const [save, setSave] = useState(false);
   const [share, setShare] = useState(false);
   const [imageReady, setImageReady] = useState(false);
@@ -34,7 +34,7 @@ export default function ArtCard({ art, index = 0 }: { art: any; index?: number }
                 alt={art.title || art.character_name}
                 fill
                 sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1439px) 25vw, 20vw"
-                priority={index < 4}
+                priority={priority ?? index < 4}
                 onLoad={() => setImageReady(true)}
                 className={`object-cover transition-[opacity,transform] duration-500 ease-out group-hover:scale-[1.04] ${imageReady ? "opacity-100" : "opacity-0"}`}
               />

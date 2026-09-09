@@ -37,14 +37,6 @@ export default function ArtLightbox() {
     }).catch(() => setId(null));
   }, [id]);
 
-  useEffect(() => {
-    if (!data?.related?.length) return;
-    data.related.slice(0, 1).forEach((related: any) => {
-      const image = new window.Image();
-      image.src = `/api/img/${related.orig || related.thumb}`;
-    });
-  }, [data]);
-
   const nav = useCallback((dir: "prev" | "next") => {
     const nid = dir === "prev" ? data?.prevId : data?.nextId;
     if (nid) setId(nid);
@@ -98,7 +90,7 @@ export default function ArtLightbox() {
             className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-3xl bg-panel hairline shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
             <div className="grid md:grid-cols-[1.35fr,1fr]">
               <div className="relative flex max-h-[55vh] items-center justify-center bg-ink md:max-h-[82vh]">
-                {art ? <ZoomableArtwork src={`/api/img/${art.orig}`} alt={art.title || art.character_name} onSwipe={nav} className="max-h-[55vh] w-full md:max-h-[82vh]" />
+                {art ? <ZoomableArtwork src={`/api/img/${art.orig}`} previewSrc={`/api/img/${art.thumb}`} alt={art.title || art.character_name} onSwipe={nav} className="max-h-[55vh] w-full md:max-h-[82vh]" />
                   : <div className="skeleton h-[50vh] w-full" />}
               </div>
               <div className="flex min-h-80 flex-col p-6 md:p-8">
@@ -138,8 +130,8 @@ export default function ArtLightbox() {
             </div>
             {data?.related?.length > 0 && (
               <section className="border-t border-paper/10 p-5 md:p-8">
-                <h3 className="font-display text-xl font-semibold">More like this</h3>
-                <p className="mt-1 text-xs text-fog">Choose another image to keep exploring.</p>
+                <h3 className="font-display text-xl font-semibold">More to explore</h3>
+                <p className="mt-1 text-xs text-fog">Fresh picks from every series—choose any image to continue.</p>
                 <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                   {data.related.map((related: any) => (
                     <button key={related.id} type="button" onClick={() => setId(related.id)}
