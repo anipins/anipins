@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     ...[...tagSet].slice(0, 4).map((t) => ({ type: "tag", label: t, href: `/search?q=${encodeURIComponent(t)}` })),
   ].slice(0, 9);
   if (suggestions.length < 4) {
-    const pool = await rows("SELECT DISTINCT character_name, character_slug, anime_name, anime_slug FROM artworks WHERE published=1 ORDER BY views DESC LIMIT 300");
+    const pool = await rows("SELECT character_name, character_slug, anime_name, anime_slug, MAX(views) AS score FROM artworks WHERE published=1 GROUP BY character_name, character_slug, anime_name, anime_slug ORDER BY score DESC LIMIT 300");
     const distance = (a: string, b: string) => {
       const dp = Array.from({ length: b.length + 1 }, (_, i) => i);
       for (let i = 1; i <= a.length; i++) { let prev = dp[0]; dp[0] = i; for (let j = 1; j <= b.length; j++) { const old = dp[j]; dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = old; } }
