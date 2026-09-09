@@ -36,7 +36,7 @@ export default function ArtLightbox() {
 
   useEffect(() => {
     if (!data?.related?.length) return;
-    data.related.slice(0, 3).forEach((related: any) => {
+    data.related.slice(0, 1).forEach((related: any) => {
       const image = new window.Image();
       image.src = `/api/img/${related.orig || related.thumb}`;
     });
