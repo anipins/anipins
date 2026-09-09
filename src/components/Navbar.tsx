@@ -9,6 +9,7 @@ import NotificationBell from "./NotificationBell";
 
 const IG_URL = "https://www.instagram.com/_anipins_?igsi=dzZzem42bnBha3Y=";
 const APP_URL = "/downloads/AniPins.apk";
+const APP_DOWNLOAD_KEY = "anipins-app-download-requested-v1";
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/explore", label: "Explore" },
@@ -26,6 +27,7 @@ export default function Navbar() {
   const [focus, setFocus] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [showAppDownload, setShowAppDownload] = useState(false);
   const router = useRouter();
   const path = usePathname();
   const boxRef = useRef<HTMLDivElement>(null);
@@ -36,7 +38,17 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", on);
   }, []);
 
-  useEffect(() => { fetch("/api/auth/me").then(r => r.json()).then(d => setUser(d.user)).catch(() => {}); }, [path]);
+  useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store", credentials: "include" })
+      .then(r => r.json())
+      .then(d => setUser(d.user))
+      .catch(() => {});
+  }, [path]);
+  useEffect(() => {
+    const isNativeApp = Boolean(window.AniPinsAndroid);
+    const downloadRequested = localStorage.getItem(APP_DOWNLOAD_KEY) === "1";
+    setShowAppDownload(!isNativeApp && !downloadRequested);
+  }, []);
   useEffect(() => { try { setRecent(JSON.parse(localStorage.getItem("anipins-recent-searches") || "[]")); } catch {} }, []);
   useEffect(() => { setOpen(false); setFocus(false); }, [path]);
 
@@ -56,6 +68,11 @@ export default function Navbar() {
   const go = (e: React.FormEvent) => {
     e.preventDefault();
     if (q.trim()) { const term=q.trim(); const next=[term,...recent.filter(x=>x.toLowerCase()!==term.toLowerCase())].slice(0,6); setRecent(next); localStorage.setItem("anipins-recent-searches",JSON.stringify(next)); router.push(`/search?q=${encodeURIComponent(term)}`); setFocus(false); }
+  };
+
+  const rememberAppDownload = () => {
+    localStorage.setItem(APP_DOWNLOAD_KEY, "1");
+    setShowAppDownload(false);
   };
 
   return (
@@ -99,14 +116,15 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-2 shrink-0">
-          <a
+          {showAppDownload && <a
   href={APP_URL}
   download="AniPins.apk"
+  onClick={rememberAppDownload}
   title="Download AniPins App"
   className="inline-flex items-center gap-2 rounded-full hairline px-4 py-2 text-sm font-medium text-gold hover:text-paper hover:border-gold-dim hover:bg-paper/5 transition-colors"
 >
   Download App
-</a>
+</a>}
           <ThemeToggle />
           <NotificationBell />
           <a href={IG_URL} target="_blank" rel="noopener noreferrer" title="Instagram — @_anipins_"
@@ -124,7 +142,7 @@ export default function Navbar() {
               <Link href="/saves" className="rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors">Saves</Link>
               {user.role === "ADMIN" && (
                 <Link href="/admin" className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors">
-                  Admin <span className="badge-gold !px-2 !py-0.5">Owner</span>
+                  AniPins Admin <span className="badge-gold !px-2 !py-0.5">Owner</span>
                 </Link>
               )}
               <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }}
@@ -153,13 +171,14 @@ export default function Navbar() {
               {LINKS.map(l => (
                 <Link key={l.href} href={l.href} className={`py-2.5 text-[15px] ${path === l.href ? "text-gold" : "text-fog hover:text-paper"}`}>{l.label}</Link>
               ))}
-             <a
+             {showAppDownload && <a
   href={APP_URL}
   download="AniPins.apk"
+  onClick={rememberAppDownload}
   className="py-2.5 text-[15px] text-gold font-medium hover:text-paper"
 >
   Download App
-</a>
+</a>}
               <ThemeToggle mobile />
               <div className="py-1"><NotificationBell /></div>
               <a href={IG_URL} target="_blank" rel="noopener noreferrer" className="py-2.5 text-[15px] text-fog hover:text-gold">Instagram — @_anipins_</a>
@@ -174,7 +193,7 @@ export default function Navbar() {
                   <Link href="/saves" className="py-2.5 text-[15px] text-fog hover:text-paper">Saves</Link>
                   <Link href="/offline" className="py-2.5 text-[15px] text-fog hover:text-paper">Offline library</Link>
                   <Link href="/settings" className="py-2.5 text-[15px] text-fog hover:text-paper">Settings</Link>
-                  {user.role === "ADMIN" && <Link href="/admin" className="py-2.5 text-[15px] text-gold">Admin — Owner</Link>}
+                  {user.role === "ADMIN" && <Link href="/admin" className="py-2.5 text-[15px] text-gold">AniPins Admin — Dashboard</Link>}
                   <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }} className="py-2.5 text-left text-[15px] text-fog hover:text-paper">Sign out</button>
                 </>
               ) : (
