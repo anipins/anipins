@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,7 @@ final class ArtworkAdapter extends RecyclerView.Adapter<ArtworkAdapter.Holder> {
     private final Listener listener;
     ArtworkAdapter(Listener listener) { this.listener = listener; }
     void replace(List<Artwork> values) { items.clear(); items.addAll(values); notifyDataSetChanged(); }
+    void append(List<Artwork> values) { int start=items.size(); items.addAll(values); notifyItemRangeInserted(start,values.size()); }
     boolean isEmpty() { return items.isEmpty(); }
 
     @NonNull @Override public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -43,7 +45,8 @@ final class ArtworkAdapter extends RecyclerView.Adapter<ArtworkAdapter.Holder> {
         holder.image.getLayoutParams().height = Ui.dp(holder.image.getContext(), Math.max(190, Math.min(340, 170 * ratio)));
         holder.title.setText(artwork.displayTitle()); holder.meta.setText(artwork.anime);
         holder.itemView.setContentDescription(artwork.displayTitle() + " from " + artwork.anime);
-        Glide.with(holder.image).load(artwork.thumbUrl()).apply(new RequestOptions().centerCrop().placeholder(android.R.color.transparent)).transition(DrawableTransitionOptions.withCrossFade(180)).into(holder.image);
+        Glide.with(holder.image).load(artwork.thumbUrl()).apply(new RequestOptions().centerCrop().diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).placeholder(android.R.color.darker_gray)).transition(DrawableTransitionOptions.withCrossFade(140)).into(holder.image);
+        if(position+2<items.size()) Glide.with(holder.image).load(items.get(position+2).thumbUrl()).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).preload();
         holder.itemView.setOnClickListener(view -> listener.open(artwork));
     }
     @Override public int getItemCount() { return items.size(); }

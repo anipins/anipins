@@ -24,6 +24,8 @@ export default function Footer() {
               <Link href="/characters" className="text-fog hover:text-paper transition-colors">Characters</Link>
               <Link href="/anime" className="text-fog hover:text-paper transition-colors">Anime</Link>
               <a href={IG_URL} target="_blank" rel="noopener noreferrer" className="text-fog hover:text-paper transition-colors">Instagram</a>
+              <Link href="/about" className="text-fog hover:text-paper transition-colors">About</Link>
+              <Link href="/support" className="text-fog hover:text-paper transition-colors">Help & Support</Link>
             </div>
             <div className="flex flex-col gap-2.5">
               <span className="text-[11px] uppercase tracking-widest text-gold/70 mb-1">Legal</span>

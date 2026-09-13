@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rows } from "@/lib/db";
 import { getUser } from "@/lib/auth";
+import { publicMediaUrl } from "@/lib/media";
 export const dynamic = "force-dynamic";
+
+const clientItems = (items: any[]) => items.map(item => ({ ...item, thumb_url: publicMediaUrl(item.thumb) }));
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
@@ -43,7 +46,7 @@ export async function GET(req: NextRequest) {
     if (characterValues.length) { clauses.push(`character_slug IN (${characterValues.map(() => "?").join(",")})`); followArgs.push(...characterValues); }
     if (animeValues.length) { clauses.push(`anime_slug IN (${animeValues.map(() => "?").join(",")})`); followArgs.push(...animeValues); }
     const items = await rows(`SELECT ${cols} FROM artworks WHERE published=1 AND (${clauses.join(" OR ")}) ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`, ...followArgs, limit + 1, page * limit);
-    return NextResponse.json({ items: items.slice(0, limit), hasMore: items.length > limit }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ items: clientItems(items.slice(0, limit)), hasMore: items.length > limit }, { headers: { "Cache-Control": "private, no-store" } });
   }
   if (sort === "for-you") {
     const user = await getUser();
@@ -71,7 +74,7 @@ export async function GET(req: NextRequest) {
         });
         const start = page * limit;
         return NextResponse.json(
-          { items: candidates.slice(start, start + limit), hasMore: candidates.length > start + limit, personalized: true },
+          { items: clientItems(candidates.slice(start, start + limit)), hasMore: candidates.length > start + limit, personalized: true },
           { headers: { "Cache-Control": "private, no-store" } },
         );
       }
@@ -79,7 +82,7 @@ export async function GET(req: NextRequest) {
     // New and signed-out visitors still receive a varied discovery feed.
     const multiplier = (seed * 48_271) % 2_147_483_647 || 1;
     const fallback = await rows(`SELECT ${cols} FROM artworks WHERE ${where} ORDER BY ((CAST(id AS BIGINT) * ?) % 2147483647), id LIMIT ? OFFSET ?`, ...args, multiplier, limit + 1, page * limit);
-    return NextResponse.json({ items: fallback.slice(0, limit), hasMore: fallback.length > limit, personalized: false }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ items: clientItems(fallback.slice(0, limit)), hasMore: fallback.length > limit, personalized: false }, { headers: { "Cache-Control": "private, no-store" } });
   }
 
   let order = "created_at DESC, id DESC";
@@ -100,7 +103,7 @@ export async function GET(req: NextRequest) {
   );
   const hasMore = items.length > limit;
   return NextResponse.json(
-    { items: items.slice(0, limit), hasMore },
+    { items: clientItems(items.slice(0, limit)), hasMore },
     { headers: { "Cache-Control": "public, max-age=15, s-maxage=30, stale-while-revalidate=60" } },
   );
 }

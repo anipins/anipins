@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { row, rows, run } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { recordActivity } from "@/lib/activity";
+import { publicMediaUrl } from "@/lib/media";
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -40,8 +41,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   ]);
 
   return NextResponse.json({
-    art,
-    related,
+    art: { ...art, thumb_url: publicMediaUrl(art.thumb), original_url: publicMediaUrl(art.orig) },
+    related: related.map((item: any) => ({ ...item, thumb_url: publicMediaUrl(item.thumb) })),
     prevId: adjacent?.prev_id ?? null,
     nextId: adjacent?.next_id ?? null,
     likeCount: social?.c ?? 0,

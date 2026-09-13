@@ -59,6 +59,13 @@ export async function saveImage(buffer: Buffer, origName: string) {
   return { orig: origKey, thumb: thumbKey, width: meta.width || 0, height: meta.height || 0 };
 }
 
+/** A cacheable media URL for clients. Production uses the storage CDN directly,
+ * while local installations keep using the authenticated application route. */
+export function publicMediaUrl(rel: string) {
+  if (!isSafeMediaKey(rel)) return "";
+  return USE_SUPABASE_STORAGE ? sbPublicUrl(rel) : `/api/img/${rel}`;
+}
+
 export async function saveAvatar(buffer: Buffer, userId: number) {
   const key = `avatars/${userId}-${crypto.randomBytes(8).toString("hex")}.webp`;
   const avatar = await sharp(buffer)
