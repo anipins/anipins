@@ -9,6 +9,7 @@ import FollowButton from "./FollowButton";
 import ZoomableArtwork from "./ZoomableArtwork";
 import DownloadButton from "./DownloadButton";
 import ReportArtwork from "./ReportArtwork";
+import MasonryFeed from "./MasonryFeed";
 
 export default function ArtLightbox() {
   const [id, setId] = useState<number | null>(null);
@@ -146,21 +147,7 @@ export default function ArtLightbox() {
               <section className="border-t border-paper/10 p-5 md:p-8">
                 <h3 className="font-display text-xl font-semibold">More to explore</h3>
                 <p className="mt-1 text-xs text-fog">Fresh picks from every series—choose any image to continue.</p>
-                <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                  {data.related.map((related: any) => (
-                    <button key={related.id} type="button" onClick={() => { setPreview(related); setId(related.id); }}
-                      className="group overflow-hidden rounded-2xl bg-soft text-left hairline hover:border-gold-dim transition-colors">
-                      <div className="aspect-[3/4] overflow-hidden">
-                        <img src={`/api/img/${related.thumb}`} alt={related.title || related.character_name} loading="lazy"
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                      </div>
-                      <div className="p-3">
-                        <p className="truncate text-sm font-medium">{related.character_name}</p>
-                        <p className="truncate text-xs text-fog">{related.anime_name}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                <div className="mt-5"><MasonryFeed query={{ sort: "random" }} randomize initialItems={data.related} initialHasMore /></div>
               </section>
             )}
           </motion.div>

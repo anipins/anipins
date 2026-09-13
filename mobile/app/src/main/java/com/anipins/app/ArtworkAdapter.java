@@ -25,7 +25,7 @@ final class ArtworkAdapter extends RecyclerView.Adapter<ArtworkAdapter.Holder> {
     private final Listener listener;
     ArtworkAdapter(Listener listener) { this.listener = listener; }
     void replace(List<Artwork> values) { items.clear(); items.addAll(values); notifyDataSetChanged(); }
-    void append(List<Artwork> values) { int start=items.size(); items.addAll(values); notifyItemRangeInserted(start,values.size()); }
+    void append(List<Artwork> values) { int start=items.size(); for(Artwork value:values){boolean duplicate=false;for(Artwork item:items)if(item.id==value.id){duplicate=true;break;}if(!duplicate)items.add(value);} notifyItemRangeInserted(start,items.size()-start); }
     boolean isEmpty() { return items.isEmpty(); }
 
     @NonNull @Override public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

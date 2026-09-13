@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import SaveMenu from "@/components/SaveMenu";
 import ShareMenu from "@/components/ShareMenu";
-import ArtCard from "@/components/ArtCard";
+import MasonryFeed from "@/components/MasonryFeed";
 import { toast } from "@/components/Toaster";
 import FollowButton from "@/components/FollowButton";
 import ZoomableArtwork from "@/components/ZoomableArtwork";
@@ -119,9 +119,7 @@ export default function ArtworkDetailClient({ params, initialData }: { params: {
         <div className="mt-20">
           <h2 className="font-display text-2xl font-semibold">More to explore</h2>
           <p className="mt-1 text-sm text-fog">Fresh discoveries from every series across AniPins.</p>
-          <div className="masonry mt-6">
-            {data.related.map((a: any, i: number) => <ArtCard key={a.id} art={a} index={i} priority={false} />)}
-          </div>
+          <div className="mt-6"><MasonryFeed query={{ sort: "random" }} randomize initialItems={data.related} initialHasMore /></div>
         </div>
       )}
 

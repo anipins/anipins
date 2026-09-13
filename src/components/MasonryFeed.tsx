@@ -25,7 +25,11 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     }
     const r = await fetch(`/api/artworks?${sp}`, { cache: forceFresh ? "no-store" : "default" });
     const d = await r.json();
-    setItems(prev => reset ? d.items : [...prev, ...d.items]);
+    setItems(prev => {
+      if (reset) return d.items;
+      const existing = new Set(prev.map(item => item.id));
+      return [...prev, ...d.items.filter((item: any) => !existing.has(item.id))];
+    });
     setHasMore(d.hasMore);
     setLoading(false);
     setInitial(false);

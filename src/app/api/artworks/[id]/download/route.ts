@@ -15,18 +15,20 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   const user = await getUser();
   if (user) await recordActivity(user.id, id, "download", 2);
   const name = `anipins-${slugify(art.character_name)}-${id}${path.extname(art.orig) || ".jpg"}`;
+  const extension = path.extname(art.orig).toLowerCase();
+  const contentType = extension === ".png" ? "image/png" : extension === ".webp" ? "image/webp" : extension === ".gif" ? "image/gif" : "image/jpeg";
 
   if (USE_SUPABASE_STORAGE) {
     const r = await fetch(sbPublicUrl(art.orig));
     if (!r.ok) return new NextResponse("File missing", { status: 404 });
     const buf = Buffer.from(await r.arrayBuffer());
     return new NextResponse(buf, {
-      headers: { "Content-Type": "application/octet-stream", "Content-Disposition": `attachment; filename="${name}"` },
+      headers: { "Content-Type": contentType, "Content-Length": String(buf.length), "Content-Disposition": `attachment; filename="${name}"`, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" },
     });
   }
   const file = path.join(UPLOADS_DIR, art.orig);
   if (!fs.existsSync(file)) return new NextResponse("File missing", { status: 404 });
   return new NextResponse(fs.readFileSync(file), {
-    headers: { "Content-Type": "application/octet-stream", "Content-Disposition": `attachment; filename="${name}"` },
+    headers: { "Content-Type": contentType, "Content-Disposition": `attachment; filename="${name}"`, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" },
   });
 }
