@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
 import { UPLOADS_DIR } from "@/lib/db";
-import { USE_SUPABASE_STORAGE, sbPublicUrl } from "@/lib/media";
+import { USE_SUPABASE_STORAGE, isSafeMediaKey, sbPublicUrl } from "@/lib/media";
 
 const TYPES: Record<string, string> = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif" };
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ p: string[] }> }) {
   const params = await props.params;
   const rel = params.p.join("/");
+  if (!isSafeMediaKey(rel)) return new NextResponse("Not found", { status: 404 });
   if (USE_SUPABASE_STORAGE) {
     return NextResponse.redirect(sbPublicUrl(rel), {
       status: 308,

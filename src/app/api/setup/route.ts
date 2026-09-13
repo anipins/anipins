@@ -26,9 +26,14 @@ const SEED = [
   { file: "zerotwo.jpg", ch: "Zero Two", an: "Darling in the Franxx", title: "Darling", tags: "darling in the franxx,zero two,pink hair,horns,female", cat: "Female Characters", featured: 1, desc: "Zero Two, elegant and untouchable." },
 ];
 
-export async function GET() {
+export async function GET(req: Request) {
   const log: string[] = [];
   try {
+    if (process.env.NODE_ENV === "production") {
+      const expected = process.env.SETUP_SECRET;
+      const supplied = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+      if (!expected || supplied !== expected) return new NextResponse("Not found", { status: 404 });
+    }
     // 1. Schema (Postgres only; SQLite auto-creates)
     if (process.env.DATABASE_URL) {
       for (const stmt of PG_SCHEMA) await run(stmt);
@@ -58,7 +63,8 @@ export async function GET() {
     // 3. Admin account
     const admin = await row("SELECT id FROM users WHERE email=?", ADMIN_EMAIL);
     if (!admin) {
-      const pw = process.env.ADMIN_PASSWORD || "AniPins@2026";
+      const pw = process.env.ADMIN_PASSWORD;
+      if (!pw || pw.length < 12) throw new Error("ADMIN_PASSWORD must be configured with at least 12 characters before setup.");
       await run("INSERT INTO users (email,password_hash,name,role) VALUES (?,?,?,?)", ADMIN_EMAIL, hashPassword(pw), "AniPins Admin", "ADMIN");
       log.push(`Admin account created (${ADMIN_EMAIL})`);
     } else log.push("Admin account already exists");

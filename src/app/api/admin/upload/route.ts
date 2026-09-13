@@ -13,16 +13,21 @@ export async function POST(req: NextRequest) {
   const form = await req.formData();
   const files = form.getAll("files") as File[];
   if (!files.length) return NextResponse.json({ error: "No files" }, { status: 400 });
+  if (files.length > 20) return NextResponse.json({ error: "Upload no more than 20 files at once." }, { status: 400 });
+  const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+  if (files.some(file => !allowedTypes.has(file.type) || file.size < 1 || file.size > 15 * 1024 * 1024)) {
+    return NextResponse.json({ error: "Each artwork must be a JPG, PNG or WebP image no larger than 15 MB." }, { status: 400 });
+  }
 
   const character = String(form.get("character") || "").trim();
   const anime = String(form.get("anime") || "").trim();
   if (!character || !anime) return NextResponse.json({ error: "Character and anime names are required." }, { status: 400 });
 
-  const title = String(form.get("title") || "").trim();
-  const description = String(form.get("description") || "").trim();
+  const title = String(form.get("title") || "").trim().slice(0, 160);
+  const description = String(form.get("description") || "").trim().slice(0, 2000);
   const creator = String(form.get("creator") || "").trim().slice(0, 120);
   const sourceUrl = String(form.get("sourceUrl") || "").trim().slice(0, 1000);
-  const tags = String(form.get("tags") || "").trim();
+  const tags = String(form.get("tags") || "").trim().slice(0, 1000);
   const gender = String(form.get("gender") || "").trim();
   const category = String(form.get("category") || "").trim();
   const featured = form.get("featured") === "1" ? 1 : 0;

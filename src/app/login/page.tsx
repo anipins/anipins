@@ -40,7 +40,7 @@ export default function Login() {
           <div><label className="label">Email</label>
             <input className="input" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" /></div>
           <div><label className="label">Password</label>
-            <input className="input" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" /></div>
+            <input className="input" type="password" required minLength={mode === "register" ? 8 : 1} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" /></div>
           {err && <p className="text-sm text-red-400">{err}</p>}
           <button disabled={busy} className="btn-primary w-full disabled:opacity-50">{busy ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}</button>
         </form>

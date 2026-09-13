@@ -9,7 +9,12 @@ const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const USE_SUPABASE_STORAGE = !!(SB_URL && SB_KEY);
 export const BUCKET = "artworks";
 
+export function isSafeMediaKey(rel: string) {
+  return /^(?:o|t|avatars|covers)\/[a-zA-Z0-9._-]+$/.test(rel);
+}
+
 export function sbPublicUrl(rel: string) {
+  if (!isSafeMediaKey(rel)) throw new Error("Invalid media key");
   return `${SB_URL}/storage/v1/object/public/${BUCKET}/${rel}`;
 }
 
@@ -105,7 +110,7 @@ export function hashDistance(a: string, b: string) {
 }
 
 export async function deleteFile(rel: string) {
-  if (!rel) return;
+  if (!rel || !isSafeMediaKey(rel)) return;
   if (USE_SUPABASE_STORAGE) { await sbDelete([rel]); return; }
   try {
     const p = path.normalize(path.join(UPLOADS_DIR, rel));
@@ -114,6 +119,7 @@ export async function deleteFile(rel: string) {
 }
 
 export async function deleteFiles(orig: string, thumb: string) {
+  if (!isSafeMediaKey(orig) || !isSafeMediaKey(thumb)) return;
   if (USE_SUPABASE_STORAGE) { await sbDelete([orig, thumb]); return; }
   for (const rel of [orig, thumb]) {
     try {

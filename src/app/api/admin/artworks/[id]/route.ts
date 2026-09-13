@@ -46,6 +46,10 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   if (body.published !== undefined) { fields.push("published=?"); args.push(body.published === "1" || body.published === 1 || body.published === true ? 1 : 0); }
 
   if (newImage) {
+    const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+    if (!allowedTypes.has(newImage.type) || newImage.size > 15 * 1024 * 1024) {
+      return NextResponse.json({ error: "Replacement must be a JPG, PNG or WebP image no larger than 15 MB." }, { status: 400 });
+    }
     const buf = Buffer.from(await newImage.arrayBuffer());
     const m = await saveImage(buf, newImage.name);
     await deleteFiles(art.orig, art.thumb);

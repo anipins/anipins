@@ -6,6 +6,15 @@ import { row, run } from "./db";
 export const ADMIN_EMAIL = "anipins01@gmail.com";
 export const COOKIE = "anipins_session";
 
+export const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+  maxAge: 60 * 60 * 24 * 30,
+  priority: "high" as const,
+};
+
 export type SessionUser = { id: number; email: string; name: string; nickname: string; avatar: string; cover: string; bio: string; is_public: number; notify_following: number; notify_updates: number; role: string };
 
 export async function getUser(): Promise<SessionUser | null> {

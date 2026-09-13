@@ -48,8 +48,8 @@ export async function PATCH(req: NextRequest) {
   let avatar = user.avatar || "";
   const file = form.get("avatar");
   if (file instanceof File && file.size > 0) {
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "Profile image must be an image file." }, { status: 400 });
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      return NextResponse.json({ error: "Profile image must be a JPG, PNG or WebP file." }, { status: 400 });
     }
     if (file.size > 8 * 1024 * 1024) {
       return NextResponse.json({ error: "Profile image must be smaller than 8 MB." }, { status: 400 });
@@ -63,8 +63,8 @@ export async function PATCH(req: NextRequest) {
   let cover = user.cover || "";
   const coverFile = form.get("cover");
   if (coverFile instanceof File && coverFile.size > 0) {
-    if (!coverFile.type.startsWith("image/") || coverFile.size > 12 * 1024 * 1024) {
-      return NextResponse.json({ error: "Cover must be an image smaller than 12 MB." }, { status: 400 });
+    if (!["image/jpeg", "image/png", "image/webp"].includes(coverFile.type) || coverFile.size > 12 * 1024 * 1024) {
+      return NextResponse.json({ error: "Cover must be a JPG, PNG or WebP image smaller than 12 MB." }, { status: 400 });
     }
     const nextCover = await saveCover(Buffer.from(await coverFile.arrayBuffer()), user.id);
     const previousCover = cover;
