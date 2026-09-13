@@ -13,7 +13,7 @@
 Set these in Vercel Production, Preview and local `.env.local` as appropriate:
 
 ```text
-NEXT_PUBLIC_SITE_URL=https://anipins-three.vercel.app
+NEXT_PUBLIC_SITE_URL=https://anipins.com
 GOOGLE_SITE_VERIFICATION=the_token_from_search_console
 ANDROID_APP_LINKS_SHA256=AA:BB:...release-certificate-fingerprint
 ```
@@ -22,9 +22,9 @@ Never place `DATABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` in a `NEXT_PUBLIC_` va
 
 ## Google Search Console
 
-1. Add a URL-prefix property for `https://anipins-three.vercel.app/` (or add a domain property if a custom domain is connected).
+1. Add the domain property `anipins.com`.
 2. Choose HTML-tag verification, copy only the `content` token into `GOOGLE_SITE_VERIFICATION`, deploy, then verify.
-3. Submit `https://anipins-three.vercel.app/sitemap.xml`.
+3. Submit `https://anipins.com/sitemap.xml`.
 4. Inspect `/`, `/anime`, `/characters`, representative `/anime/[slug]`, `/c/[slug]` and `/a/[id]` URLs and request indexing.
 5. Use the rendered HTML and Rich Results tests to validate structured data. Image indexing can take time and is not guaranteed.
 

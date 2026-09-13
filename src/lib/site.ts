@@ -1,5 +1,5 @@
 export const SITE_NAME = "AniPins";
-export const DEFAULT_SITE_URL = "https://anipins-three.vercel.app";
+export const DEFAULT_SITE_URL = "https://anipins.com";
 
 export function getSiteUrl() {
   const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();

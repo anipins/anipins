@@ -1,6 +1,6 @@
 # Google Play Data Safety draft
 
-This draft reflects the source and libraries in AniPins Android 2.0.2. Recheck the final Play Console definitions before submission.
+This draft reflects the source and libraries in AniPins Android 2.1.0. Recheck the final Play Console definitions before submission.
 
 ## SDK audit
 
@@ -23,7 +23,7 @@ This draft reflects the source and libraries in AniPins Android 2.0.2. Recheck t
 
 `No*` means not sold or transferred to unrelated third parties. Vercel (hosting/API) and Supabase (database/image storage) process data as service providers. Confirm whether Google Play's current “service provider” exception applies when answering the live form.
 
-All network traffic uses HTTPS. The Android session token is encrypted with Android Keystore. Passwords are sent only to the AniPins API over HTTPS and are stored server-side as one-way hashes. Users can request full account deletion in-app or at `https://anipins-three.vercel.app/delete-account`.
+All network traffic uses HTTPS. The Android session token is encrypted with Android Keystore. Passwords are sent only to the AniPins API over HTTPS and are stored server-side as one-way hashes. Users can request full account deletion in-app or at `https://anipins.com/delete-account`.
 
 ## Play Console answers to verify
 

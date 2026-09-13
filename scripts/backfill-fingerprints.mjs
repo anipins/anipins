@@ -1,6 +1,6 @@
 import sharp from "sharp";
 
-const base = "https://anipins-three.vercel.app";
+const base = "https://anipins.com";
 const artworks = [];
 for (let page = 0; ; page++) {
   const response = await fetch(`${base}/api/artworks?page=${page}&limit=40&sort=latest`);

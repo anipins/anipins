@@ -4,10 +4,10 @@ AniPins Android is a native Java/Android Views application under `/mobile`, reta
 
 The consumer shell is not a WebView. Home, Explore, debounced Search, Saves, Profile, authentication, artwork detail, pinch/double-tap zoom, save, like, Download Manager downloads, sharing, error states and App Links are native Android UI and APIs. `LegalActivity` is a contained authenticated web surface for legal documents and the owner-only existing admin dashboard; it is not the application shell. This preserves complex administrator upload/management workflows without embedding service credentials or duplicating privileged logic.
 
-Data source: `https://anipins-three.vercel.app/api/*`. Website and app therefore share users, sessions, artwork, likes, saves and collections. The session cookie is encrypted at rest with an AES-GCM key held in Android Keystore. Passwords are never stored. Image thumbnails are memory/disk cached by Glide with bounded system-managed application cache.
+Data source: `https://anipins.com/api/*`. Website and app therefore share users, sessions, artwork, likes, saves and collections. The session cookie is encrypted at rest with an AES-GCM key held in Android Keystore. Passwords are never stored. Image thumbnails are memory/disk cached by Glide with bounded system-managed application cache.
 
 Package: `com.anipins.app`
-Version: `2.0.2` (`versionCode 7`)
+Version: `2.1.0` (`versionCode 8`)
 `compileSdk`/`targetSdk`: 36
 `minSdk`: 24
 

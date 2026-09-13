@@ -1,7 +1,7 @@
 AniPins canonical live source
 =============================
 
-Website: https://anipins-three.vercel.app/
+Website: https://anipins.com/
 Android package: com.anipins.app
 
 This Android shell must always load the Vercel URL above. It must not use the former chatgpt.site URL.

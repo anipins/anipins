@@ -10,9 +10,9 @@ android {
         applicationId 'com.anipins.app'
         minSdk 24
         targetSdk 36
-        versionCode 7
-        versionName '2.0.2'
-        buildConfigField 'String', 'API_BASE_URL', '"https://anipins-three.vercel.app"'
+        versionCode 8
+        versionName '2.1.0'
+        buildConfigField 'String', 'API_BASE_URL', '"https://anipins.com"'
     }
 
     def releaseStoreFile = System.getenv('ANIPINS_KEYSTORE_PATH')
