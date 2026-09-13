@@ -38,11 +38,12 @@ export default function MobileBottomNav() {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         return (
           <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined}
-            className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl text-[11px] transition-colors ${active ? "text-gold" : "text-fog hover:text-paper"}`}>
+            className={`group relative flex min-h-16 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl text-[11px] transition-all ${active ? "bg-gold/[0.08] text-gold" : "text-fog hover:bg-paper/[0.04] hover:text-paper"}`}>
+            <span className={`absolute top-0 h-0.5 rounded-full bg-gold transition-all duration-300 ${active ? "w-8 opacity-100" : "w-0 opacity-0"}`} />
             <svg className="h-5 w-5" fill={active && item.href === "/" ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.9">
               {item.icon}
             </svg>
-            <span>{item.label}</span>
+            <span className={active ? "font-semibold" : ""}>{item.label}</span>
           </Link>
         );
       })}

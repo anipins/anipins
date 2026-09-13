@@ -2,6 +2,7 @@ package com.anipins.app;
 
 import android.graphics.Color;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -47,7 +48,7 @@ final class ArtworkAdapter extends RecyclerView.Adapter<ArtworkAdapter.Holder> {
         holder.itemView.setContentDescription(artwork.displayTitle() + " from " + artwork.anime);
         Glide.with(holder.image).load(artwork.thumbUrl()).apply(new RequestOptions().centerCrop().diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).placeholder(android.R.color.darker_gray)).transition(DrawableTransitionOptions.withCrossFade(140)).into(holder.image);
         if(position+2<items.size()) Glide.with(holder.image).load(items.get(position+2).thumbUrl()).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).preload();
-        holder.itemView.setOnClickListener(view -> listener.open(artwork));
+        holder.itemView.setOnClickListener(view -> { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); view.animate().scaleX(.97f).scaleY(.97f).setDuration(70).withEndAction(() -> { view.animate().scaleX(1f).scaleY(1f).setDuration(110).start(); listener.open(artwork); }).start(); });
     }
     @Override public int getItemCount() { return items.size(); }
 

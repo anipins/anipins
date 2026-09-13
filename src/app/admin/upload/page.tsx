@@ -76,7 +76,7 @@ export default function AdminUpload() {
           <div className="flex flex-wrap gap-5 text-sm sm:col-span-2"><label className="flex items-center gap-2"><input type="checkbox" checked={item.featured} onChange={event => update(item.key, { featured: event.target.checked })} className="accent-gold" /> Featured</label><label className="flex items-center gap-2"><input type="checkbox" checked={item.published} onChange={event => update(item.key, { published: event.target.checked })} className="accent-gold" /> Publish immediately</label></div>
         </div>
       </article>)}</div>
-      {progress ? <p className="text-sm text-gold" aria-live="polite">{progress}</p> : null}{message ? <p className={`text-sm ${message.startsWith("✓") ? "text-green-400" : "text-red-300"}`}>{message}</p> : null}
+      {progress ? <div className="rounded-2xl bg-soft p-4 hairline" aria-live="polite"><div className="mb-2 flex items-center justify-between gap-3 text-sm"><span className="truncate text-gold">{progress}</span><span className="shrink-0 text-fog">Please keep this page open</span></div><div className="h-1.5 overflow-hidden rounded-full bg-ink"><div className="h-full animate-pulse rounded-full bg-gold" style={{ width: `${Math.max(8, ((Number(progress.match(/Uploading (\d+)/)?.[1]) || 1) / Math.max(items.length, 1)) * 100)}%` }} /></div></div> : null}{message ? <p className={`text-sm ${message.startsWith("✓") ? "text-green-400" : "text-red-300"}`}>{message}</p> : null}
       <button disabled={busy || !items.length} className="btn-primary w-full disabled:opacity-50">{busy ? "Uploading…" : `Publish ${items.length || ""} artwork${items.length === 1 ? "" : "s"}`}</button>
     </form>
   );

@@ -11,6 +11,7 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -42,6 +43,7 @@ public class MainActivity extends Activity {
     private SwipeRefreshLayout swipe; private ArtworkAdapter adapter; private String currentPath = "/api/artworks?sort=for-you&limit=30";
     private int lastRandomFirstId = -1, feedPage = 0; private boolean feedLoading = false, feedHasMore = true;
     private final Handler handler = new Handler(Looper.getMainLooper()); private Runnable pendingSearch;
+    private final List<TextView> navItems = new ArrayList<>();
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state); requestWindowFeature(Window.FEATURE_NO_TITLE); getWindow().setStatusBarColor(Ui.INK); getWindow().setNavigationBarColor(Ui.INK);
@@ -58,15 +60,17 @@ public class MainActivity extends Activity {
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal); progress.setIndeterminate(true); progress.setVisibility(View.GONE); root.addView(progress, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 2)));
         body = new FrameLayout(this); root.addView(body, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         LinearLayout nav = new LinearLayout(this); nav.setPadding(Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 10)); nav.setGravity(Gravity.CENTER); nav.setBackgroundColor(Ui.PANEL);
-        addNav(nav, "Home", this::showHome); addNav(nav, "Explore", this::showExplore); addNav(nav, "Saves", this::showSaves); addNav(nav, "Profile", this::showProfile); root.addView(nav);
+        addNav(nav, "⌂", "Home", this::showHome); addNav(nav, "◇", "Explore", this::showExplore); addNav(nav, "♡", "Saves", this::showSaves); addNav(nav, "○", "Profile", this::showProfile); root.addView(nav);
         return root;
     }
 
     private Button button(String label) { Button value = new Button(this); value.setText(label); value.setTextColor(Ui.PAPER); value.setTextSize(12); value.setAllCaps(false); value.setBackground(Ui.background(Ui.SOFT, Ui.dp(this, 20), Color.rgb(55,55,55))); return value; }
-    private void addNav(LinearLayout parent, String label, Runnable action) { Button tab = button(label); tab.setOnClickListener(v -> action.run()); LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, Ui.dp(this, 48), 1); params.setMargins(Ui.dp(this, 3), 0, Ui.dp(this, 3), 0); parent.addView(tab, params); }
+    private void addNav(LinearLayout parent, String icon, String label, Runnable action) { TextView tab=Ui.text(this,icon+"\n"+label,11,Ui.FOG,false);tab.setGravity(Gravity.CENTER);tab.setLineSpacing(0,.9f);int index=navItems.size();navItems.add(tab);tab.setOnClickListener(v->{v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);selectNav(index);action.run();});LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,Ui.dp(this,58),1);params.setMargins(Ui.dp(this,3),0,Ui.dp(this,3),0);parent.addView(tab,params);}
+    private void selectNav(int selected){for(int i=0;i<navItems.size();i++){TextView item=navItems.get(i);boolean active=i==selected;item.setTextColor(active?Ui.GOLD:Ui.FOG);item.setTypeface(android.graphics.Typeface.DEFAULT,active?android.graphics.Typeface.BOLD:android.graphics.Typeface.NORMAL);item.setBackground(Ui.background(active?Color.rgb(34,29,19):Color.TRANSPARENT,Ui.dp(this,18),Color.TRANSPARENT));}}
 
-    private void showHome() { title.setText("For You"); subtitle.setText("A fresh mix every time"); currentPath = "/api/artworks?sort=random&limit=30&seed=" + (new Random().nextInt(2_000_000_000) + 1); showGrid(currentPath); }
+    private void showHome() { selectNav(0); title.setText("For You"); subtitle.setText("A fresh mix every time"); currentPath = "/api/artworks?sort=random&limit=30&seed=" + (new Random().nextInt(2_000_000_000) + 1); showGrid(currentPath); }
     private void showExplore() {
+        selectNav(1);
         title.setText("Explore"); subtitle.setText("Trending across AniPins");
         LinearLayout container = new LinearLayout(this); container.setOrientation(LinearLayout.VERTICAL); container.setBackgroundColor(Ui.INK);
         LinearLayout filters = new LinearLayout(this); filters.setPadding(Ui.dp(this, 12), Ui.dp(this, 4), Ui.dp(this, 12), Ui.dp(this, 8));
@@ -106,6 +110,7 @@ public class MainActivity extends Activity {
     private void errorView(String message, Runnable retry) { body.removeAllViews(); LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setGravity(Gravity.CENTER);panel.setPadding(Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28));TextView text=Ui.text(this,message,16,Ui.FOG,false);text.setGravity(Gravity.CENTER);panel.addView(text);Button button=button("Try again");button.setOnClickListener(v->retry.run());LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,48));p.setMargins(0,Ui.dp(this,18),0,0);panel.addView(button,p);body.addView(panel); }
 
     private void showSaves() {
+        selectNav(2);
         title.setText("Saves"); subtitle.setText("Your synced collections"); progress.setVisibility(View.VISIBLE);
         api.get("/api/collections", (status,data,error)->{progress.setVisibility(View.GONE);if(status==401||data.optBoolean("guest")){guestPanel("Sign in to see the same saves and collections as the website.");return;}if(error!=null){errorView("Could not load collections.",this::showSaves);return;}
             ScrollView scroll=new ScrollView(this);LinearLayout content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(Ui.dp(this,16),Ui.dp(this,8),Ui.dp(this,16),Ui.dp(this,24));scroll.addView(content);

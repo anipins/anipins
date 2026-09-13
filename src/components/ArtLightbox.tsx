@@ -82,7 +82,7 @@ export default function ArtLightbox() {
     <AnimatePresence>
       {id !== null && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 backdrop-blur-md p-3 md:p-8"
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 backdrop-blur-md md:p-8"
           onClick={() => setId(null)}
           onTouchStart={e => (touch.current = e.touches[0].clientX)}
           onTouchEnd={e => {
@@ -102,10 +102,10 @@ export default function ArtLightbox() {
             transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
             style={{ transformPerspective: 1100 }}
             onClick={e => e.stopPropagation()}
-            className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-3xl bg-panel hairline shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
+            className="h-full w-full max-w-6xl overflow-y-auto bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.7)] md:h-auto md:max-h-[92vh] md:rounded-3xl md:hairline">
             <div className="grid md:grid-cols-[1.35fr,1fr]">
-              <div className="relative flex max-h-[55vh] items-center justify-center bg-ink md:max-h-[82vh]">
-                {art && fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} className="max-h-[55vh] w-full md:max-h-[82vh]" />
+              <div className="relative flex min-h-[52vh] max-h-[68vh] items-center justify-center bg-black md:min-h-0 md:max-h-[82vh]">
+                {art && fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} className="max-h-[68vh] w-full md:max-h-[82vh]" />
                   : <div className="skeleton h-[50vh] w-full" />}
               </div>
               <div className="flex min-h-80 flex-col p-6 md:p-8">
