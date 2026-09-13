@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AniPins</string>
+    <string name="offline_message">Unable to reach the AniPins website. Check your internet connection and try again.</string>
+    <string name="retry">Retry</string>
+</resources>

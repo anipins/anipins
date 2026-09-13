@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { openArtwork } from "./ArtCard";
 import { toast } from "./Toaster";
+import { artworkAlt } from "@/lib/site";
 
 function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: boolean; sizes: string }) {
   const [ready, setReady] = useState(false);
@@ -23,7 +24,7 @@ function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: 
       />
       <Image
         src={src}
-        alt={art.title || art.character_name}
+        alt={artworkAlt(art)}
         fill
         sizes={sizes}
         priority={priority}
@@ -34,14 +35,14 @@ function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: 
   );
 }
 
-export default function FeaturedSlider() {
-  const [arts, setArts] = useState<any[]>([]);
+export default function FeaturedSlider({ initialArts = [] }: { initialArts?: any[] }) {
+  const [arts, setArts] = useState<any[]>(initialArts);
   const [idx, setIdx] = useState(0);
   const [dir, setDir] = useState(1);
 
   useEffect(() => {
-    fetch("/api/artworks?featured=1&limit=8").then(r => r.json()).then(d => setArts(d.items || []));
-  }, []);
+    if (initialArts.length === 0) fetch("/api/artworks?featured=1&limit=8").then(r => r.json()).then(d => setArts(d.items || []));
+  }, [initialArts.length]);
 
   useEffect(() => {
     if (arts.length < 2) return;

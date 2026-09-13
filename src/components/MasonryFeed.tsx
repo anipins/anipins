@@ -6,17 +6,15 @@ function createFeedSeed() {
   return Math.floor(Math.random() * 2_147_483_646) + 1;
 }
 
-export default function MasonryFeed({ query = {}, randomize = false }: { query?: Record<string, string>; randomize?: boolean }) {
-  const [items, setItems] = useState<any[]>([]);
+export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true }: { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean }) {
+  const [items, setItems] = useState<any[]>(initialItems);
   const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
-  const [initial, setInitial] = useState(true);
+  const [initial, setInitial] = useState(initialItems.length === 0);
   const sentinel = useRef<HTMLDivElement>(null);
   const randomSeed = useRef(createFeedSeed());
   const key = JSON.stringify(query);
-
-  useEffect(() => { setItems([]); setPage(0); setHasMore(true); setInitial(true); }, [key]);
 
   const load = useCallback(async (p: number, reset: boolean, forceFresh = false) => {
     setLoading(true);
@@ -33,7 +31,9 @@ export default function MasonryFeed({ query = {}, randomize = false }: { query?:
     setInitial(false);
   }, [key, randomize]);
 
-  useEffect(() => { load(0, true); }, [load]);
+  useEffect(() => {
+    if (initialItems.length === 0) load(0, true);
+  }, [load, initialItems.length]);
 
   useEffect(() => {
     const refresh = () => {

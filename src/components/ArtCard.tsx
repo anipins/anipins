@@ -7,6 +7,7 @@ import SaveMenu from "./SaveMenu";
 import ShareMenu from "./ShareMenu";
 import Tilt from "./Tilt";
 import { toast } from "./Toaster";
+import { artworkAlt } from "@/lib/site";
 
 export function openArtwork(id: number, art?: any) {
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("anipins:open-art", { detail: { id, art } }));
@@ -31,7 +32,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
             <div style={{ aspectRatio: `1 / ${ratio}` }} className={`relative w-full overflow-hidden bg-soft ${imageReady ? "" : "skeleton"}`}>
               <Image
                 src={`/api/img/${art.thumb}`}
-                alt={art.title || art.character_name}
+                alt={artworkAlt(art)}
                 fill
                 sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1439px) 25vw, 20vw"
                 priority={priority ?? index < 4}

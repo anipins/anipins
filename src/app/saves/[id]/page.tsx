@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import ArtCard from "@/components/ArtCard";
 
-export default function CollectionPage({ params }: { params: { id: string } }) {
+export default function CollectionPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const [data, setData] = useState<any>(null);
   const [err, setErr] = useState(false);
   const load = () => fetch(`/api/collections/${params.id}`).then(r => r.ok ? r.json() : Promise.reject()).then(setData).catch(() => setErr(true));

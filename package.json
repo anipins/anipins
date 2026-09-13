@@ -1,6 +1,9 @@
 {
   "name": "anipins",
   "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3000",
     "build": "next build",
@@ -11,21 +14,24 @@
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.3.0",
     "framer-motion": "^11.11.0",
-    "next": "14.2.35",
+    "next": "^15.5.25",
     "pg": "^8.12.0",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "sharp": "^0.33.5"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "sharp": "^0.35.4"
+  },
+  "overrides": {
+    "next": { "postcss": "8.5.23" }
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^20",
     "@types/pg": "^8.11.0",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.47",
+    "postcss": "^8.5.23",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.2"
   }

@@ -9,15 +9,17 @@ async function guard() {
   return null;
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const g = await guard(); if (g) return g;
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const g = await guard();if (g) return g;
   const art = await row("SELECT * FROM artworks WHERE id=?", parseInt(params.id));
   if (!art) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ art });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const g = await guard(); if (g) return g;
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const g = await guard();if (g) return g;
   const id = parseInt(params.id);
   const art = await row("SELECT * FROM artworks WHERE id=?", id);
   if (!art) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -55,8 +57,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const g = await guard(); if (g) return g;
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const g = await guard();if (g) return g;
   const id = parseInt(params.id);
   const art = await row("SELECT * FROM artworks WHERE id=?", id);
   if (!art) return NextResponse.json({ error: "Not found" }, { status: 404 });

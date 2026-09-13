@@ -10,22 +10,28 @@ import MobileBottomNav from "@/components/MobileBottomNav";
 import PullToRefresh from "@/components/PullToRefresh";
 import AppUpdateBanner from "@/components/AppUpdateBanner";
 import ClientTelemetry from "@/components/ClientTelemetry";
+import JsonLd from "@/components/JsonLd";
+import { absoluteUrl, getSiteUrl, SITE_NAME } from "@/lib/site";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-grotesk" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://anipins-three.vercel.app"),
-  title: "AniPins — Discover. Save. Create.",
+  metadataBase: new URL(getSiteUrl()),
+  title: { default: "AniPins — Discover, Save and Download Anime Artwork", template: "%s | AniPins" },
   description: "Anime artwork curated for inspiration. Discover, save, share and download high-quality anime character art.",
+  applicationName: SITE_NAME,
+  verification: process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : undefined,
   icons: { icon: "/favicon.svg", apple: "/brand/ap-symbol-192.png" },
   openGraph: {
-    title: "AniPins — Discover. Save. Create.",
+    title: "AniPins — Discover, Save and Download Anime Artwork",
     description: "Anime artwork curated for inspiration.",
     images: ["/brand/og-image.png"],
-    siteName: "AniPins",
+    siteName: SITE_NAME,
+    type: "website",
+    url: "/",
   },
-  twitter: { card: "summary_large_image", images: ["/brand/og-image.png"] },
+  twitter: { card: "summary_large_image", title: "AniPins — Anime Artwork", description: "Discover, save and download high-quality anime character art.", images: ["/brand/og-image.png"] },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -39,6 +45,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        <JsonLd data={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: SITE_NAME,
+          url: getSiteUrl(),
+          potentialAction: { "@type": "SearchAction", target: `${absoluteUrl("/search")}?q={search_term_string}`, "query-input": "required name=search_term_string" },
+        }} />
         <Intro />
         <Navbar />
         <PullToRefresh />

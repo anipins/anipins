@@ -1,0 +1,55 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.anipins.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.anipins.app'
+        minSdk 24
+        targetSdk 36
+        versionCode 5
+        versionName '2.0.0'
+        buildConfigField 'String', 'API_BASE_URL', '"https://anipins-three.vercel.app"'
+    }
+
+    def releaseStoreFile = System.getenv('ANIPINS_KEYSTORE_PATH')
+    def releaseStorePassword = System.getenv('ANIPINS_KEYSTORE_PASSWORD')
+    def releaseKeyAlias = System.getenv('ANIPINS_KEY_ALIAS')
+    def releaseKeyPassword = System.getenv('ANIPINS_KEY_PASSWORD')
+
+    signingConfigs {
+        if (releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword) {
+            release {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (signingConfigs.findByName('release')) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+    buildFeatures { buildConfig true }
+}
+
+dependencies {
+    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.8.22')
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+}

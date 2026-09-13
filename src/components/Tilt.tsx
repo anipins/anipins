@@ -3,7 +3,7 @@ import { useRef } from "react";
 
 export default function Tilt({ children, max = 4, className = "" }: { children: React.ReactNode; max?: number; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  const raf = useRef<number>();
+  const raf = useRef<number | undefined>(undefined);
 
   const onMove = (e: React.MouseEvent) => {
     const el = ref.current;

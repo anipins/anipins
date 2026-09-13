@@ -6,7 +6,8 @@ import { USE_SUPABASE_STORAGE, sbPublicUrl } from "@/lib/media";
 
 const TYPES: Record<string, string> = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif" };
 
-export async function GET(_req: NextRequest, { params }: { params: { p: string[] } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ p: string[] }> }) {
+  const params = await props.params;
   const rel = params.p.join("/");
   if (USE_SUPABASE_STORAGE) {
     return NextResponse.redirect(sbPublicUrl(rel), {

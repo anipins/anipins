@@ -1,0 +1,118 @@
+package com.anipins.app;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Intent;
+import android.graphics.Color;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+public class MainActivity extends Activity {
+    private ApiClient api; private FrameLayout body; private TextView title, subtitle; private ProgressBar progress;
+    private SwipeRefreshLayout swipe; private ArtworkAdapter adapter; private String currentPath = "/api/artworks?sort=for-you&limit=30";
+    private final Handler handler = new Handler(Looper.getMainLooper()); private Runnable pendingSearch;
+
+    @Override protected void onCreate(Bundle state) {
+        super.onCreate(state); requestWindowFeature(Window.FEATURE_NO_TITLE); getWindow().setStatusBarColor(Ui.INK); getWindow().setNavigationBarColor(Ui.INK);
+        api = new ApiClient(this); setContentView(buildShell()); handleDeepLink(getIntent()); if (state == null) showHome();
+    }
+
+    private View buildShell() {
+        LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Ui.INK);
+        LinearLayout header = new LinearLayout(this); header.setGravity(Gravity.CENTER_VERTICAL); header.setPadding(Ui.dp(this, 18), Ui.dp(this, 12), Ui.dp(this, 18), Ui.dp(this, 12));
+        ImageView logo = new ImageView(this); logo.setImageResource(R.drawable.ap_symbol); header.addView(logo, new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
+        LinearLayout headings = new LinearLayout(this); headings.setOrientation(LinearLayout.VERTICAL); headings.setPadding(Ui.dp(this, 12), 0, 0, 0);
+        title = Ui.text(this, "AniPins", 25, Ui.PAPER, true); subtitle = Ui.text(this, "Discover anime artwork", 12, Ui.FOG, false); headings.addView(title); headings.addView(subtitle); header.addView(headings, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        Button search = button("Search"); search.setContentDescription("Search artwork"); search.setOnClickListener(v -> showSearch()); header.addView(search); root.addView(header);
+        progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal); progress.setIndeterminate(true); progress.setVisibility(View.GONE); root.addView(progress, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 2)));
+        body = new FrameLayout(this); root.addView(body, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+        LinearLayout nav = new LinearLayout(this); nav.setPadding(Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 10)); nav.setGravity(Gravity.CENTER); nav.setBackgroundColor(Ui.PANEL);
+        addNav(nav, "Home", this::showHome); addNav(nav, "Explore", this::showExplore); addNav(nav, "Saves", this::showSaves); addNav(nav, "Profile", this::showProfile); root.addView(nav);
+        return root;
+    }
+
+    private Button button(String label) { Button value = new Button(this); value.setText(label); value.setTextColor(Ui.PAPER); value.setTextSize(12); value.setAllCaps(false); value.setBackground(Ui.background(Ui.SOFT, Ui.dp(this, 20), Color.rgb(55,55,55))); return value; }
+    private void addNav(LinearLayout parent, String label, Runnable action) { Button tab = button(label); tab.setOnClickListener(v -> action.run()); LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, Ui.dp(this, 48), 1); params.setMargins(Ui.dp(this, 3), 0, Ui.dp(this, 3), 0); parent.addView(tab, params); }
+
+    private void showHome() { title.setText("For You"); subtitle.setText("A fresh mix every time"); currentPath = "/api/artworks?sort=for-you&limit=30&seed=" + (new Random().nextInt(2_000_000_000) + 1); showGrid(currentPath); }
+    private void showExplore() {
+        title.setText("Explore"); subtitle.setText("Trending across AniPins");
+        LinearLayout container = new LinearLayout(this); container.setOrientation(LinearLayout.VERTICAL); container.setBackgroundColor(Ui.INK);
+        LinearLayout filters = new LinearLayout(this); filters.setPadding(Ui.dp(this, 12), Ui.dp(this, 4), Ui.dp(this, 12), Ui.dp(this, 8));
+        for (String sort : new String[]{"Latest", "Trending", "Popular"}) { Button chip = button(sort); LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, Ui.dp(this, 44), 1); p.setMargins(Ui.dp(this, 3),0,Ui.dp(this,3),0); filters.addView(chip,p); chip.setOnClickListener(v -> { currentPath = "/api/artworks?sort=" + sort.toLowerCase() + "&limit=30"; loadGrid(currentPath); }); }
+        container.addView(filters); View grid = createGrid(); container.addView(grid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1)); body.removeAllViews(); body.addView(container); currentPath = "/api/artworks?sort=trending&limit=30"; loadGrid(currentPath);
+    }
+    private void showSearch() {
+        title.setText("Search"); subtitle.setText("Characters, anime, tags and artwork");
+        LinearLayout container = new LinearLayout(this); container.setOrientation(LinearLayout.VERTICAL); container.setBackgroundColor(Ui.INK);
+        EditText input = new EditText(this); input.setHint("Search AniPins"); input.setHintTextColor(Ui.FOG); input.setTextColor(Ui.PAPER); input.setSingleLine(); input.setBackground(Ui.background(Ui.SOFT, Ui.dp(this, 20), Color.rgb(55,55,55))); input.setPadding(Ui.dp(this,18),0,Ui.dp(this,18),0);
+        LinearLayout.LayoutParams inputParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 54)); inputParams.setMargins(Ui.dp(this,14),Ui.dp(this,6),Ui.dp(this,14),Ui.dp(this,8)); container.addView(input,inputParams);
+        View grid = createGrid(); container.addView(grid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1)); body.removeAllViews(); body.addView(container);
+        input.addTextChangedListener(new TextWatcher() { public void beforeTextChanged(CharSequence s,int a,int b,int c){} public void onTextChanged(CharSequence s,int a,int b,int c){ if(pendingSearch!=null)handler.removeCallbacks(pendingSearch); pendingSearch=()->{ String q=Uri.encode(s.toString().trim()); currentPath=q.isEmpty()?"/api/artworks?sort=random&limit=30&seed="+System.currentTimeMillis():"/api/artworks?q="+q+"&limit=30"; loadGrid(currentPath);}; handler.postDelayed(pendingSearch,400);} public void afterTextChanged(Editable e){} });
+        input.requestFocus(); currentPath = "/api/artworks?sort=random&limit=30&seed=" + System.currentTimeMillis(); loadGrid(currentPath);
+    }
+
+    private void showGrid(String path) { body.removeAllViews(); body.addView(createGrid()); loadGrid(path); }
+    private View createGrid() {
+        swipe = new SwipeRefreshLayout(this); swipe.setColorSchemeColors(Ui.GOLD); RecyclerView list = new RecyclerView(this); list.setBackgroundColor(Ui.INK); list.setPadding(Ui.dp(this,8),0,Ui.dp(this,8),Ui.dp(this,16)); list.setClipToPadding(false);
+        list.setLayoutManager(new StaggeredGridLayoutManager(getResources().getConfiguration().smallestScreenWidthDp >= 600 ? 3 : 2, StaggeredGridLayoutManager.VERTICAL)); adapter = new ArtworkAdapter(this::openArtwork); list.setAdapter(adapter); swipe.addView(list); swipe.setOnRefreshListener(() -> { if (currentPath.contains("for-you") || currentPath.contains("sort=random")) currentPath = currentPath.replaceAll("seed=[^&]*", "seed=" + System.currentTimeMillis()); loadGrid(currentPath); }); return swipe;
+    }
+    private void loadGrid(String path) {
+        progress.setVisibility(View.VISIBLE); api.get(path, (status, data, error) -> { progress.setVisibility(View.GONE); if(swipe!=null)swipe.setRefreshing(false);
+            if (error != null) { errorView("You appear to be offline.", () -> loadGrid(path)); return; }
+            if (status != 200) { errorView(status == 401 ? "Sign in to view this section." : "AniPins could not load this feed.", status == 401 ? this::openLogin : () -> loadGrid(path)); return; }
+            JSONArray values=data.optJSONArray("items"); List<Artwork> artwork=new ArrayList<>(); if(values!=null)for(int i=0;i<values.length();i++)artwork.add(new Artwork(values.optJSONObject(i))); adapter.replace(artwork); if(artwork.isEmpty())Toast.makeText(this,"No artwork found",Toast.LENGTH_SHORT).show();
+        });
+    }
+    private void errorView(String message, Runnable retry) { body.removeAllViews(); LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setGravity(Gravity.CENTER);panel.setPadding(Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28));TextView text=Ui.text(this,message,16,Ui.FOG,false);text.setGravity(Gravity.CENTER);panel.addView(text);Button button=button("Try again");button.setOnClickListener(v->retry.run());LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,48));p.setMargins(0,Ui.dp(this,18),0,0);panel.addView(button,p);body.addView(panel); }
+
+    private void showSaves() {
+        title.setText("Saves"); subtitle.setText("Your synced collections"); progress.setVisibility(View.VISIBLE);
+        api.get("/api/collections", (status,data,error)->{progress.setVisibility(View.GONE);if(status==401||data.optBoolean("guest")){guestPanel("Sign in to see the same saves and collections as the website.");return;}if(error!=null){errorView("Could not load collections.",this::showSaves);return;}
+            ScrollView scroll=new ScrollView(this);LinearLayout content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(Ui.dp(this,16),Ui.dp(this,8),Ui.dp(this,16),Ui.dp(this,24));scroll.addView(content);
+            Button create=button("+ Create private collection");create.setOnClickListener(v->createCollection());LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,Ui.dp(this,54));cp.setMargins(0,0,0,Ui.dp(this,14));content.addView(create,cp);
+            JSONArray collections=data.optJSONArray("collections");if(collections==null||collections.length()==0)content.addView(Ui.text(this,"No collections yet. Save an artwork to create your first collection.",15,Ui.FOG,false));else for(int i=0;i<collections.length();i++){JSONObject collection=collections.optJSONObject(i);String collectionName=collection.optString("name");int id=collection.optInt("id");Button card=button(collectionName+"  ·  "+collection.optInt("count")+" saves");card.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);card.setOnClickListener(v->showCollection(id,collectionName));card.setOnLongClickListener(v->{new AlertDialog.Builder(this).setTitle("Delete "+collectionName+"?").setMessage("This removes the collection and its saved links.").setNegativeButton("Cancel",null).setPositiveButton("Delete",(dialog,which)->api.delete("/api/collections/"+id,new JSONObject(),(s,d,e)->showSaves())).show();return true;});LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,Ui.dp(this,62));p.setMargins(0,0,0,Ui.dp(this,10));content.addView(card,p);}body.removeAllViews();body.addView(scroll);
+        });
+    }
+    private void createCollection(){EditText input=new EditText(this);input.setHint("Collection name");input.setSingleLine();new AlertDialog.Builder(this).setTitle("New private collection").setView(input).setNegativeButton("Cancel",null).setPositiveButton("Create",(dialog,which)->{String name=input.getText().toString().trim();if(name.isEmpty())return;try{api.post("/api/collections",new JSONObject().put("name",name).put("isPrivate",true),(status,data,error)->{if(status==200)showSaves();else Toast.makeText(this,data.optString("error","Could not create collection"),Toast.LENGTH_LONG).show();});}catch(Exception ignored){}}).show();}
+    private void showCollection(int id,String name){title.setText(name);subtitle.setText("Saved on AniPins");currentPath="/api/collections/"+id;body.removeAllViews();body.addView(createGrid());progress.setVisibility(View.VISIBLE);api.get(currentPath,(status,data,error)->{progress.setVisibility(View.GONE);if(swipe!=null)swipe.setRefreshing(false);if(status!=200||error!=null){errorView("Could not load this collection.",this::showSaves);return;}JSONArray values=data.optJSONArray("items");List<Artwork> result=new ArrayList<>();if(values!=null)for(int i=0;i<values.length();i++)result.add(new Artwork(values.optJSONObject(i)));adapter.replace(result);});}
+
+    private void showProfile() { title.setText("Profile"); subtitle.setText("Account and settings"); progress.setVisibility(View.VISIBLE); api.get("/api/auth/me",(status,data,error)->{progress.setVisibility(View.GONE);JSONObject user=data.optJSONObject("user");if(user==null){guestPanel("Sign in to sync saves, likes, follows and collections.");return;}ScrollView scroll=new ScrollView(this);LinearLayout content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(Ui.dp(this,20),Ui.dp(this,18),Ui.dp(this,20),Ui.dp(this,30));TextView name=Ui.text(this,user.optString("nickname",user.optString("name","AniPins user")),26,Ui.PAPER,true);content.addView(name);TextView email=Ui.text(this,user.optString("email"),14,Ui.FOG,false);content.addView(email);addAction(content,"Privacy Policy",()->openLegal("Privacy Policy","/privacy"));addAction(content,"Terms of Use",()->openLegal("Terms of Use","/terms"));addAction(content,"Copyright / Takedown",()->openLegal("Copyright / Takedown","/copyright"));addAction(content,"Delete Account",()->openLegal("Delete Account","/delete-account"));if("ADMIN".equals(user.optString("role")))addAction(content,"AniPins Admin Dashboard",()->openLegal("AniPins Admin","/admin"));addAction(content,"Sign out",()->{api.post("/api/auth/logout",new JSONObject(),(s,d,e)->{api.session().clear();showProfile();});});TextView version=Ui.text(this,"AniPins "+BuildConfig.VERSION_NAME+" · Native Android",12,Ui.FOG,false);version.setPadding(0,Ui.dp(this,24),0,0);content.addView(version);scroll.addView(content);body.removeAllViews();body.addView(scroll);}); }
+    private void addAction(LinearLayout parent,String label,Runnable action){Button button=button(label);button.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);button.setOnClickListener(v->action.run());LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,Ui.dp(this,58));p.setMargins(0,Ui.dp(this,12),0,0);parent.addView(button,p);}
+    private void guestPanel(String message){body.removeAllViews();LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setGravity(Gravity.CENTER);panel.setPadding(Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28));TextView text=Ui.text(this,message,16,Ui.FOG,false);text.setGravity(Gravity.CENTER);panel.addView(text);Button login=button("Sign in or create account");login.setOnClickListener(v->openLogin());LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,50));p.setMargins(0,Ui.dp(this,18),0,0);panel.addView(login,p);body.addView(panel);}
+    private void openLogin(){startActivity(new Intent(this,LoginActivity.class));}
+    private void openLegal(String label,String path){Intent intent=new Intent(this,LegalActivity.class);intent.putExtra("title",label);intent.putExtra("path",path);startActivity(intent);}
+    private void openArtwork(Artwork artwork){Intent intent=new Intent(this,ArtworkActivity.class);intent.putExtra("id",artwork.id);startActivity(intent);}
+
+    private void handleDeepLink(Intent intent){Uri uri=intent.getData();if(uri==null)return;List<String> parts=uri.getPathSegments();if(parts.size()>=2&&"a".equals(parts.get(0))){try{Intent art=new Intent(this,ArtworkActivity.class);art.putExtra("id",Integer.parseInt(parts.get(1)));startActivity(art);}catch(NumberFormatException ignored){}}}
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);handleDeepLink(intent);}
+    @Override protected void onResume(){super.onResume(); if(title!=null&&"Profile".contentEquals(title.getText()))showProfile();}
+}

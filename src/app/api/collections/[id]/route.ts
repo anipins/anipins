@@ -3,7 +3,8 @@ import { rows, row, run } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const u = await getUser();
   if (!u) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const col = await row("SELECT * FROM collections WHERE id=? AND user_id=?", parseInt(params.id), u.id);
@@ -14,7 +15,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json({ collection: col, items });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const u = await getUser();
   if (!u) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const id = parseInt(params.id);
@@ -23,10 +25,11 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   return NextResponse.json({ ok: true });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const u = await getUser();
   if (!u) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
-  const id = parseInt(params.id); const body = await req.json();
+  const id = parseInt(params.id);const body = await req.json();
   await run("UPDATE collections SET is_private=? WHERE id=? AND user_id=?", body.isPrivate ? 1 : 0, id, u.id);
   return NextResponse.json({ ok: true });
 }

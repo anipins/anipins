@@ -6,7 +6,8 @@ import { USE_SUPABASE_STORAGE, sbPublicUrl } from "@/lib/media";
 import { getUser } from "@/lib/auth";
 import { recordActivity } from "@/lib/activity";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const id = parseInt(params.id);
   const art = await row("SELECT * FROM artworks WHERE id=?", id);
   if (!art) return new NextResponse("Not found", { status: 404 });

@@ -1,34 +1,36 @@
-"use client";
-import { useEffect, useState } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import JsonLd from "@/components/JsonLd";
 import MasonryFeed from "@/components/MasonryFeed";
+import { getAnimeBySlug, getArtworkCards, getCharactersForAnime } from "@/lib/content";
+import { absoluteUrl, artworkAlt } from "@/lib/site";
 
-export default function AnimePage({ params }: { params: { slug: string } }) {
-  const [meta, setMeta] = useState<any>(null);
-  useEffect(() => {
-    fetch("/api/meta").then(r => r.json()).then(d => {
-      const me = (d.animes || []).find((a: any) => a.slug === params.slug);
-      const chars = (d.characters || []).filter((c: any) => me && c.anime === me.name);
-      setMeta({ me, chars });
-    });
-  }, [params.slug]);
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await props.params;
+  const anime = await getAnimeBySlug(params.slug);
+  if (!anime) return { title: "Anime not found", robots: { index: false, follow: false } };
+  const title = `${anime.name} Anime Artwork`;
+  const description = `Explore ${anime.count} curated ${anime.name} artwork${anime.count === 1 ? "" : "s"} featuring ${anime.characters} character${anime.characters === 1 ? "" : "s"} on AniPins.`;
+  const images = await getArtworkCards({ anime: params.slug, limit: 1 });
+  return { title, description, alternates: { canonical: `/anime/${params.slug}` }, openGraph: { title: `${title} | AniPins`, description, url: `/anime/${params.slug}`, images: images[0]?.thumb ? [{ url: `/api/img/${images[0].thumb}`, alt: artworkAlt(images[0]) }] : undefined }, twitter: { card: "summary_large_image", title, description, images: images[0]?.thumb ? [`/api/img/${images[0].thumb}`] : undefined } };
+}
 
+export default async function AnimePage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
+  const anime = await getAnimeBySlug(params.slug);
+  if (!anime) notFound();
+  const [artworks, characters] = await Promise.all([getArtworkCards({ anime: params.slug, limit: 20 }), getCharactersForAnime(params.slug)]);
   return (
-    <section className="mx-auto max-w-[1600px] px-4 md:px-8 pt-28 md:pt-32">
+    <section className="mx-auto max-w-[1600px] px-4 pt-28 md:px-8 md:pt-32">
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Anime", href: "/anime" }, { label: anime.name }]} />
+      <JsonLd data={{ "@context": "https://schema.org", "@type": "CollectionPage", name: `${anime.name} anime artwork`, url: absoluteUrl(`/anime/${params.slug}`), description: `Curated artwork from ${anime.name}.`, mainEntity: { "@type": "ItemList", itemListElement: artworks.map((art: any, index: number) => ({ "@type": "ListItem", position: index + 1, name: art.title || art.character_name, url: absoluteUrl(`/a/${art.id}`), image: absoluteUrl(`/api/img/${art.thumb}`) })) } }} />
       <p className="text-[12px] uppercase tracking-[0.25em] text-fog">Anime</p>
-      <h1 className="mt-1 font-display text-4xl font-semibold md:text-5xl">{meta?.me?.name || "…"}</h1>
-      {meta?.me && <p className="mt-2 text-sm text-fog">{meta.me.count} artworks · {meta.me.characters} characters</p>}
-      {meta?.chars?.length > 0 && (
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-fog mr-1">Characters:</span>
-          {meta.chars.map((c: any) => (
-            <Link key={c.slug} href={`/c/${c.slug}`} className="chip">{c.name}</Link>
-          ))}
-        </div>
-      )}
-      <div className="mt-8">
-        <MasonryFeed query={{ anime: params.slug }} />
-      </div>
+      <h1 className="mt-1 font-display text-4xl font-semibold md:text-5xl">{anime.name}</h1>
+      <p className="mt-2 text-sm text-fog">{anime.count} artworks · {anime.characters} characters</p>
+      {characters.length ? <div className="mt-5 flex flex-wrap items-center gap-2"><span className="mr-1 text-xs text-fog">Characters:</span>{characters.map((item: any) => <Link key={item.slug} href={`/c/${item.slug}`} className="chip">{item.name}</Link>)}</div> : null}
+      <div className="mt-8"><MasonryFeed query={{ anime: params.slug }} initialItems={artworks} initialHasMore={artworks.length === 20} /></div>
     </section>
   );
 }

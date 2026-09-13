@@ -4,7 +4,8 @@ import { getUser } from "@/lib/auth";
 import { recordActivity } from "@/lib/activity";
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const id = parseInt(params.id);
   const [art, user] = await Promise.all([
     row("SELECT * FROM artworks WHERE id=? AND published=1", id),

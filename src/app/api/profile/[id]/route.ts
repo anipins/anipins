@@ -4,7 +4,8 @@ import { row, rows } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const id = parseInt(params.id, 10);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const viewer = await getUser();

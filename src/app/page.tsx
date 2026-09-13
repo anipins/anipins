@@ -2,11 +2,26 @@ import FeaturedSlider from "@/components/FeaturedSlider";
 import FilterChips from "@/components/FilterChips";
 import MasonryFeed from "@/components/MasonryFeed";
 import TrendingRow from "@/components/TrendingRow";
+import Link from "next/link";
+import JsonLd from "@/components/JsonLd";
+import { getAnime, getArtworkCards, getCharacters } from "@/lib/content";
+import { getSiteUrl } from "@/lib/site";
+import type { Metadata } from "next";
 
-export default function Home() {
+export const metadata: Metadata = { alternates: { canonical: "/" } };
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const [featured, latest, anime, characters] = await Promise.all([
+    getArtworkCards({ sort: "featured", limit: 8 }),
+    getArtworkCards({ sort: "random", limit: 20 }),
+    getAnime(),
+    getCharacters(),
+  ]);
   return (
     <div className="pt-28 md:pt-32">
-      <FeaturedSlider />
+      <JsonLd data={{ "@context": "https://schema.org", "@type": "CollectionPage", name: "AniPins anime artwork", url: getSiteUrl(), description: "Discover, save and download curated anime character artwork.", numberOfItems: latest.length }} />
+      <FeaturedSlider initialArts={featured} />
       <section className="mx-auto max-w-[1600px] px-4 md:px-8 pt-14">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
@@ -15,7 +30,23 @@ export default function Home() {
           </div>
           <FilterChips />
         </div>
-        <MasonryFeed query={{ sort: "for-you" }} randomize />
+        <MasonryFeed query={{ sort: "for-you" }} randomize initialItems={latest} initialHasMore={latest.length === 20} />
+      </section>
+      <section className="mx-auto max-w-[1600px] px-4 py-14 md:px-8" aria-labelledby="browse-anipins">
+        <h2 id="browse-anipins" className="font-display text-2xl font-semibold md:text-3xl">Browse anime art by series and character</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-fog">Explore AniPins collections with direct links to artwork from popular anime series and characters. New uploads appear automatically in every collection.</p>
+        <div className="mt-6 grid gap-6 md:grid-cols-2">
+          <div className="rounded-2xl bg-soft p-5 hairline">
+            <h3 className="font-display text-lg font-semibold">Popular anime series</h3>
+            <div className="mt-4 flex flex-wrap gap-2">{anime.slice(0, 12).map((item: any) => <Link key={item.slug} href={`/anime/${item.slug}`} className="chip">{item.name} ({item.count})</Link>)}</div>
+            <Link href="/anime" className="mt-5 inline-block text-sm text-gold hover:underline">View every anime collection →</Link>
+          </div>
+          <div className="rounded-2xl bg-soft p-5 hairline">
+            <h3 className="font-display text-lg font-semibold">Popular characters</h3>
+            <div className="mt-4 flex flex-wrap gap-2">{characters.slice(0, 12).map((item: any) => <Link key={item.slug} href={`/c/${item.slug}`} className="chip">{item.name} ({item.count})</Link>)}</div>
+            <Link href="/characters" className="mt-5 inline-block text-sm text-gold hover:underline">View every character →</Link>
+          </div>
+        </div>
       </section>
       <TrendingRow />
     </div>

@@ -30,6 +30,7 @@ export default function Footer() {
               <Link href="/privacy" className="text-fog hover:text-paper transition-colors">Privacy</Link>
               <Link href="/terms" className="text-fog hover:text-paper transition-colors">Terms</Link>
               <Link href="/copyright" className="text-fog hover:text-paper transition-colors">Copyright / Takedown</Link>
+              <Link href="/delete-account" className="text-fog hover:text-paper transition-colors">Delete account</Link>
             </div>
           </div>
           <div className="md:text-right text-sm text-fog/70 self-end">© AniPins. All rights reserved.</div>

@@ -35,7 +35,7 @@ function Spark({ seed, height = 26 }: { seed: number; height?: number }) {
   );
 }
 
-const ICONS: Record<string, JSX.Element> = {
+const ICONS: Record<string, React.ReactNode> = {
   art: <path d="M4 5h16v14H4zM4 15l4-4 3 3 5-5 4 4" strokeLinejoin="round" />,
   chars: <><circle cx="9" cy="8" r="3.2" /><path d="M3.5 19c.7-3.2 2.8-5 5.5-5s4.8 1.8 5.5 5" /><circle cx="17" cy="9" r="2.4" /><path d="M15.5 14.4c2.3.2 4 1.7 4.6 4.6" /></>,
   anime: <><rect x="3" y="5" width="18" height="13" rx="2" /><path d="M10 9.5v4l3.6-2z" /></>,

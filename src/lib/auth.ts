@@ -10,7 +10,7 @@ export type SessionUser = { id: number; email: string; name: string; nickname: s
 
 export async function getUser(): Promise<SessionUser | null> {
   try {
-    const token = cookies().get(COOKIE)?.value;
+    const token = (await cookies()).get(COOKIE)?.value;
     if (!token) return null;
     const u = await row(
       "SELECT u.id, u.email, u.name, u.nickname, u.avatar, u.cover, u.bio, u.is_public, u.notify_following, u.notify_updates, u.role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?",
