@@ -7,7 +7,7 @@ The consumer shell is not a WebView. Home, Explore, debounced Search, Saves, Pro
 Data source: `https://anipins-three.vercel.app/api/*`. Website and app therefore share users, sessions, artwork, likes, saves and collections. The session cookie is encrypted at rest with an AES-GCM key held in Android Keystore. Passwords are never stored. Image thumbnails are memory/disk cached by Glide with bounded system-managed application cache.
 
 Package: `com.anipins.app`
-Version: `2.0.1` (`versionCode 6`)
+Version: `2.0.2` (`versionCode 7`)
 `compileSdk`/`targetSdk`: 36
 `minSdk`: 24
 

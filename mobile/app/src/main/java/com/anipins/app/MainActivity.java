@@ -32,6 +32,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -39,6 +40,7 @@ public class MainActivity extends Activity {
     private static final String INSTAGRAM_URL = "https://www.instagram.com/_anipins_/";
     private ApiClient api; private FrameLayout body; private TextView title, subtitle; private ProgressBar progress;
     private SwipeRefreshLayout swipe; private ArtworkAdapter adapter; private String currentPath = "/api/artworks?sort=for-you&limit=30";
+    private int lastRandomFirstId = -1;
     private final Handler handler = new Handler(Looper.getMainLooper()); private Runnable pendingSearch;
 
     @Override protected void onCreate(Bundle state) {
@@ -90,7 +92,7 @@ public class MainActivity extends Activity {
         progress.setVisibility(View.VISIBLE); api.get(path, (status, data, error) -> { progress.setVisibility(View.GONE); if(swipe!=null)swipe.setRefreshing(false);
             if (error != null) { errorView("You appear to be offline.", () -> loadGrid(path)); return; }
             if (status != 200) { errorView(status == 401 ? "Sign in to view this section." : "AniPins could not load this feed.", status == 401 ? this::openLogin : () -> loadGrid(path)); return; }
-            JSONArray values=data.optJSONArray("items"); List<Artwork> artwork=new ArrayList<>(); if(values!=null)for(int i=0;i<values.length();i++)artwork.add(new Artwork(values.optJSONObject(i))); adapter.replace(artwork); if(artwork.isEmpty())Toast.makeText(this,"No artwork found",Toast.LENGTH_SHORT).show();
+            JSONArray values=data.optJSONArray("items"); List<Artwork> artwork=new ArrayList<>(); if(values!=null)for(int i=0;i<values.length();i++)artwork.add(new Artwork(values.optJSONObject(i))); if(path.contains("sort=random")&&!artwork.isEmpty()){if(artwork.size()>1&&artwork.get(0).id==lastRandomFirstId)Collections.rotate(artwork,-1);lastRandomFirstId=artwork.get(0).id;} adapter.replace(artwork); if(artwork.isEmpty())Toast.makeText(this,"No artwork found",Toast.LENGTH_SHORT).show();
         });
     }
     private void errorView(String message, Runnable retry) { body.removeAllViews(); LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setGravity(Gravity.CENTER);panel.setPadding(Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28));TextView text=Ui.text(this,message,16,Ui.FOG,false);text.setGravity(Gravity.CENTER);panel.addView(text);Button button=button("Try again");button.setOnClickListener(v->retry.run());LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,48));p.setMargins(0,Ui.dp(this,18),0,0);panel.addView(button,p);body.addView(panel); }

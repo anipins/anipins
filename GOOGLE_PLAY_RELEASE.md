@@ -2,7 +2,7 @@
 
 1. Confirm the Play Console target-SDK requirement; AniPins currently compiles and targets API 36.
 2. Create the app with package ID `com.anipins.app` and enroll in Play App Signing.
-3. Upload `release/AniPins-2.0.1.aab` to an internal test track.
+3. Upload `release/AniPins-2.0.2.aab` to an internal test track.
 4. Add the listing copy and graphics from `PLAY_STORE_LISTING.md` and `play-store-assets/`.
 5. Capture phone screenshots using the documented plan.
 6. Set privacy URL to `https://anipins-three.vercel.app/privacy`.
@@ -17,6 +17,6 @@
 
 Local outputs:
 
-- Sideload APK: `release/AniPins-2.0.1.apk`
-- Play upload bundle: `release/AniPins-2.0.1.aab`
+- Sideload APK: `release/AniPins-2.0.2.apk`
+- Play upload bundle: `release/AniPins-2.0.2.aab`
 - Website APK: `public/downloads/AniPins.apk`
