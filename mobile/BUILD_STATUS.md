@@ -1,7 +1,7 @@
 # AniPins Android build status
 
 - Package: `com.anipins.app`
-- Version: `1.3.0` (`versionCode` 4)
+- Version: `2.0.1` (`versionCode` 6)
 - Website: `https://anipins-three.vercel.app/`
 - minSdk: 24
 - targetSdk / compileSdk: 36

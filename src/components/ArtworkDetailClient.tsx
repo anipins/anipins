@@ -12,7 +12,7 @@ import ZoomableArtwork from "@/components/ZoomableArtwork";
 import DownloadButton from "@/components/DownloadButton";
 import ReportArtwork from "@/components/ReportArtwork";
 
-const IG_URL = "https://www.instagram.com/_anipins_?igsi=dzZzem42bnBha3Y=";
+const IG_URL = "https://www.instagram.com/_anipins_/";
 
 export default function ArtworkDetailClient({ params, initialData }: { params: { id: string }; initialData: any }) {
   const [data, setData] = useState<any>(initialData);

@@ -1,6 +1,6 @@
 # Google Play Data Safety draft
 
-This draft reflects the source and libraries in AniPins Android 2.0.0. Recheck the final Play Console definitions before submission.
+This draft reflects the source and libraries in AniPins Android 2.0.1. Recheck the final Play Console definitions before submission.
 
 ## SDK audit
 

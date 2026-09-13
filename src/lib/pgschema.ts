@@ -77,6 +77,6 @@ export const PG_SCHEMA: string[] = [
     ('site_name','AniPins'),
     ('tagline','Anime artwork for inspiration.'),
     ('instagram_handle','@_anipins_'),
-    ('instagram_url','https://www.instagram.com/_anipins_?igsi=dzZzem42bnBha3Y=')
+    ('instagram_url','https://www.instagram.com/_anipins_/')
    ON CONFLICT (key) DO NOTHING`,
 ];

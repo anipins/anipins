@@ -1,5 +1,5 @@
 import Link from "next/link";
-const IG_URL = "https://www.instagram.com/_anipins_?igsi=dzZzem42bnBha3Y=";
+const IG_URL = "https://www.instagram.com/_anipins_/";
 
 export default function Footer() {
   return (
