@@ -21,7 +21,7 @@ export function sbPublicUrl(rel: string) {
 async function sbUpload(key: string, buf: Buffer, contentType: string) {
   const r = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${key}`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${SB_KEY}`, "Content-Type": contentType, "x-upsert": "true" },
+    headers: { Authorization: `Bearer ${SB_KEY}`, "Content-Type": contentType, "Cache-Control": "public, max-age=31536000, immutable", "x-upsert": "true" },
     body: new Uint8Array(buf),
   });
   if (!r.ok) throw new Error(`Storage upload failed (${r.status}): ${await r.text()}`);
@@ -41,15 +41,15 @@ export async function saveImage(buffer: Buffer, origName: string) {
   const id = crypto.randomBytes(8).toString("hex");
   const ext = (path.extname(origName) || ".jpg").toLowerCase().replace(/[^a-z0-9.]/g, "") || ".jpg";
   const origKey = `o/${id}${ext}`;
-  const thumbKey = `t/${id}.jpg`;
+  const thumbKey = `t/${id}.webp`;
 
   const img = sharp(buffer);
   const meta = await img.metadata();
-  const thumbBuf = await img.resize({ width: 560, withoutEnlargement: true }).jpeg({ quality: 72 }).toBuffer();
+  const thumbBuf = await img.rotate().resize({ width: 480, withoutEnlargement: true, fastShrinkOnLoad: true }).webp({ quality: 68, effort: 4 }).toBuffer();
 
   if (USE_SUPABASE_STORAGE) {
     await sbUpload(origKey, buffer, MIME[ext] || "application/octet-stream");
-    await sbUpload(thumbKey, thumbBuf, "image/jpeg");
+    await sbUpload(thumbKey, thumbBuf, "image/webp");
   } else {
     fs.mkdirSync(path.join(UPLOADS_DIR, "o"), { recursive: true });
     fs.mkdirSync(path.join(UPLOADS_DIR, "t"), { recursive: true });
@@ -63,7 +63,7 @@ export async function saveImage(buffer: Buffer, origName: string) {
  * while local installations keep using the authenticated application route. */
 export function publicMediaUrl(rel: string) {
   if (!isSafeMediaKey(rel)) return "";
-  return USE_SUPABASE_STORAGE ? sbPublicUrl(rel) : `/api/img/${rel}`;
+  return `/api/img/${rel}`;
 }
 
 export async function saveAvatar(buffer: Buffer, userId: number) {

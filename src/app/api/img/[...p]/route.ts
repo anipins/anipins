@@ -11,10 +11,13 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ p: strin
   const rel = params.p.join("/");
   if (!isSafeMediaKey(rel)) return new NextResponse("Not found", { status: 404 });
   if (USE_SUPABASE_STORAGE) {
-    return NextResponse.redirect(sbPublicUrl(rel), {
-      status: 308,
-      headers: { "Cache-Control": "public, max-age=31536000, immutable" },
-    });
+    const source = await fetch(sbPublicUrl(rel), { next: { revalidate: 31536000 } });
+    if (!source.ok || !source.body) return new NextResponse("Not found", { status: source.status === 404 ? 404 : 502 });
+    return new NextResponse(source.body, { headers: {
+      "Content-Type": source.headers.get("content-type") || TYPES[path.extname(rel).toLowerCase()] || "application/octet-stream",
+      "Cache-Control": "public, max-age=31536000, s-maxage=31536000, stale-while-revalidate=86400, immutable",
+      "CDN-Cache-Control": "public, max-age=31536000, immutable",
+    } });
   }
   const file = path.normalize(path.join(UPLOADS_DIR, rel));
   if (!file.startsWith(UPLOADS_DIR) || !fs.existsSync(file)) {

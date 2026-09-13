@@ -35,7 +35,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
                 alt={artworkAlt(art)}
                 fill
                 sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1439px) 25vw, 20vw"
-                priority={priority ?? index < 4}
+                priority={priority ?? index < 2}
                 onLoad={() => setImageReady(true)}
                 className={`object-cover transition-[opacity,transform] duration-500 ease-out group-hover:scale-[1.04] ${imageReady ? "opacity-100" : "opacity-0"}`}
               />
