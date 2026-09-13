@@ -27,6 +27,15 @@ function sqlite() {
     if (!userColumns.includes("is_public")) d.exec("ALTER TABLE users ADD COLUMN is_public INTEGER DEFAULT 1");
     if (!userColumns.includes("notify_following")) d.exec("ALTER TABLE users ADD COLUMN notify_following INTEGER DEFAULT 1");
     if (!userColumns.includes("notify_updates")) d.exec("ALTER TABLE users ADD COLUMN notify_updates INTEGER DEFAULT 1");
+    if (!userColumns.includes("two_factor_secret")) d.exec("ALTER TABLE users ADD COLUMN two_factor_secret TEXT DEFAULT ''");
+    if (!userColumns.includes("two_factor_pending_secret")) d.exec("ALTER TABLE users ADD COLUMN two_factor_pending_secret TEXT DEFAULT ''");
+    if (!userColumns.includes("two_factor_enabled")) d.exec("ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER DEFAULT 0");
+    if (!userColumns.includes("recovery_codes")) d.exec("ALTER TABLE users ADD COLUMN recovery_codes TEXT DEFAULT ''");
+    const sessionColumns = d.pragma("table_info(sessions)").map((c: any) => c.name);
+    if (!sessionColumns.includes("created_at")) d.exec("ALTER TABLE sessions ADD COLUMN created_at TEXT DEFAULT ''");
+    if (!sessionColumns.includes("last_seen_at")) d.exec("ALTER TABLE sessions ADD COLUMN last_seen_at TEXT DEFAULT ''");
+    if (!sessionColumns.includes("ip_address")) d.exec("ALTER TABLE sessions ADD COLUMN ip_address TEXT DEFAULT ''");
+    if (!sessionColumns.includes("user_agent")) d.exec("ALTER TABLE sessions ADD COLUMN user_agent TEXT DEFAULT ''");
     const artworkColumns = d.pragma("table_info(artworks)").map((c: any) => c.name);
     if (!artworkColumns.includes("gender")) d.exec("ALTER TABLE artworks ADD COLUMN gender TEXT DEFAULT ''");
     if (!artworkColumns.includes("content_hash")) d.exec("ALTER TABLE artworks ADD COLUMN content_hash TEXT DEFAULT ''");

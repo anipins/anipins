@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { row, run } from "@/lib/db";
 import { hashPassword, createSession, COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
+import { ensureSecuritySchema, requestInfo } from "@/lib/admin-security";
 
 export async function POST(req: NextRequest) {
+  await ensureSecuritySchema();
   const { email, password, name } = await req.json();
   if (!email || !password || password.length < 8) {
     return NextResponse.json({ error: "Valid email and a password of 8+ characters required." }, { status: 400 });
@@ -14,7 +16,7 @@ export async function POST(req: NextRequest) {
   const displayName = String(name || "").trim().slice(0, 40);
   await run("INSERT INTO users (email,password_hash,name,nickname,role) VALUES (?,?,?,?,?)", em, hashPassword(password), displayName, displayName, role);
   const u = await row("SELECT id FROM users WHERE email=?", em);
-  const token = await createSession(u.id);
+  const info = requestInfo(req); const token = await createSession(u.id, info);
   const res = NextResponse.json({ ok: true, role });
   res.cookies.set(COOKIE, token, SESSION_COOKIE_OPTIONS);
   return res;

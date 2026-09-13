@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { rows, run } from "@/lib/db";
 import { getUser, isAdmin } from "@/lib/auth";
 import { deleteFiles } from "@/lib/media";
+import { audit, requestInfo } from "@/lib/admin-security";
 
 export async function POST(req: NextRequest) {
   const u = await getUser();
@@ -20,5 +21,6 @@ export async function POST(req: NextRequest) {
   else if (action === "feature") await run(`UPDATE artworks SET featured=1 WHERE id IN (${list})`, ...ids);
   else if (action === "unfeature") await run(`UPDATE artworks SET featured=0 WHERE id IN (${list})`, ...ids);
   else return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+  await audit(u!.id, `BULK_${String(action).toUpperCase()}`, "artwork", ids.join(","), `${ids.length} artwork(s)`, requestInfo(req).ip);
   return NextResponse.json({ ok: true });
 }

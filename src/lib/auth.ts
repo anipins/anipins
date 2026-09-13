@@ -35,10 +35,10 @@ export function isAdmin(u: SessionUser | null) {
   return !!u && u.role === "ADMIN";
 }
 
-export async function createSession(userId: number): Promise<string> {
+export async function createSession(userId: number, metadata: { ip?: string; ua?: string } = {}): Promise<string> {
   const token = crypto.randomBytes(32).toString("hex");
-  await run("INSERT INTO sessions (token, user_id, expires_at) VALUES (?,?,?)",
-    token, userId, Date.now() + 1000 * 60 * 60 * 24 * 30);
+  await run("INSERT INTO sessions (token, user_id, expires_at, ip_address, user_agent) VALUES (?,?,?,?,?)",
+    token, userId, Date.now() + 1000 * 60 * 60 * 24 * 30, metadata.ip || "", metadata.ua || "");
   return token;
 }
 

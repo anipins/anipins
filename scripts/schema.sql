@@ -10,14 +10,27 @@ CREATE TABLE IF NOT EXISTS users (
   is_public INTEGER DEFAULT 1,
   notify_following INTEGER DEFAULT 1,
   notify_updates INTEGER DEFAULT 1,
+  two_factor_secret TEXT DEFAULT '',
+  two_factor_pending_secret TEXT DEFAULT '',
+  two_factor_enabled INTEGER DEFAULT 0,
+  recovery_codes TEXT DEFAULT '',
   role TEXT DEFAULT 'USER',
   created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS sessions (
   token TEXT PRIMARY KEY,
   user_id INTEGER NOT NULL,
-  expires_at INTEGER NOT NULL
+  expires_at INTEGER NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  last_seen_at TEXT DEFAULT (datetime('now')),
+  ip_address TEXT DEFAULT '',
+  user_agent TEXT DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS login_challenges (token TEXT PRIMARY KEY, user_id INTEGER NOT NULL, expires_at INTEGER NOT NULL, ip_address TEXT DEFAULT '', user_agent TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS security_alerts (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, kind TEXT NOT NULL, message TEXT NOT NULL, ip_address TEXT DEFAULT '', user_agent TEXT DEFAULT '', read_at TEXT, created_at TEXT DEFAULT (datetime('now')));
+CREATE TABLE IF NOT EXISTS admin_audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, admin_id INTEGER NOT NULL, action TEXT NOT NULL, target_type TEXT DEFAULT '', target_id TEXT DEFAULT '', detail TEXT DEFAULT '', ip_address TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now')));
+CREATE INDEX IF NOT EXISTS idx_security_alerts_user ON security_alerts(user_id, id);
+CREATE INDEX IF NOT EXISTS idx_admin_audit ON admin_audit_log(admin_id, id);
 CREATE TABLE IF NOT EXISTS artworks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT DEFAULT '',

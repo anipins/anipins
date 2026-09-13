@@ -3,6 +3,7 @@ import { run, row, rows, slugify } from "@/lib/db";
 import { getUser, isAdmin } from "@/lib/auth";
 import { fingerprintImage, hashDistance, saveImage } from "@/lib/media";
 import { notifyFollowers } from "@/lib/activity";
+import { audit, requestInfo } from "@/lib/admin-security";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -63,5 +64,6 @@ export async function POST(req: NextRequest) {
     ids.push(r.id);
     if (published) await notifyFollowers(r.id, slugify(character), character, slugify(anime), anime);
   }
+  await audit(u!.id, "ARTWORK_UPLOAD", "artwork", ids.join(","), `${ids.length} artwork(s): ${character} · ${anime}`, requestInfo(req).ip);
   return NextResponse.json({ ok: true, ids });
 }

@@ -2,16 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { row, run, slugify } from "@/lib/db";
 import { getUser, isAdmin } from "@/lib/auth";
 import { deleteFiles, saveImage } from "@/lib/media";
+import { audit, requestInfo } from "@/lib/admin-security";
 
 async function guard() {
   const u = await getUser();
-  if (!isAdmin(u)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  return null;
+  return isAdmin(u) ? u : null;
 }
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const g = await guard();if (g) return g;
+  const g = await guard();if (!g) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const art = await row("SELECT * FROM artworks WHERE id=?", parseInt(params.id));
   if (!art) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ art });
@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const g = await guard();if (g) return g;
+  const g = await guard();if (!g) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const id = parseInt(params.id);
   const art = await row("SELECT * FROM artworks WHERE id=?", id);
   if (!art) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -58,12 +58,13 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   }
 
   if (fields.length) await run(`UPDATE artworks SET ${fields.join(",")} WHERE id=?`, ...args, id);
+  await audit(g.id,"ARTWORK_UPDATED","artwork",String(id),fields.map(field=>field.split("=")[0]).join(","),requestInfo(req).ip);
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const g = await guard();if (g) return g;
+  const g = await guard();if (!g) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const id = parseInt(params.id);
   const art = await row("SELECT * FROM artworks WHERE id=?", id);
   if (!art) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -71,5 +72,6 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: s
   await run("DELETE FROM saves WHERE artwork_id=?", id);
   await run("DELETE FROM likes WHERE artwork_id=?", id);
   await run("DELETE FROM artworks WHERE id=?", id);
+  await audit(g.id,"ARTWORK_DELETED","artwork",String(id),`${art.character_name} · ${art.anime_name}`,requestInfo(_req).ip);
   return NextResponse.json({ ok: true });
 }
