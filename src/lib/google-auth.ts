@@ -94,7 +94,7 @@ export async function findOrCreateGoogleUser(payload: TokenPayload): Promise<Goo
   }
 
   let user = await row(
-    "SELECT id,email,role,two_factor_enabled FROM users WHERE email=?",
+    "SELECT id,email,role,two_factor_enabled FROM users WHERE LOWER(email)=LOWER(?)",
     email,
   );
   if (!user) {

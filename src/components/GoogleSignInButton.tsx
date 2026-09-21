@@ -36,6 +36,22 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  const renderButton = useCallback(() => {
+    const target = buttonRef.current;
+    if (!target || !window.google) return;
+    const availableWidth = Math.max(220, Math.floor(target.getBoundingClientRect().width));
+    target.replaceChildren();
+    window.google.accounts.id.renderButton(target, {
+      type: "standard",
+      shape: "pill",
+      theme: "outline",
+      text: "continue_with",
+      size: "large",
+      logo_alignment: "left",
+      width: Math.min(320, availableWidth),
+    });
+  }, []);
+
   const initialize = useCallback(async () => {
     if (!clientId || !window.google || !buttonRef.current || initializing.current) return;
     initializing.current = true;
@@ -84,26 +100,32 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
         },
       });
 
-      buttonRef.current.replaceChildren();
-      window.google.accounts.id.renderButton(buttonRef.current, {
-        type: "standard",
-        shape: "pill",
-        theme: "outline",
-        text: "continue_with",
-        size: "large",
-        logo_alignment: "left",
-        width: 336,
-      });
+      renderButton();
     } catch (initializationError) {
       setError(initializationError instanceof Error ? initializationError.message : "Google sign-in is unavailable.");
     } finally {
       initializing.current = false;
     }
-  }, [clientId, onSuccess, onTwoFactor]);
+  }, [clientId, onSuccess, onTwoFactor, renderButton]);
 
   useEffect(() => {
     if (window.google) void initialize();
   }, [initialize]);
+
+  useEffect(() => {
+    const target = buttonRef.current;
+    if (!target || typeof ResizeObserver === "undefined") return;
+    let previousWidth = 0;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = Math.floor(entry.contentRect.width);
+      if (window.google && width > 0 && width !== previousWidth) {
+        previousWidth = width;
+        renderButton();
+      }
+    });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [renderButton]);
 
   if (!clientId) {
     return <p className="text-center text-xs text-fog">Google sign-in will appear after its client ID is configured.</p>;
@@ -117,8 +139,8 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
         onReady={() => void initialize()}
         onError={() => setError("Google sign-in could not be loaded. Check your connection and try again.")}
       />
-      <div className={busy ? "pointer-events-none opacity-60" : ""} aria-busy={busy}>
-        <div ref={buttonRef} className="flex min-h-11 justify-center" />
+      <div className={`min-w-0 overflow-hidden ${busy ? "pointer-events-none opacity-60" : ""}`} aria-busy={busy}>
+        <div ref={buttonRef} className="flex min-h-11 w-full min-w-0 justify-center overflow-hidden" />
       </div>
       {busy && <p className="text-center text-xs text-fog">Signing in securely…</p>}
       {error && <p role="alert" className="text-center text-sm text-red-400">{error}</p>}
