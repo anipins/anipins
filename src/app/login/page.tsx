@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 export default function Login() {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -14,6 +15,17 @@ export default function Login() {
   const [code, setCode] = useState("");
   const router = useRouter();
 
+  const finishSignIn = useCallback((role: string) => {
+    router.push(role === "ADMIN" ? "/admin" : "/");
+    router.refresh();
+  }, [router]);
+
+  const requestTwoFactor = useCallback((nextChallenge: string) => {
+    setChallenge(nextChallenge);
+    setPassword("");
+    setErr("");
+  }, []);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(""); setBusy(true);
@@ -25,8 +37,7 @@ export default function Login() {
     setBusy(false);
     if (!r.ok) { setErr(d.error || "Something went wrong"); return; }
     if (d.requiresTwoFactor) { setChallenge(d.challenge); setPassword(""); return; }
-    router.push(d.role === "ADMIN" ? "/admin" : "/");
-    router.refresh();
+    finishSignIn(d.role);
   };
 
   return (
@@ -49,6 +60,17 @@ export default function Login() {
           {err && <p className="text-sm text-red-400">{err}</p>}
           <button disabled={busy} className="btn-primary w-full disabled:opacity-50">{busy ? "Please wait…" : challenge ? "Verify and sign in" : mode === "login" ? "Sign in" : "Create account"}</button>
         </form>
+        {!challenge && <>
+          <div className="my-5 flex items-center gap-3" aria-hidden="true">
+            <span className="h-px flex-1 bg-line" />
+            <span className="text-xs uppercase tracking-[.2em] text-fog">or</span>
+            <span className="h-px flex-1 bg-line" />
+          </div>
+          <GoogleSignInButton
+            onSuccess={finishSignIn}
+            onTwoFactor={requestTwoFactor}
+          />
+        </>}
         <button onClick={() => { if(challenge){setChallenge("");setCode("");}else setMode(mode === "login" ? "register" : "login"); setErr(""); }}
           className="mt-5 w-full text-center text-sm text-fog hover:text-paper transition-colors">
           {challenge ? "Back to sign in" : mode === "login" ? "New here? Create an account" : "Already have an account? Sign in"}

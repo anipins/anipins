@@ -6,6 +6,8 @@ const buckets = new Map<string, Bucket>();
 const limits = [
   { path: "/api/auth/login", requests: 15, windowMs: 15 * 60_000 },
   { path: "/api/auth/register", requests: 6, windowMs: 60 * 60_000 },
+  { path: "/api/auth/google", requests: 15, windowMs: 15 * 60_000 },
+  { path: "/api/auth/google/nonce", requests: 30, windowMs: 15 * 60_000 },
   { path: "/api/takedown", requests: 5, windowMs: 60 * 60_000 },
   { path: "/api/reports", requests: 20, windowMs: 60 * 60_000 },
   { path: "/api/admin/upload", requests: 30, windowMs: 10 * 60_000 },

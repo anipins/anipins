@@ -15,6 +15,15 @@ export const PG_SCHEMA: string[] = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_pending_secret TEXT DEFAULT ''`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_enabled INTEGER DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_codes TEXT DEFAULT ''`,
+  `CREATE TABLE IF NOT EXISTS auth_identities (
+    provider TEXT NOT NULL,
+    provider_subject TEXT NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL DEFAULT '',
+    created_at BIGINT NOT NULL,
+    PRIMARY KEY (provider, provider_subject),
+    UNIQUE (provider, user_id))`,
+  `CREATE INDEX IF NOT EXISTS idx_auth_identities_user ON auth_identities(user_id)`,
   `CREATE TABLE IF NOT EXISTS sessions (
     token TEXT PRIMARY KEY, user_id INTEGER NOT NULL, expires_at BIGINT NOT NULL)`,
   `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now()`,
@@ -87,7 +96,8 @@ export const PG_SCHEMA: string[] = [
   `ALTER TABLE public.login_challenges ENABLE ROW LEVEL SECURITY`,
   `ALTER TABLE public.security_alerts ENABLE ROW LEVEL SECURITY`,
   `ALTER TABLE public.admin_audit_log ENABLE ROW LEVEL SECURITY`,
-  `REVOKE ALL ON TABLE public.users, public.collections, public.saves, public.likes, public.interactions, public.follows, public.notifications, public.content_reports, public.push_devices, public.login_challenges, public.security_alerts, public.admin_audit_log FROM anon, authenticated`,
+  `ALTER TABLE public.auth_identities ENABLE ROW LEVEL SECURITY`,
+  `REVOKE ALL ON TABLE public.users, public.auth_identities, public.collections, public.saves, public.likes, public.interactions, public.follows, public.notifications, public.content_reports, public.push_devices, public.login_challenges, public.security_alerts, public.admin_audit_log FROM anon, authenticated`,
   `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`,
   `INSERT INTO settings (key, value) VALUES
     ('site_name','AniPins'),

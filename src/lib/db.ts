@@ -31,6 +31,17 @@ function sqlite() {
     if (!userColumns.includes("two_factor_pending_secret")) d.exec("ALTER TABLE users ADD COLUMN two_factor_pending_secret TEXT DEFAULT ''");
     if (!userColumns.includes("two_factor_enabled")) d.exec("ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER DEFAULT 0");
     if (!userColumns.includes("recovery_codes")) d.exec("ALTER TABLE users ADD COLUMN recovery_codes TEXT DEFAULT ''");
+    d.exec(`CREATE TABLE IF NOT EXISTS auth_identities (
+      provider TEXT NOT NULL,
+      provider_subject TEXT NOT NULL,
+      user_id INTEGER NOT NULL,
+      email TEXT NOT NULL DEFAULT '',
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (provider, provider_subject),
+      UNIQUE (provider, user_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+    d.exec("CREATE INDEX IF NOT EXISTS idx_auth_identities_user ON auth_identities(user_id)");
     const sessionColumns = d.pragma("table_info(sessions)").map((c: any) => c.name);
     if (!sessionColumns.includes("created_at")) d.exec("ALTER TABLE sessions ADD COLUMN created_at TEXT DEFAULT ''");
     if (!sessionColumns.includes("last_seen_at")) d.exec("ALTER TABLE sessions ADD COLUMN last_seen_at TEXT DEFAULT ''");

@@ -17,6 +17,17 @@ CREATE TABLE IF NOT EXISTS users (
   role TEXT DEFAULT 'USER',
   created_at TEXT DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS auth_identities (
+  provider TEXT NOT NULL,
+  provider_subject TEXT NOT NULL,
+  user_id INTEGER NOT NULL,
+  email TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (provider, provider_subject),
+  UNIQUE (provider, user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_auth_identities_user ON auth_identities(user_id);
 CREATE TABLE IF NOT EXISTS sessions (
   token TEXT PRIMARY KEY,
   user_id INTEGER NOT NULL,
