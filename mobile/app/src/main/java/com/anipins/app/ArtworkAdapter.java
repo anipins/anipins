@@ -43,10 +43,12 @@ final class ArtworkAdapter extends RecyclerView.Adapter<ArtworkAdapter.Holder> {
 
     @Override public void onBindViewHolder(@NonNull Holder holder, int position) {
         Artwork artwork = items.get(position); float ratio = artwork.width > 0 && artwork.height > 0 ? (float) artwork.height / artwork.width : 1.3f;
-        holder.image.getLayoutParams().height = Ui.dp(holder.image.getContext(), Math.max(190, Math.min(340, 170 * ratio)));
+        ViewGroup.LayoutParams imageParams = holder.image.getLayoutParams();
+        imageParams.height = Ui.dp(holder.image.getContext(), Math.max(190, Math.min(340, 170 * ratio)));
+        holder.image.setLayoutParams(imageParams);
         holder.title.setText(artwork.displayTitle()); holder.meta.setText(artwork.anime);
         holder.itemView.setContentDescription(artwork.displayTitle() + " from " + artwork.anime);
-        Glide.with(holder.image).load(artwork.thumbUrl()).apply(new RequestOptions().centerCrop().diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).placeholder(android.R.color.darker_gray)).transition(DrawableTransitionOptions.withCrossFade(140)).into(holder.image);
+        Glide.with(holder.image).load(artwork.thumbUrl()).apply(new RequestOptions().centerCrop().diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).dontAnimate().placeholder(android.R.color.darker_gray)).into(holder.image);
         if(position+2<items.size()) Glide.with(holder.image).load(items.get(position+2).thumbUrl()).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).preload();
         holder.itemView.setOnClickListener(view -> { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); view.animate().scaleX(.97f).scaleY(.97f).setDuration(70).withEndAction(() -> { view.animate().scaleX(1f).scaleY(1f).setDuration(110).start(); listener.open(artwork); }).start(); });
     }
