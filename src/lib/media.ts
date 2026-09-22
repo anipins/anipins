@@ -63,6 +63,7 @@ export async function saveImage(buffer: Buffer, origName: string) {
  * while local installations keep using the authenticated application route. */
 export function publicMediaUrl(rel: string) {
   if (!isSafeMediaKey(rel)) return "";
+  if (USE_SUPABASE_STORAGE) return sbPublicUrl(rel);
   return `/api/img/${rel}`;
 }
 
