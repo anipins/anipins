@@ -6,8 +6,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import Logo from "./Logo";
 import ThemeToggle from "./ThemeToggle";
 import NotificationBell from "./NotificationBell";
+import InstagramLink from "./InstagramLink";
 
-const IG_URL = "https://www.instagram.com/_anipins_/";
 const APP_URL = "/downloads/AniPins-2.4.2.apk";
 const APP_DOWNLOAD_KEY = "anipins-app-download-requested-v1";
 const LINKS = [
@@ -140,10 +140,10 @@ export default function Navbar() {
 </a>}
           <ThemeToggle />
           <NotificationBell />
-          <a href={IG_URL} target="_blank" rel="noopener noreferrer" title="Instagram — @_anipins_"
+          <InstagramLink title="Instagram — @_anipins_"
             className="rounded-full p-2.5 text-fog hover:text-gold hover:bg-paper/5 transition-colors">
             <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>
-          </a>
+          </InstagramLink>
           {user ? (
             <>
               <Link href="/profile" title="Profile" className="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-fog hover:bg-paper/5 hover:text-paper transition-colors">
@@ -194,7 +194,7 @@ export default function Navbar() {
 </a>}
               <ThemeToggle mobile />
               <div className="py-1"><NotificationBell /></div>
-              <a href={IG_URL} target="_blank" rel="noopener noreferrer" className="py-2.5 text-[15px] text-fog hover:text-gold">Instagram — @_anipins_</a>
+              <InstagramLink className="py-2.5 text-[15px] text-fog hover:text-gold">Instagram — @_anipins_</InstagramLink>
               {user ? (
                 <>
                   <Link href="/profile" className="flex items-center gap-3 py-2.5 text-[15px] text-fog hover:text-paper">
