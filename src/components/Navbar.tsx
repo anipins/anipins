@@ -54,7 +54,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`).then(r => r.json()).then(d => setSugs(d.suggestions || []));
+      fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`).then(r => r.json()).then(d => setSugs((d.suggestions || []).slice(0, 8)));
     }, 180);
     return () => clearTimeout(t);
   }, [q]);
@@ -106,7 +106,7 @@ export default function Navbar() {
           <form onSubmit={go}>
             <input value={q} onChange={e => setQ(e.target.value)} onFocus={() => setFocus(true)}
               placeholder="Search characters, anime, tags…"
-              className="min-h-11 w-full rounded-full bg-soft/80 hairline px-4 py-2.5 pl-9 text-sm text-paper placeholder:text-fog/60 outline-none focus:border-gold-dim transition-all" />
+              className="min-h-11 w-full rounded-full bg-soft/80 hairline px-4 py-2.5 pl-9 text-sm text-paper placeholder:text-fog/60 outline-none focus:border-gold-dim transition-colors" />
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-fog" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" strokeLinecap="round"/></svg>
           </form>
           <AnimatePresence>
