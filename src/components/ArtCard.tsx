@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import SaveMenu from "./SaveMenu";
 import ShareMenu from "./ShareMenu";
@@ -21,13 +21,8 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "80px" }}
-        transition={{ duration: 0.5, delay: Math.min(index % 8, 5) * 0.05, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <Tilt max={3.5} className="group relative overflow-hidden rounded-2xl bg-soft hairline hover:border-gold-dim transition-colors duration-300">
+      <div className="art-card">
+        <Tilt max={3.5} className="group relative overflow-hidden rounded-2xl bg-soft hairline hover:border-gold-dim transition-colors duration-200">
           <button onClick={() => openArtwork(art.id, art)} className="block w-full text-left cursor-zoom-in">
             <div style={{ aspectRatio: `1 / ${ratio}` }} className={`relative w-full overflow-hidden bg-soft ${imageReady ? "" : "skeleton"}`}>
               <Image
@@ -36,8 +31,9 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
                 fill
                 sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1439px) 25vw, 20vw"
                 priority={priority ?? index < 2}
+                loading={priority ?? index < 2 ? "eager" : "lazy"}
                 onLoad={() => setImageReady(true)}
-                className={`object-cover transition-[opacity,transform] duration-500 ease-out group-hover:scale-[1.04] ${imageReady ? "opacity-100" : "opacity-0"}`}
+                className={`object-cover transition-opacity duration-200 group-hover:scale-[1.025] ${imageReady ? "opacity-100" : "opacity-0"}`}
               />
             </div>
           </button>
@@ -61,7 +57,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
             </div>
           </div>
         </Tilt>
-      </motion.div>
+      </div>
       <AnimatePresence>
         {save && <SaveMenu artworkId={art.id} onClose={() => setSave(false)} />}
         {share && <ShareMenu url={typeof location !== "undefined" ? `${location.origin}/a/${art.id}` : `/a/${art.id}`} title={art.character_name} onClose={() => setShare(false)} />}

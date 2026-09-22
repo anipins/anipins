@@ -59,7 +59,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
         setPage(next);
         load(next, false);
       }
-    }, { rootMargin: "600px" });
+    }, { rootMargin: "900px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, [hasMore, loading, page, initial, load]);
@@ -68,7 +68,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     <div>
       {initial ? (
         <div className="masonry">
-          {Array.from({ length: 10 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="skeleton rounded-2xl" style={{ height: 180 + ((i * 97) % 220) }} />
           ))}
         </div>
