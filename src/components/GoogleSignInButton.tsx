@@ -35,6 +35,38 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
   const initializing = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [nativeGoogle, setNativeGoogle] = useState(false);
+
+  const completeSignIn = useCallback(async (credential: string) => {
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ credential }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Google sign-in failed.");
+      if (data.requiresTwoFactor) onTwoFactor(data.challenge);
+      else onSuccess(data.role || "USER");
+    } catch (signInError) {
+      setError(signInError instanceof Error ? signInError.message : "Google sign-in failed.");
+    } finally {
+      setBusy(false);
+    }
+  }, [onSuccess, onTwoFactor]);
+
+  const requestNonce = useCallback(async () => {
+    const response = await fetch("/api/auth/google/nonce", {
+      cache: "no-store",
+      credentials: "same-origin",
+    });
+    const data = await response.json();
+    if (!response.ok || !data.nonce) throw new Error(data.error || "Google sign-in is unavailable.");
+    return String(data.nonce);
+  }, []);
 
   const renderButton = useCallback(() => {
     const target = buttonRef.current;
@@ -52,67 +84,75 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
     });
   }, []);
 
-  const initialize = useCallback(async () => {
-    if (!clientId || !window.google || !buttonRef.current || initializing.current) return;
+  const initializeWebGoogle = useCallback(async () => {
+    if (nativeGoogle || !clientId || !window.google || !buttonRef.current || initializing.current) return;
     initializing.current = true;
     setError("");
     try {
-      const nonceResponse = await fetch("/api/auth/google/nonce", {
-        cache: "no-store",
-        credentials: "same-origin",
-      });
-      const nonceData = await nonceResponse.json();
-      if (!nonceResponse.ok || !nonceData.nonce) {
-        throw new Error(nonceData.error || "Google sign-in is unavailable.");
-      }
-
+      const nonce = await requestNonce();
       window.google.accounts.id.initialize({
         client_id: clientId,
-        nonce: nonceData.nonce,
+        nonce,
         auto_select: false,
         cancel_on_tap_outside: true,
         use_fedcm_for_prompt: true,
-        callback: async ({ credential }) => {
-          if (!credential) {
-            setError("Google did not return a sign-in credential.");
-            return;
-          }
-          setBusy(true);
-          setError("");
-          try {
-            const response = await fetch("/api/auth/google", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "same-origin",
-              body: JSON.stringify({ credential }),
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || "Google sign-in failed.");
-            if (data.requiresTwoFactor) onTwoFactor(data.challenge);
-            else onSuccess(data.role || "USER");
-          } catch (signInError) {
-            setError(signInError instanceof Error ? signInError.message : "Google sign-in failed.");
-            initializing.current = false;
-            void initialize();
-          } finally {
-            setBusy(false);
-          }
+        callback: ({ credential }) => {
+          if (!credential) setError("Google did not return a sign-in credential.");
+          else void completeSignIn(credential);
         },
       });
-
       renderButton();
     } catch (initializationError) {
       setError(initializationError instanceof Error ? initializationError.message : "Google sign-in is unavailable.");
     } finally {
       initializing.current = false;
     }
-  }, [clientId, onSuccess, onTwoFactor, renderButton]);
+  }, [clientId, completeSignIn, nativeGoogle, renderButton, requestNonce]);
+
+  const beginNativeGoogle = useCallback(async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const nonce = await requestNonce();
+      window.AniPinsAndroid?.signInWithGoogle?.(nonce);
+    } catch (nativeError) {
+      setBusy(false);
+      setError(nativeError instanceof Error ? nativeError.message : "Google sign-in is unavailable.");
+    }
+  }, [requestNonce]);
 
   useEffect(() => {
-    if (window.google) void initialize();
-  }, [initialize]);
+    setNativeGoogle(typeof window.AniPinsAndroid?.signInWithGoogle === "function");
+  }, []);
 
   useEffect(() => {
+    const onCredential = (event: Event) => {
+      const credential = (event as CustomEvent<{ credential?: string }>).detail?.credential;
+      if (!credential) {
+        setBusy(false);
+        setError("Google did not return a sign-in credential.");
+        return;
+      }
+      void completeSignIn(credential);
+    };
+    const onError = (event: Event) => {
+      setBusy(false);
+      setError((event as CustomEvent<{ message?: string }>).detail?.message || "Google sign-in failed.");
+    };
+    window.addEventListener("anipins-native-google-credential", onCredential);
+    window.addEventListener("anipins-native-google-error", onError);
+    return () => {
+      window.removeEventListener("anipins-native-google-credential", onCredential);
+      window.removeEventListener("anipins-native-google-error", onError);
+    };
+  }, [completeSignIn]);
+
+  useEffect(() => {
+    if (!nativeGoogle && window.google) void initializeWebGoogle();
+  }, [initializeWebGoogle, nativeGoogle]);
+
+  useEffect(() => {
+    if (nativeGoogle) return;
     const target = buttonRef.current;
     if (!target || typeof ResizeObserver === "undefined") return;
     let previousWidth = 0;
@@ -125,7 +165,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
     });
     observer.observe(target);
     return () => observer.disconnect();
-  }, [renderButton]);
+  }, [nativeGoogle, renderButton]);
 
   if (!clientId) {
     return <p className="text-center text-xs text-fog">Google sign-in will appear after its client ID is configured.</p>;
@@ -133,14 +173,27 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
 
   return (
     <div className="space-y-3">
-      <Script
-        src="https://accounts.google.com/gsi/client"
-        strategy="afterInteractive"
-        onReady={() => void initialize()}
-        onError={() => setError("Google sign-in could not be loaded. Check your connection and try again.")}
-      />
+      {!nativeGoogle && (
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="afterInteractive"
+          onReady={() => void initializeWebGoogle()}
+          onError={() => setError("Google sign-in could not be loaded. Check your connection and try again.")}
+        />
+      )}
       <div className={`min-w-0 overflow-hidden ${busy ? "pointer-events-none opacity-60" : ""}`} aria-busy={busy}>
-        <div ref={buttonRef} className="flex min-h-11 w-full min-w-0 justify-center overflow-hidden" />
+        {nativeGoogle ? (
+          <button
+            type="button"
+            onClick={() => void beginNativeGoogle()}
+            className="flex min-h-11 w-full items-center justify-center gap-3 rounded-full border border-black/20 bg-white px-5 text-sm font-medium text-[#1f1f1f] shadow-sm"
+          >
+            <span aria-hidden="true" className="text-xl font-bold text-[#4285f4]">G</span>
+            Continue with Google
+          </button>
+        ) : (
+          <div ref={buttonRef} className="flex min-h-11 w-full min-w-0 justify-center overflow-hidden" />
+        )}
       </div>
       {busy && <p className="text-center text-xs text-fog">Signing in securely…</p>}
       {error && <p role="alert" className="text-center text-sm text-red-400">{error}</p>}

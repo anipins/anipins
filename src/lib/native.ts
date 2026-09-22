@@ -1,6 +1,6 @@
 export type OfflineArtwork = { id: number; title: string; character_name: string; anime_name: string; thumb: string; orig: string; savedAt: number; kind: "saved" | "downloaded" };
 
-declare global { interface Window { AniPinsAndroid?: { haptic?: (kind: string) => void; openDownloads?: () => void; getVersionCode?: () => number; showNotification?: (title: string, body: string, url: string) => void } } }
+declare global { interface Window { AniPinsAndroid?: { haptic?: (kind: string) => void; openDownloads?: () => void; getVersionCode?: () => number; showNotification?: (title: string, body: string, url: string) => void; signInWithGoogle?: (nonce: string) => void } } }
 
 export function haptic(kind = "tap") { try { window.AniPinsAndroid?.haptic?.(kind); } catch {} }
 
