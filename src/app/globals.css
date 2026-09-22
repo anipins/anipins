@@ -53,6 +53,7 @@ img, video, canvas, svg { max-width: 100%; }
 @media (min-width: 1024px) { .masonry { column-count: 4; } }
 @media (min-width: 1440px) { .masonry { column-count: 5; } }
 .masonry > * { break-inside: avoid; margin-bottom: 14px; }
+.art-card { break-inside: avoid; content-visibility: auto; contain-intrinsic-size: 280px 420px; }
 .masonry > * { content-visibility: auto; contain-intrinsic-size: 280px 420px; }
 
 .skeleton { position: relative; overflow: hidden; background: var(--skeleton); }
@@ -66,7 +67,7 @@ img, video, canvas, svg { max-width: 100%; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-.btn { @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium transition-all duration-300; }
+.btn { @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium transition-all duration-200; }
 .btn-primary { @apply btn bg-gold text-ink px-6 py-3 hover:bg-gold-bright hover:shadow-[0_0_28px_rgba(198,161,91,0.28)]; }
 .btn-ghost { @apply btn px-6 py-3 text-paper/85 hairline hover:border-gold-dim hover:bg-paper/5 hover:text-paper; }
 .chip { @apply shrink-0 rounded-full px-4 py-1.5 text-[13px] transition-colors duration-200 hairline text-fog hover:text-paper hover:border-gold-dim hover:bg-paper/5 cursor-pointer; }
