@@ -3,6 +3,7 @@ import { rows } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { publicMediaUrl } from "@/lib/media";
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const clientItems = (items: any[]) => items.map(item => ({ ...item, thumb_url: publicMediaUrl(item.thumb) }));
 
