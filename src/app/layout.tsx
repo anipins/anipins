@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Inter, Space_Grotesk } from "next/font/google";
 import Navbar from "@/components/Navbar";
@@ -32,6 +32,14 @@ export const metadata: Metadata = {
     url: "/",
   },
   twitter: { card: "summary_large_image", title: "AniPins — Anime Artwork", description: "Discover, save and download high-quality anime character art.", images: ["/brand/og-image.png"] },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

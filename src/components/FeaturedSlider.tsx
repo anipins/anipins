@@ -82,16 +82,11 @@ export default function FeaturedSlider({ initialArts = [] }: { initialArts?: any
         <div className="relative flex-1 overflow-hidden rounded-3xl hairline">
           <AnimatePresence mode="popLayout" custom={dir}>
             <motion.div key={a.id} custom={dir}
-              initial={{ x: dir * 80, opacity: 0, scale: 1.02 }}
-              animate={{ x: 0, opacity: 1, scale: 1 }}
-              exit={{ x: dir * -80, opacity: 0 }}
-              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-              drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.12}
-              onDragEnd={(_, info) => {
-                if (info.offset.x < -70) { setDir(1); setIdx(i => (i + 1) % arts.length); }
-                else if (info.offset.x > 70) { setDir(-1); setIdx(i => (i - 1 + arts.length) % arts.length); }
-              }}
-              className="absolute inset-0 cursor-grab active:cursor-grabbing">
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.28, ease: "easeOut" }}
+              className="absolute inset-0">
               <FeaturedImage art={a} priority sizes="(max-width: 1023px) 100vw, 76vw" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
               <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }}

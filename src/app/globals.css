@@ -29,9 +29,11 @@
   --skeleton: #e8e5dd;
 }
 
-html { scroll-behavior: smooth; }
-body { @apply bg-ink text-paper font-body antialiased; }
+html { width: 100%; max-width: 100%; overflow-x: clip; scroll-behavior: smooth; overscroll-behavior-x: none; }
+body { @apply bg-ink text-paper font-body antialiased; width: 100%; max-width: 100%; overflow-x: clip; overscroll-behavior-x: none; touch-action: pan-y; }
 body { line-height: 1.55; text-rendering: optimizeLegibility; }
+main { width: 100%; max-width: 100%; overflow-x: clip; }
+img, video, canvas, svg { max-width: 100%; }
 ::selection { background: #C6A15B; color: #080808; }
 
 .site-navbar { padding-top: max(env(safe-area-inset-top, 0px), 1.75rem); }
