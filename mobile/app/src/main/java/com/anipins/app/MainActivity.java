@@ -124,7 +124,23 @@ public class MainActivity extends Activity {
     private void showProfile() { title.setText("Profile"); subtitle.setText("Account and settings"); progress.setVisibility(View.VISIBLE); api.get("/api/auth/me",(status,data,error)->{progress.setVisibility(View.GONE);JSONObject user=data.optJSONObject("user");if(user==null){guestPanel("Sign in to sync saves, likes, follows and collections.");return;}ScrollView scroll=new ScrollView(this);LinearLayout content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(Ui.dp(this,20),Ui.dp(this,18),Ui.dp(this,20),Ui.dp(this,30));TextView name=Ui.text(this,user.optString("nickname",user.optString("name","AniPins user")),26,Ui.PAPER,true);content.addView(name);TextView email=Ui.text(this,user.optString("email"),14,Ui.FOG,false);content.addView(email);addAction(content,"Instagram · @_anipins_",this::openInstagram);addAction(content,"About AniPins",()->openLegal("About AniPins","/about"));addAction(content,"Help & Support",()->openLegal("Help & Support","/support"));addAction(content,"Privacy Policy",()->openLegal("Privacy Policy","/privacy"));addAction(content,"Terms of Use",()->openLegal("Terms of Use","/terms"));addAction(content,"Copyright / Takedown",()->openLegal("Copyright / Takedown","/copyright"));addAction(content,"Delete Account",()->openLegal("Delete Account","/delete-account"));if("ADMIN".equals(user.optString("role")))addAction(content,"AniPins Admin Dashboard",()->openLegal("AniPins Admin","/admin"));addAction(content,"Sign out",()->{api.post("/api/auth/logout",new JSONObject(),(s,d,e)->{api.session().clear();showProfile();});});TextView version=Ui.text(this,"AniPins "+BuildConfig.VERSION_NAME+" · Native Android",12,Ui.FOG,false);version.setPadding(0,Ui.dp(this,24),0,0);content.addView(version);scroll.addView(content);body.removeAllViews();body.addView(scroll);}); }
     private void addAction(LinearLayout parent,String label,Runnable action){Button button=button(label);button.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);button.setOnClickListener(v->action.run());LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,Ui.dp(this,58));p.setMargins(0,Ui.dp(this,12),0,0);parent.addView(button,p);}
     private void guestPanel(String message){body.removeAllViews();LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setGravity(Gravity.CENTER);panel.setPadding(Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28));TextView text=Ui.text(this,message,16,Ui.FOG,false);text.setGravity(Gravity.CENTER);panel.addView(text);Button login=button("Sign in or create account");login.setOnClickListener(v->openLogin());LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,50));p.setMargins(0,Ui.dp(this,18),0,0);panel.addView(login,p);Button instagram=button("Instagram · @_anipins_");instagram.setOnClickListener(v->openInstagram());LinearLayout.LayoutParams social=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,50));social.setMargins(0,Ui.dp(this,12),0,0);panel.addView(instagram,social);body.addView(panel);}
-    private void openInstagram(){Intent intent=new Intent(Intent.ACTION_VIEW,Uri.parse(INSTAGRAM_URL));intent.setPackage("com.instagram.android");try{startActivity(intent);}catch(Exception unavailable){startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(INSTAGRAM_URL)));}}
+    private void openInstagram(){
+        // Prefer Instagram's native profile URI so Android opens the installed app.
+        Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("instagram://user?username=_anipins_"));
+        appIntent.setPackage("com.instagram.android");
+        try {
+            startActivity(appIntent);
+            return;
+        } catch (Exception ignored) {
+            // Instagram may not be installed or may not expose the native URI.
+        }
+        Intent webIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(INSTAGRAM_URL));
+        try {
+            startActivity(webIntent);
+        } catch (Exception ignored) {
+            Toast.makeText(this, "Instagram is not available on this device.", Toast.LENGTH_SHORT).show();
+        }
+    }
     private void openLogin(){startActivity(new Intent(this,LoginActivity.class));}
     private void openLegal(String label,String path){Intent intent=new Intent(this,LegalActivity.class);intent.putExtra("title",label);intent.putExtra("path",path);startActivity(intent);}
     private void openArtwork(Artwork artwork){Intent intent=new Intent(this,ArtworkActivity.class);intent.putExtra("id",artwork.id);startActivity(intent);}
