@@ -1,5 +1,5 @@
 import Link from "next/link";
-const IG_URL = "https://www.instagram.com/_anipins_/";
+import InstagramLink from "./InstagramLink";
 
 export default function Footer() {
   return (
@@ -12,10 +12,10 @@ export default function Footer() {
               <span className="font-display text-2xl font-semibold">Ani<span className="text-gold">Pins</span></span>
             </div>
             <p className="mt-3 text-sm text-fog">Anime artwork for inspiration.</p>
-            <a href={IG_URL} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 text-sm text-fog hover:text-gold transition-colors">
+            <InstagramLink className="mt-4 inline-flex items-center gap-2 text-sm text-fog hover:text-gold transition-colors">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>
               Instagram — @_anipins_
-            </a>
+            </InstagramLink>
           </div>
           <div className="flex gap-16 text-sm">
             <div className="flex flex-col gap-2.5">
@@ -23,7 +23,7 @@ export default function Footer() {
               <Link href="/explore" className="text-fog hover:text-paper transition-colors">Explore</Link>
               <Link href="/characters" className="text-fog hover:text-paper transition-colors">Characters</Link>
               <Link href="/anime" className="text-fog hover:text-paper transition-colors">Anime</Link>
-              <a href={IG_URL} target="_blank" rel="noopener noreferrer" className="text-fog hover:text-paper transition-colors">Instagram</a>
+              <InstagramLink className="text-fog hover:text-paper transition-colors">Instagram</InstagramLink>
               <Link href="/about" className="text-fog hover:text-paper transition-colors">About</Link>
               <Link href="/support" className="text-fog hover:text-paper transition-colors">Help & Support</Link>
             </div>
