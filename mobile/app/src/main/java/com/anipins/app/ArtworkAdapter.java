@@ -13,7 +13,6 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
@@ -26,14 +25,15 @@ final class ArtworkAdapter extends RecyclerView.Adapter<ArtworkAdapter.Holder> {
     private final Listener listener;
     ArtworkAdapter(Listener listener) { this.listener = listener; }
     void replace(List<Artwork> values) { items.clear(); items.addAll(values); notifyDataSetChanged(); }
-    void append(List<Artwork> values) { int start=items.size(); for(Artwork value:values){boolean duplicate=false;for(Artwork item:items)if(item.id==value.id){duplicate=true;break;}if(!duplicate)items.add(value);} notifyItemRangeInserted(start,items.size()-start); }
+    void clear() { int count = items.size(); items.clear(); if (count > 0) notifyItemRangeRemoved(0, count); }
+    void append(List<Artwork> values) { int start=items.size(); for(Artwork value:values){boolean duplicate=false;for(Artwork item:items)if(item.id==value.id){duplicate=true;break;}if(!duplicate)items.add(value);} int added=items.size()-start; if(added>0) notifyItemRangeInserted(start,added); }
     boolean isEmpty() { return items.isEmpty(); }
 
     @NonNull @Override public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LinearLayout card = new LinearLayout(parent.getContext()); card.setOrientation(LinearLayout.VERTICAL);
         card.setBackground(Ui.background(Ui.PANEL, Ui.dp(parent.getContext(), 18), Color.rgb(43, 43, 43)));
         RecyclerView.LayoutParams params = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        int gap = Ui.dp(parent.getContext(), 6); params.setMargins(gap, gap, gap, gap); card.setLayoutParams(params); card.setClipToOutline(true);
+        int gap = Ui.dp(parent.getContext(), 6); params.setMargins(gap, gap, gap, gap); card.setLayoutParams(params); card.setClipToOutline(true); card.setHasTransientState(false);
         ImageView image = new ImageView(parent.getContext()); image.setScaleType(ImageView.ScaleType.CENTER_CROP); image.setBackgroundColor(Ui.SOFT);
         card.addView(image, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(parent.getContext(), 250)));
         TextView title = Ui.text(parent.getContext(), "", 14, Ui.PAPER, true); title.setMaxLines(1); title.setGravity(Gravity.START); title.setPadding(gap * 2, gap * 2, gap * 2, 0); card.addView(title);
