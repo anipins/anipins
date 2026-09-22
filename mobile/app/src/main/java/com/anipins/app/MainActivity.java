@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal); progress.setIndeterminate(true); progress.setVisibility(View.GONE); root.addView(progress, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 2)));
         body = new FrameLayout(this); root.addView(body, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         LinearLayout nav = new LinearLayout(this); nav.setPadding(Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 10)); nav.setGravity(Gravity.CENTER); nav.setBackgroundColor(Ui.PANEL);
-        addNav(nav, "⌂", "For You", this::showHome); addNav(nav, "◇", "Discover", this::showExplore); addNav(nav, "＋", "Create", this::showSearch); addNav(nav, "♡", "Saves", this::showSaves); addNav(nav, "○", "Profile", this::showProfile); root.addView(nav);
+        addNav(nav, "⌂", "For You", this::showHome); addNav(nav, "◇", "Discover", this::showExplore); addNav(nav, "♡", "Saves", this::showSaves); addNav(nav, "○", "Profile", this::showProfile); root.addView(nav);
         return root;
     }
 
