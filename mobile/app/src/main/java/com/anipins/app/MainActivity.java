@@ -52,15 +52,15 @@ public class MainActivity extends Activity {
 
     private View buildShell() {
         LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Ui.INK);
-        LinearLayout header = new LinearLayout(this); header.setGravity(Gravity.CENTER_VERTICAL); header.setPadding(Ui.dp(this, 18), Ui.dp(this, 12), Ui.dp(this, 18), Ui.dp(this, 12));
-        ImageView logo = new ImageView(this); logo.setImageResource(R.drawable.ap_symbol); header.addView(logo, new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
+        LinearLayout header = new LinearLayout(this); header.setGravity(Gravity.CENTER_VERTICAL); header.setPadding(Ui.dp(this, 16), Ui.dp(this, 10), Ui.dp(this, 16), Ui.dp(this, 10));
+        ImageView logo = new ImageView(this); logo.setImageResource(R.drawable.ap_symbol); header.addView(logo, new LinearLayout.LayoutParams(Ui.dp(this, 44), Ui.dp(this, 44)));
         LinearLayout headings = new LinearLayout(this); headings.setOrientation(LinearLayout.VERTICAL); headings.setPadding(Ui.dp(this, 12), 0, 0, 0);
-        title = Ui.text(this, "AniPins", 25, Ui.PAPER, true); subtitle = Ui.text(this, "Discover anime artwork", 12, Ui.FOG, false); headings.addView(title); headings.addView(subtitle); header.addView(headings, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-        Button search = button("Search"); search.setContentDescription("Search artwork"); search.setOnClickListener(v -> showSearch()); header.addView(search); root.addView(header);
+        title = Ui.text(this, "AniPins", 23, Ui.PAPER, true); subtitle = Ui.text(this, "Anime visual discovery", 12, Ui.FOG, false); headings.addView(title); headings.addView(subtitle); header.addView(headings, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        Button search = button("⌕  Search"); search.setContentDescription("Search artwork"); search.setOnClickListener(v -> showSearch()); header.addView(search); root.addView(header);
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal); progress.setIndeterminate(true); progress.setVisibility(View.GONE); root.addView(progress, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 2)));
         body = new FrameLayout(this); root.addView(body, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         LinearLayout nav = new LinearLayout(this); nav.setPadding(Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 10)); nav.setGravity(Gravity.CENTER); nav.setBackgroundColor(Ui.PANEL);
-        addNav(nav, "⌂", "Home", this::showHome); addNav(nav, "◇", "Explore", this::showExplore); addNav(nav, "♡", "Saves", this::showSaves); addNav(nav, "○", "Profile", this::showProfile); root.addView(nav);
+        addNav(nav, "⌂", "For You", this::showHome); addNav(nav, "◇", "Discover", this::showExplore); addNav(nav, "＋", "Create", this::showSearch); addNav(nav, "♡", "Saves", this::showSaves); addNav(nav, "○", "Profile", this::showProfile); root.addView(nav);
         return root;
     }
 
