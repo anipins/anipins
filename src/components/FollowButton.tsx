@@ -6,7 +6,7 @@ export default function FollowButton({ kind, value, label }: { kind: "character"
   const [following, setFollowing] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    fetch("/api/follows").then(r => r.json()).then(d => setFollowing((d.follows || []).some((f: any) => f.kind === kind && f.value === value))).catch(() => {});
+    fetch("/api/follows", { cache: "no-store" }).then(r => r.json()).then(d => setFollowing((d.follows || []).some((f: any) => f.kind === kind && f.value === value))).catch(() => {});
   }, [kind, value]);
   const toggle = async () => {
     setBusy(true);
@@ -18,7 +18,7 @@ export default function FollowButton({ kind, value, label }: { kind: "character"
     setFollowing(d.following);
     toast(d.following ? `Following ${label}` : `Unfollowed ${label}`);
   };
-  return <button type="button" disabled={busy} onClick={toggle} className={`chip ${following ? "chip-on" : ""}`} aria-pressed={following}>
+  return <button type="button" disabled={busy} onClick={toggle} className={`btn ${following ? "btn-ghost" : "btn-primary"} !px-4 !py-2.5`} aria-pressed={following}>
     {following ? "✓ Following" : "+ Follow"} {kind === "anime" ? "series" : "character"}
   </button>;
 }
