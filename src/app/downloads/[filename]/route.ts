@@ -21,16 +21,22 @@ export async function GET(
   const storageUrl = `${base}/storage/v1/object/public/anipins-downloads/${encodeURIComponent(filename)}`;
   const upstream = await fetch(storageUrl, { cache: "no-store" });
 
-  if (!upstream.ok || !upstream.body) {
+  if (!upstream.ok) {
     return NextResponse.json({ error: "APK is temporarily unavailable." }, { status: 502 });
   }
 
-  const headers = new Headers();
-  headers.set("Content-Type", "application/vnd.android.package-archive");
-  headers.set("Content-Disposition", `attachment; filename="${filename}"`);
-  headers.set("Cache-Control", "public, max-age=300, must-revalidate");
-  const length = upstream.headers.get("content-length");
-  if (length) headers.set("Content-Length", length);
+  const bytes = await upstream.arrayBuffer();
+  if (bytes.byteLength === 0) {
+    return NextResponse.json({ error: "APK is empty." }, { status: 502 });
+  }
 
-  return new Response(upstream.body, { status: 200, headers });
+  const headers = new Headers({
+    "Content-Type": "application/vnd.android.package-archive",
+    "Content-Disposition": `attachment; filename="${filename}"`,
+    "Content-Length": String(bytes.byteLength),
+    "Cache-Control": "public, max-age=300, must-revalidate",
+    "X-Content-Type-Options": "nosniff",
+  });
+
+  return new Response(bytes, { status: 200, headers });
 }
