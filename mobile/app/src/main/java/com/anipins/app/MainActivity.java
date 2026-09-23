@@ -52,7 +52,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state); requestWindowFeature(Window.FEATURE_NO_TITLE); getWindow().setStatusBarColor(Ui.INK); getWindow().setNavigationBarColor(Ui.INK);
-        api = new ApiClient(this); setContentView(buildShell()); handleDeepLink(getIntent()); if (state == null) showHome(); if (Build.VERSION.SDK_INT >= 33) requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 1001); checkForUpdate();
+        api = new ApiClient(this); setContentView(buildShell()); handleDeepLink(getIntent()); if (state == null) showHome(); checkForNotifications(); if (Build.VERSION.SDK_INT >= 33) requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 1001); checkForUpdate();
     }
 
     private View buildShell() {
@@ -171,7 +171,7 @@ public class MainActivity extends Activity {
     private void errorView(String message, Runnable retry) { body.removeAllViews(); LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setGravity(Gravity.CENTER);panel.setPadding(Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28));TextView text=Ui.text(this,message,16,Ui.FOG,false);text.setGravity(Gravity.CENTER);panel.addView(text);Button button=button("Try again");button.setOnClickListener(v->retry.run());LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,48));p.setMargins(0,Ui.dp(this,18),0,0);panel.addView(button,p);body.addView(panel); }
 
     private void showSaves() {
-        selectNav(2);
+        title.setText("Saves");
         title.setText("Saves"); subtitle.setText("Your synced collections"); progress.setVisibility(View.VISIBLE);
         api.get("/api/collections", (status,data,error)->{progress.setVisibility(View.GONE);if(status==401||data.optBoolean("guest")){guestPanel("Sign in to see the same saves and collections as the website.");return;}if(error!=null){errorView("Could not load collections.",this::showSaves);return;}
             ScrollView scroll=new ScrollView(this);LinearLayout content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(Ui.dp(this,16),Ui.dp(this,8),Ui.dp(this,16),Ui.dp(this,24));scroll.addView(content);
@@ -183,6 +183,13 @@ public class MainActivity extends Activity {
     private void showCollection(int id,String name){title.setText(name);subtitle.setText("Saved on AniPins");currentPath="/api/collections/"+id;body.removeAllViews();body.addView(createGrid());progress.setVisibility(View.VISIBLE);api.get(currentPath,(status,data,error)->{progress.setVisibility(View.GONE);if(swipe!=null)swipe.setRefreshing(false);if(status!=200||error!=null){errorView("Could not load this collection.",this::showSaves);return;}JSONArray values=data.optJSONArray("items");List<Artwork> result=new ArrayList<>();if(values!=null)for(int i=0;i<values.length();i++)result.add(new Artwork(values.optJSONObject(i)));adapter.replace(result);});}
 
     private void showFollowing() {
+        selectNav(2); title.setText("Following"); subtitle.setText("Artwork from characters and anime you follow");
+        currentPath = "/api/artworks?sort=following&limit=30";
+        showGrid(currentPath);
+    }
+
+    /* Legacy saves screen retained for collection access from older callers. */
+    private void showFollowingLegacy() {
         selectNav(2); title.setText("Following"); subtitle.setText("Artwork from characters and anime you follow");
         progress.setVisibility(View.VISIBLE);
         api.get("/api/follows", (status,data,error) -> {
@@ -235,5 +242,5 @@ private void showProfile() { title.setText("Profile"); subtitle.setText("Account
         }
     }
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);handleDeepLink(intent);}
-    @Override protected void onResume(){super.onResume(); if(title!=null&&"Profile".contentEquals(title.getText()))showProfile();}
+    @Override protected void onResume(){super.onResume(); checkForNotifications(); if(title!=null&&"Profile".contentEquals(title.getText()))showProfile();}
 }
