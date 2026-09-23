@@ -9,7 +9,7 @@ import { artworkAlt } from "@/lib/site";
 
 function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: boolean; sizes: string }) {
   const [ready, setReady] = useState(false);
-  const src = `/api/img/${art.thumb}`;
+  const src = art.thumb_url || `/api/img/${art.thumb}`;
 
   return (
     <div className="absolute inset-0 overflow-hidden bg-black">
@@ -76,7 +76,7 @@ export default function FeaturedSlider({ initialArts = [] }: { initialArts?: any
         {[prevA, nextA].map((side, i) => (
           <button key={i} onClick={() => { setDir(i === 0 ? -1 : 1); setIdx(arts.indexOf(side)); }}
             className={`hidden lg:block relative w-[12%] overflow-hidden rounded-3xl opacity-40 hover:opacity-70 transition-opacity duration-300 ${i === 0 ? "order-first" : "order-last"}`}>
-            <Image src={`/api/img/${side.thumb}`} alt="" fill sizes="12vw" className="object-cover" />
+            <Image src={side.thumb_url || `/api/img/${side.thumb}`} alt="" fill sizes="12vw" loading="lazy" className="object-cover" />
           </button>
         ))}
         <div className="relative flex-1 overflow-hidden rounded-3xl hairline">
