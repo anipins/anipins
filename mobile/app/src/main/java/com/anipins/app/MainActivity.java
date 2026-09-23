@@ -71,11 +71,52 @@ public class MainActivity extends Activity {
     private void showHome() { selectNav(0); title.setText("For You"); subtitle.setText("A fresh mix every time"); currentPath = "/api/artworks?sort=random&limit=30&seed=" + (new Random().nextInt(2_000_000_000) + 1); showGrid(currentPath); }
     private void showExplore() {
         selectNav(1);
-        title.setText("Explore"); subtitle.setText("Trending across AniPins");
+        title.setText("Discover"); subtitle.setText("Anime, characters and artwork");
         LinearLayout container = new LinearLayout(this); container.setOrientation(LinearLayout.VERTICAL); container.setBackgroundColor(Ui.INK);
-        LinearLayout filters = new LinearLayout(this); filters.setPadding(Ui.dp(this, 12), Ui.dp(this, 4), Ui.dp(this, 12), Ui.dp(this, 8));
+        LinearLayout filters = new LinearLayout(this); filters.setPadding(Ui.dp(this, 12), Ui.dp(this, 4), Ui.dp(this, 12), Ui.dp(this, 6));
         for (String sort : new String[]{"Latest", "Trending", "Popular"}) { Button chip = button(sort); LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, Ui.dp(this, 44), 1); p.setMargins(Ui.dp(this, 3),0,Ui.dp(this,3),0); filters.addView(chip,p); chip.setOnClickListener(v -> { currentPath = "/api/artworks?sort=" + sort.toLowerCase() + "&limit=30"; loadGrid(currentPath); }); }
-        container.addView(filters); View grid = createGrid(); container.addView(grid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1)); body.removeAllViews(); body.addView(container); currentPath = "/api/artworks?sort=trending&limit=30"; loadGrid(currentPath);
+        container.addView(filters);
+        ScrollView scroll = new ScrollView(this); LinearLayout hubs = new LinearLayout(this); hubs.setOrientation(LinearLayout.VERTICAL); hubs.setPadding(Ui.dp(this, 14), Ui.dp(this, 4), Ui.dp(this, 14), Ui.dp(this, 18));
+        hubs.addView(Ui.text(this, "Explore hubs", 19, Ui.PAPER, true));
+        hubs.addView(Ui.text(this, "Jump straight into popular anime and characters.", 13, Ui.FOG, false));
+        api.get("/api/discover", (status, data, error) -> {
+            if (status != 200 || error != null) { hubs.addView(Ui.text(this, "Hubs are temporarily unavailable.", 13, Ui.FOG, false)); }
+            else {
+                addHubSection(hubs, "Anime", data.optJSONArray("anime"), "anime");
+                addHubSection(hubs, "Characters", data.optJSONArray("characters"), "character");
+            }
+            Button browse = button("Browse trending artwork");
+            browse.setOnClickListener(v -> {
+                currentPath = "/api/artworks?sort=trending&limit=30";
+                title.setText("Trending"); subtitle.setText("Trending across AniPins");
+                showGrid(currentPath);
+            });
+            LinearLayout.LayoutParams browseParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 52));
+            browseParams.setMargins(0, Ui.dp(this, 16), 0, 0);
+            hubs.addView(browse, browseParams);
+        });
+        scroll.addView(hubs); body.removeAllViews(); body.addView(scroll);
+    }
+
+    private void addHubSection(LinearLayout parent, String heading, JSONArray items, String kind) {
+        parent.addView(Ui.text(this, heading, 18, Ui.PAPER, true));
+        if (items == null || items.length() == 0) { parent.addView(Ui.text(this, "No entries yet.", 13, Ui.FOG, false)); return; }
+        for (int i = 0; i < Math.min(items.length(), 8); i++) {
+            JSONObject item = items.optJSONObject(i); if (item == null) continue;
+            String name = item.optString("name", "Unknown");
+            String slug = item.optString("slug", "");
+            int count = item.optInt("artwork_count", 0);
+            Button card = button(name + "  ·  " + count + " artworks");
+            card.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+            card.setOnClickListener(v -> {
+                String param = kind + "=" + Uri.encode(slug);
+                currentPath = "/api/artworks?" + param + "&sort=latest&limit=30";
+                title.setText(name); subtitle.setText(kind.equals("anime") ? "Anime hub" : "Character hub");
+                showGrid(currentPath);
+            });
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 52));
+            p.setMargins(0, Ui.dp(this, 6), 0, 0); parent.addView(card, p);
+        }
     }
     private void showSearch() {
         title.setText("Search"); subtitle.setText("Characters, anime, tags and artwork");
