@@ -5,15 +5,13 @@ import { AnimatePresence, motion } from "framer-motion";
 export default function Intro() {
   const [show, setShow] = useState(false);
   useEffect(() => {
-    // The native Android app already supplies a black launch surface. Avoid
-    // adding a second branded splash while the WebView becomes interactive.
-    if ("AniPinsAndroid" in window) return;
-    if (sessionStorage.getItem("anipins_intro")) return;
+    const nativeApp = "AniPinsAndroid" in window;
+    if (!nativeApp && sessionStorage.getItem("anipins_intro")) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      sessionStorage.setItem("anipins_intro", "1");
+      if (!nativeApp) sessionStorage.setItem("anipins_intro", "1");
       return;
     }
-    sessionStorage.setItem("anipins_intro", "1");
+    if (!nativeApp) sessionStorage.setItem("anipins_intro", "1");
     setShow(true);
     const t = setTimeout(() => setShow(false), 1700);
     return () => clearTimeout(t);
