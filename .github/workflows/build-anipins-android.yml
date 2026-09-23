@@ -1,4 +1,5 @@
 name: Build AniPins Android
+# Release build for the current mobile app version.
 
 on:
   push:
