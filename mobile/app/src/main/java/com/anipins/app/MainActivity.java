@@ -85,9 +85,15 @@ public class MainActivity extends Activity {
                 addHubSection(hubs, "Anime", data.optJSONArray("anime"), "anime");
                 addHubSection(hubs, "Characters", data.optJSONArray("characters"), "character");
             }
-            hubs.addView(Ui.text(this, "Artwork", 19, Ui.PAPER, true));
-            View grid = createGrid(); hubs.addView(grid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 900)));
-            currentPath = "/api/artworks?sort=trending&limit=30"; loadGrid(currentPath);
+            Button browse = button("Browse trending artwork");
+            browse.setOnClickListener(v -> {
+                currentPath = "/api/artworks?sort=trending&limit=30";
+                title.setText("Trending"); subtitle.setText("Trending across AniPins");
+                showGrid(currentPath);
+            });
+            LinearLayout.LayoutParams browseParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 52));
+            browseParams.setMargins(0, Ui.dp(this, 16), 0, 0);
+            hubs.addView(browse, browseParams);
         });
         scroll.addView(hubs); body.removeAllViews(); body.addView(scroll);
     }
