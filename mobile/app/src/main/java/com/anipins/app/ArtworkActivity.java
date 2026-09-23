@@ -38,7 +38,15 @@ public class ArtworkActivity extends Activity {
     private Button button(String text){Button button=new Button(this);button.setText(text);button.setAllCaps(false);button.setTextColor(Ui.PAPER);button.setBackground(Ui.background(Ui.SOFT,Ui.dp(this,20),Color.rgb(55,55,55)));return button;}
     private void load(){api.get("/api/artworks/"+artworkId,(status,data,error)->{if(status!=200||error!=null){Toast.makeText(this,"Artwork could not be loaded",Toast.LENGTH_LONG).show();finish();return;}artwork=new Artwork(data.optJSONObject("art"));render(data);});}
     private void render(JSONObject data){ScrollView scroll=new ScrollView(this);scroll.setBackgroundColor(Ui.INK);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(Ui.dp(this,14),Ui.dp(this,12),Ui.dp(this,14),Ui.dp(this,30));scroll.addView(content);
-        Button back=button("← Back");back.setOnClickListener(v->finish());content.addView(back,new LinearLayout.LayoutParams(Ui.dp(this,92),Ui.dp(this,46)));
+        LinearLayout navigation = new LinearLayout(this);
+        Button back=button("← Back");back.setOnClickListener(v->finish());
+        Button prev=button("‹"); Button next=button("›");
+        prev.setOnClickListener(v->openAdjacent(v, data.optInt("prevId", 0)));
+        next.setOnClickListener(v->openAdjacent(v, data.optInt("nextId", 0)));
+        prev.setEnabled(data.optInt("prevId", 0) > 0); next.setEnabled(data.optInt("nextId", 0) > 0);
+        navigation.addView(back,new LinearLayout.LayoutParams(0,Ui.dp(this,46),1));
+        LinearLayout.LayoutParams navButton = new LinearLayout.LayoutParams(Ui.dp(this,52),Ui.dp(this,46)); navButton.setMargins(Ui.dp(this,6),0,0,0);
+        navigation.addView(prev,navButton); navigation.addView(next,navButton); content.addView(navigation);
         ZoomImageView image=new ZoomImageView(this);LinearLayout.LayoutParams imageParams=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,Ui.dp(this,540));imageParams.setMargins(0,Ui.dp(this,12),0,0);content.addView(image,imageParams);Glide.with(this).load(artwork.originalUrl()).thumbnail(Glide.with(this).load(artwork.thumbUrl())).into(image);
         TextView hint=Ui.text(this,"Pinch, pan or double-tap to zoom",12,Ui.FOG,false);hint.setGravity(Gravity.CENTER);hint.setPadding(0,Ui.dp(this,8),0,0);content.addView(hint);
         TextView heading=Ui.text(this,artwork.displayTitle(),26,Ui.PAPER,true);heading.setPadding(0,Ui.dp(this,22),0,0);content.addView(heading);TextView meta=Ui.text(this,artwork.character+" · "+artwork.anime+(artwork.gender.isEmpty()?"":" · "+artwork.gender),14,Ui.GOLD,false);meta.setPadding(0,Ui.dp(this,6),0,0);content.addView(meta);
@@ -48,6 +56,14 @@ public class ArtworkActivity extends Activity {
         JSONArray related=data.optJSONArray("related");if(related!=null&&related.length()>0){TextView more=Ui.text(this,"More to explore",22,Ui.PAPER,true);more.setPadding(0,Ui.dp(this,30),0,Ui.dp(this,8));content.addView(more);relatedList=new RecyclerView(this);relatedList.setNestedScrollingEnabled(false);relatedList.setLayoutManager(new StaggeredGridLayoutManager(2,StaggeredGridLayoutManager.VERTICAL));relatedAdapter=new ArtworkAdapter(item->{Intent intent=new Intent(this,ArtworkActivity.class);intent.putExtra("id",item.id);startActivity(intent);});List<Artwork> values=new ArrayList<>();for(int i=0;i<related.length();i++)values.add(new Artwork(related.optJSONObject(i)));relatedAdapter.replace(values);relatedList.setAdapter(relatedAdapter);content.addView(relatedList,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,estimateRelatedHeight()));scroll.setOnScrollChangeListener((view,x,y,oldX,oldY)->{if(y>oldY&&y>=scroll.getChildAt(0).getHeight()-scroll.getHeight()-Ui.dp(this,700))loadMoreRelated();});}
         setContentView(scroll);
     }
+    private void openAdjacent(View source, int id) {
+        if (id <= 0) return;
+        Intent intent = new Intent(this, ArtworkActivity.class);
+        intent.putExtra("id", id);
+        startActivity(intent);
+        finish();
+    }
+
     private void save(){try{JSONObject body=new JSONObject().put("artworkId",artworkId);api.post("/api/saves",body,(status,data,error)->{if(status==401){openLogin();return;}Toast.makeText(this,status==200?"Saved to your AniPins collection":"Could not save artwork",Toast.LENGTH_SHORT).show();});}catch(JSONException ignored){}}
     private void follow(String kind,String value,String label,Button button){try{JSONObject body=new JSONObject().put("kind",kind).put("value",value).put("label",label);api.post("/api/follows",body,(status,data,error)->{if(status==401){openLogin();return;}if(status==200){button.setText("Following");button.setTextColor(Ui.GOLD);}else Toast.makeText(this,data.optString("error","Could not follow"),Toast.LENGTH_LONG).show();});}catch(JSONException ignored){}}
     private void like(Button button){try{api.post("/api/likes",new JSONObject().put("artworkId",artworkId),(status,data,error)->{if(status==401){openLogin();return;}if(status==200){button.setText(data.optBoolean("liked")?"Liked ♥":"Like");Toast.makeText(this,data.optBoolean("liked")?"Artwork liked":"Like removed",Toast.LENGTH_SHORT).show();}});}catch(JSONException ignored){}}
