@@ -15,6 +15,7 @@ type GoogleAccounts = {
       use_fedcm_for_prompt?: boolean;
     }): void;
     renderButton(element: HTMLElement, options: Record<string, string | number>): void;
+    prompt(): void;
   };
 };
 
@@ -106,8 +107,9 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
         },
       });
       renderButton();
-      const mobileGoogle = new URLSearchParams(window.location.search).get("google") === "1";
-      if (mobileGoogle) {
+      const loginParams = new URLSearchParams(window.location.search);
+      const shouldPrompt = loginParams.get("google") === "1" || loginParams.get("mobile") === "1";
+      if (shouldPrompt) {
         window.setTimeout(() => {
           try { window.google?.accounts.id.prompt(); } catch {}
         }, 250);
@@ -161,7 +163,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
       window.removeEventListener("anipins-native-google-credential", onCredential);
       window.removeEventListener("anipins-native-google-error", onError);
     };
-  }, [completeSignIn]);
+  }, [completeSignIn, nativeGoogle]);
 
   useEffect(() => {
     if (!nativeGoogle && window.google) void initializeWebGoogle();
