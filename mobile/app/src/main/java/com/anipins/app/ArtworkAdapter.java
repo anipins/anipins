@@ -31,20 +31,20 @@ final class ArtworkAdapter extends RecyclerView.Adapter<ArtworkAdapter.Holder> {
 
     @NonNull @Override public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LinearLayout card = new LinearLayout(parent.getContext()); card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(Ui.background(Ui.PANEL, Ui.dp(parent.getContext(), 18), Color.rgb(43, 43, 43)));
+        card.setBackground(Ui.background(Ui.PANEL, Ui.dp(parent.getContext(), 21), Color.rgb(43, 43, 43)));
         RecyclerView.LayoutParams params = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        int gap = Ui.dp(parent.getContext(), 6); params.setMargins(gap, gap, gap, gap); card.setLayoutParams(params); card.setClipToOutline(true); card.setHasTransientState(false);
+        int gap = Ui.dp(parent.getContext(), 8); params.setMargins(gap, gap, gap, gap); card.setLayoutParams(params); card.setClipToOutline(true); card.setHasTransientState(false);
         ImageView image = new ImageView(parent.getContext()); image.setScaleType(ImageView.ScaleType.CENTER_CROP); image.setBackgroundColor(Ui.SOFT);
-        card.addView(image, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(parent.getContext(), 250)));
-        TextView title = Ui.text(parent.getContext(), "", 14, Ui.PAPER, true); title.setMaxLines(1); title.setGravity(Gravity.START); title.setPadding(gap * 2, gap * 2, gap * 2, 0); card.addView(title);
-        TextView meta = Ui.text(parent.getContext(), "", 12, Ui.FOG, false); meta.setMaxLines(1); meta.setPadding(gap * 2, gap, gap * 2, gap * 2); card.addView(meta);
+        card.addView(image, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(parent.getContext(), 220)));
+        TextView title = Ui.text(parent.getContext(), "", 15, Ui.PAPER, true); title.setMaxLines(1); title.setGravity(Gravity.START); title.setPadding(gap * 2, gap * 2, gap * 2, 0); card.addView(title);
+        TextView meta = Ui.text(parent.getContext(), "", 12.5f, Ui.FOG, false); meta.setMaxLines(1); meta.setPadding(gap * 2, gap, gap * 2, gap * 2); card.addView(meta);
         return new Holder(card, image, title, meta);
     }
 
     @Override public void onBindViewHolder(@NonNull Holder holder, int position) {
         Artwork artwork = items.get(position); float ratio = artwork.width > 0 && artwork.height > 0 ? (float) artwork.height / artwork.width : 1.3f;
         ViewGroup.LayoutParams imageParams = holder.image.getLayoutParams();
-        imageParams.height = Ui.dp(holder.image.getContext(), Math.max(190, Math.min(340, 170 * ratio)));
+        imageParams.height = Ui.dp(holder.image.getContext(), Math.max(180, Math.min(390, 172 * ratio)));
         holder.image.setLayoutParams(imageParams);
         holder.title.setText(artwork.displayTitle()); holder.meta.setText(artwork.anime);
         holder.itemView.setContentDescription(artwork.displayTitle() + " from " + artwork.anime);
