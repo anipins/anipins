@@ -1,11 +1,14 @@
 package com.anipins.app;
 
 import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
@@ -25,6 +28,9 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -39,6 +45,7 @@ import java.util.Random;
 
 public class MainActivity extends Activity {
     private static final String INSTAGRAM_URL = "https://www.instagram.com/_anipins_/";
+    private static final String NOTIFICATION_CHANNEL = "anipins_updates";
     private ApiClient api; private FrameLayout body; private TextView title, subtitle; private ProgressBar progress;
     private SwipeRefreshLayout swipe; private ArtworkAdapter adapter; private String currentPath = "/api/artworks?sort=for-you&limit=30";
     private int lastRandomFirstId = -1, feedPage = 0; private boolean feedLoading = false, feedHasMore = true;
@@ -144,6 +151,18 @@ public class MainActivity extends Activity {
             if (error != null) { errorView("You appear to be offline.", () -> loadGrid(path)); return; }
             if (status != 200) { errorView(status == 401 ? "Sign in to view this section." : "AniPins could not load this feed.", status == 401 ? this::openLogin : () -> loadGrid(path)); return; }
             JSONArray values=data.optJSONArray("items"); List<Artwork> artwork=new ArrayList<>(); if(values!=null)for(int i=0;i<values.length();i++)artwork.add(new Artwork(values.optJSONObject(i))); if(reset&&path.contains("sort=random")&&!artwork.isEmpty()){if(artwork.size()>1&&artwork.get(0).id==lastRandomFirstId)Collections.rotate(artwork,-1);lastRandomFirstId=artwork.get(0).id;} if(reset)adapter.replace(artwork);else adapter.append(artwork);feedHasMore=data.optBoolean("hasMore",false);if(feedHasMore)feedPage++; if(reset&&artwork.isEmpty())Toast.makeText(this,"No artwork found",Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void checkForNotifications(){
+        api.get("/api/notifications?unread=1&limit=1",(status,data,error)->{
+            if(status!=200||error!=null||data.optInt("unread",0)<=0)return;
+            JSONArray items=data.optJSONArray("notifications"); int artworkId=items!=null&&items.length()>0?items.optJSONObject(0).optInt("artwork_id",0):0;
+            if(Build.VERSION.SDK_INT>=26){NotificationManager manager=getSystemService(NotificationManager.class);manager.createNotificationChannel(new NotificationChannel(NOTIFICATION_CHANNEL,"AniPins updates",NotificationManager.IMPORTANCE_DEFAULT));}
+            Intent tap=new Intent(this,MainActivity.class); if(artworkId>0)tap.setData(Uri.parse(BuildConfig.API_BASE_URL+"/a/"+artworkId)); tap.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            android.app.PendingIntent pending=android.app.PendingIntent.getActivity(this,artworkId,tap,android.app.PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=23?android.app.PendingIntent.FLAG_IMMUTABLE:0));
+            NotificationCompat.Builder notification=new NotificationCompat.Builder(this,NOTIFICATION_CHANNEL).setSmallIcon(R.drawable.ap_symbol).setContentTitle("AniPins").setContentText(data.optInt("unread",1)+" new notification"+(data.optInt("unread",1)==1?"":"s")).setContentIntent(pending).setAutoCancel(true).setPriority(NotificationCompat.PRIORITY_DEFAULT);
+            try{NotificationManagerCompat.from(this).notify(1001,notification.build());}catch(SecurityException ignored){}
         });
     }
 
