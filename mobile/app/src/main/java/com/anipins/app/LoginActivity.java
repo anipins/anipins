@@ -222,7 +222,7 @@ public class LoginActivity extends Activity {
                 GetCredentialRequest request = new GetCredentialRequest.Builder()
                     .addCredentialOption(option)
                     .build();
-                credentialManager.getCredentialAsync(this, request, null, getMainExecutor(), new CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
+                credentialManager.getCredentialAsync(this, request, null, commandExecutor(), new CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
                     @Override public void onResult(GetCredentialResponse response) {
                         Credential credential = response.getCredential();
                         if (!(credential instanceof androidx.credentials.CustomCredential)) { googleFailed("Google returned an unsupported credential."); return; }
@@ -239,7 +239,7 @@ public class LoginActivity extends Activity {
         });
     }
 
-    private void completeGoogle(String idToken) {
+    private java.util.concurrent.Executor commandExecutor() { return command -> runOnUiThread(command); }\n\n    private void completeGoogle(String idToken) {
         try {
             JSONObject body = new JSONObject().put("credential", idToken).put("nonce", pendingGoogleNonce);
             api.post("/api/auth/google", body, (status, data, error) -> {
