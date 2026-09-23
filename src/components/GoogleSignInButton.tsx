@@ -35,6 +35,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
   const [configLoaded, setConfigLoaded] = useState(Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID));
   const buttonRef = useRef<HTMLDivElement>(null);
   const initializing = useRef(false);
+  const googleInitialized = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [nativeGoogle, setNativeGoogle] = useState(false);
@@ -89,7 +90,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
 
   const renderButton = useCallback(() => {
     const target = buttonRef.current;
-    if (!target || !window.google) return;
+    if (!target || !window.google || !googleInitialized.current) return;
     const availableWidth = Math.max(220, Math.floor(target.getBoundingClientRect().width));
     target.replaceChildren();
     window.google.accounts.id.renderButton(target, {
@@ -120,6 +121,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
           else void completeSignIn(credential);
         },
       });
+      googleInitialized.current = true;
       renderButton();
       const loginParams = new URLSearchParams(window.location.search);
       const shouldPrompt = loginParams.get("google") === "1" || loginParams.get("mobile") === "1";
