@@ -26,14 +26,14 @@ function errorMessage(error: unknown) {
 }
 
 export async function POST(req: NextRequest) {
-  const nonce = req.cookies.get(GOOGLE_NONCE_COOKIE)?.value || "";
+  const body = await req.json().catch(() => ({}));
+  const nonce = String(body.nonce || req.cookies.get(GOOGLE_NONCE_COOKIE)?.value || "");
   const clearNonce = (response: NextResponse) => {
     response.cookies.set(GOOGLE_NONCE_COOKIE, "", { path: "/", maxAge: 0 });
     return response;
   };
 
   try {
-    const body = await req.json();
     await ensureSecuritySchema();
     await ensureGoogleAuthSchema();
     const payload = await verifyGoogleCredential(String(body.credential || ""), nonce);
