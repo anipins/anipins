@@ -1,5 +1,6 @@
 name: Build AniPins Android
 # Release build for the current mobile app version.
+# Build trigger refreshed after Google sign-in fix.
 
 on:
   push:
