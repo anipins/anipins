@@ -56,22 +56,97 @@ public class MainActivity extends Activity {
     }
 
     private View buildShell() {
-        LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Ui.INK);
-        LinearLayout header = new LinearLayout(this); header.setGravity(Gravity.CENTER_VERTICAL); header.setPadding(Ui.dp(this, 16), Ui.dp(this, 10), Ui.dp(this, 16), Ui.dp(this, 10));
-        ImageView logo = new ImageView(this); logo.setImageResource(R.drawable.ap_symbol); header.addView(logo, new LinearLayout.LayoutParams(Ui.dp(this, 44), Ui.dp(this, 44)));
-        LinearLayout headings = new LinearLayout(this); headings.setOrientation(LinearLayout.VERTICAL); headings.setPadding(Ui.dp(this, 12), 0, 0, 0);
-        title = Ui.text(this, "AniPins", 23, Ui.PAPER, true); subtitle = Ui.text(this, "Anime visual discovery", 12, Ui.FOG, false); headings.addView(title); headings.addView(subtitle); header.addView(headings, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-        Button search = button("⌕  Search"); search.setContentDescription("Search artwork"); search.setOnClickListener(v -> showSearch()); header.addView(search); root.addView(header);
-        progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal); progress.setIndeterminate(true); progress.setVisibility(View.GONE); root.addView(progress, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 2)));
-        body = new FrameLayout(this); root.addView(body, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
-        LinearLayout nav = new LinearLayout(this); nav.setPadding(Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 10)); nav.setGravity(Gravity.CENTER); nav.setBackgroundColor(Ui.PANEL);
-        addNav(nav, "⌂", "For You", this::showHome); addNav(nav, "◇", "Discover", this::showExplore); addNav(nav, "♡", "Following", this::showFollowing); addNav(nav, "○", "Profile", this::showProfile); root.addView(nav);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(Ui.INK);
+
+        LinearLayout header = new LinearLayout(this);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setPadding(Ui.dp(this, 18), Ui.dp(this, 12), Ui.dp(this, 18), Ui.dp(this, 8));
+
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.drawable.ap_symbol);
+        logo.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        header.addView(logo, new LinearLayout.LayoutParams(Ui.dp(this, 48), Ui.dp(this, 48)));
+
+        LinearLayout headings = new LinearLayout(this);
+        headings.setOrientation(LinearLayout.VERTICAL);
+        headings.setPadding(Ui.dp(this, 13), 0, 0, 0);
+        title = Ui.text(this, "For You", 23, Ui.PAPER, true);
+        subtitle = Ui.text(this, "A fresh mix every time", 12, Ui.FOG, false);
+        headings.addView(title);
+        headings.addView(subtitle);
+        header.addView(headings, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        root.addView(header);
+
+        Button search = button("⌕   Search anime, characters & artwork");
+        search.setTextSize(14);
+        search.setGravity(Gravity.CENTER_VERTICAL);
+        search.setPadding(Ui.dp(this, 18), 0, Ui.dp(this, 18), 0);
+        search.setContentDescription("Search AniPins");
+        search.setOnClickListener(v -> showSearch());
+        LinearLayout.LayoutParams searchParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 52));
+        searchParams.setMargins(Ui.dp(this, 16), 0, Ui.dp(this, 16), Ui.dp(this, 10));
+        root.addView(search, searchParams);
+
+        progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progress.setIndeterminate(true);
+        progress.setVisibility(View.GONE);
+        root.addView(progress, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this, 2)));
+
+        body = new FrameLayout(this);
+        root.addView(body, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+
+        LinearLayout nav = new LinearLayout(this);
+        nav.setPadding(Ui.dp(this, 10), Ui.dp(this, 7), Ui.dp(this, 10), Ui.dp(this, 9));
+        nav.setGravity(Gravity.CENTER);
+        nav.setBackgroundColor(Ui.PANEL);
+        addNav(nav, "⌂", "For You", this::showHome);
+        addNav(nav, "◇", "Discover", this::showExplore);
+        addNav(nav, "♡", "Following", this::showFollowing);
+        addNav(nav, "○", "Profile", this::showProfile);
+        root.addView(nav);
         return root;
     }
 
-    private Button button(String label) { Button value = new Button(this); value.setText(label); value.setTextColor(Ui.PAPER); value.setTextSize(12); value.setAllCaps(false); value.setBackground(Ui.background(Ui.SOFT, Ui.dp(this, 20), Color.rgb(55,55,55))); return value; }
-    private void addNav(LinearLayout parent, String icon, String label, Runnable action) { TextView tab=Ui.text(this,icon+"\n"+label,11,Ui.FOG,false);tab.setGravity(Gravity.CENTER);tab.setLineSpacing(0,.9f);int index=navItems.size();navItems.add(tab);tab.setOnClickListener(v->{v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);selectNav(index);action.run();});LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,Ui.dp(this,58),1);params.setMargins(Ui.dp(this,3),0,Ui.dp(this,3),0);parent.addView(tab,params);}
-    private void selectNav(int selected){for(int i=0;i<navItems.size();i++){TextView item=navItems.get(i);boolean active=i==selected;item.setTextColor(active?Ui.GOLD:Ui.FOG);item.setTypeface(android.graphics.Typeface.DEFAULT,active?android.graphics.Typeface.BOLD:android.graphics.Typeface.NORMAL);item.setBackground(Ui.background(active?Color.rgb(34,29,19):Color.TRANSPARENT,Ui.dp(this,18),Color.TRANSPARENT));}}
+    private Button button(String label) {
+        Button value = new Button(this);
+        value.setText(label);
+        value.setTextColor(Ui.PAPER);
+        value.setTextSize(13);
+        value.setAllCaps(false);
+        value.setMinHeight(0);
+        value.setMinimumHeight(0);
+        value.setBackground(Ui.background(Ui.SOFT, Ui.dp(this, 22), Color.rgb(58,58,58)));
+        return value;
+    }
+
+    private void addNav(LinearLayout parent, String icon, String label, Runnable action) {
+        TextView tab = Ui.text(this, icon + "\n" + label, 12, Ui.FOG, false);
+        tab.setGravity(Gravity.CENTER);
+        tab.setLineSpacing(0, 1.0f);
+        tab.setPadding(0, Ui.dp(this, 5), 0, Ui.dp(this, 4));
+        int index = navItems.size();
+        navItems.add(tab);
+        tab.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+            selectNav(index);
+            action.run();
+        });
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, Ui.dp(this, 68), 1);
+        params.setMargins(Ui.dp(this, 4), 0, Ui.dp(this, 4), 0);
+        parent.addView(tab, params);
+    }
+
+    private void selectNav(int selected) {
+        for (int i = 0; i < navItems.size(); i++) {
+            TextView item = navItems.get(i);
+            boolean active = i == selected;
+            item.setTextColor(active ? Ui.GOLD : Ui.FOG);
+            item.setTypeface(android.graphics.Typeface.create("serif", active ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL));
+            item.setBackground(Ui.background(active ? Color.rgb(39,34,23) : Color.TRANSPARENT, Ui.dp(this, 20), Color.TRANSPARENT));
+        }
+    }
 
     private void showHome() { selectNav(0); title.setText("For You"); subtitle.setText("A fresh mix every time"); currentPath = "/api/artworks?sort=random&limit=30&seed=" + (new Random().nextInt(2_000_000_000) + 1); showGrid(currentPath); }
     private void showExplore() {
