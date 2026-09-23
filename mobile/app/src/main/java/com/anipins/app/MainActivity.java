@@ -391,16 +391,12 @@ public class MainActivity extends Activity {
     }
 
     private void requestGoogleCredential(final String serverClientId, final String nonce, final boolean fallback) {
-        androidx.credentials.CredentialOption option = fallback
-            ? new GetGoogleIdOption.Builder()
-                .setServerClientId(serverClientId)
-                .setNonce(nonce)
-                .setFilterByAuthorizedAccounts(false)
-                .setAutoSelectEnabled(false)
-                .build()
-            : new GetSignInWithGoogleOption.Builder(serverClientId)
-                .setNonce(nonce)
-                .build();
+        GetGoogleIdOption option = new GetGoogleIdOption.Builder()
+            .setServerClientId(serverClientId)
+            .setNonce(nonce)
+            .setFilterByAuthorizedAccounts(!fallback)
+            .setAutoSelectEnabled(false)
+            .build();
 
         GetCredentialRequest request = new GetCredentialRequest.Builder()
             .addCredentialOption(option)
