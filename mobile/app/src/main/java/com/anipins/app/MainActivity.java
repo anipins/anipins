@@ -44,6 +44,7 @@ import androidx.credentials.CustomCredential;
 import androidx.credentials.GetCredentialRequest;
 import androidx.credentials.GetCredentialResponse;
 
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 
@@ -384,52 +385,73 @@ public class MainActivity extends Activity {
                 dispatchGoogleError("Google sign-in is not configured.");
                 return;
             }
-
-            GetSignInWithGoogleOption option = new GetSignInWithGoogleOption.Builder(data.optString("clientId"))
-                .setNonce(nonce)
-                .build();
-
-            GetCredentialRequest request = new GetCredentialRequest.Builder()
-                .addCredentialOption(option)
-                .build();
-
-            Executor executor = command -> runOnUiThread(command);
-            credentialManager.getCredentialAsync(this, request, null, executor, new CredentialManagerCallback<GetCredentialResponse, androidx.credentials.exceptions.GetCredentialException>() {
-                @Override
-                public void onResult(GetCredentialResponse response) {
-                    nativeGoogleBusy = false;
-                    Credential credential = response.getCredential();
-                    if (!(credential instanceof CustomCredential)) {
-                        dispatchGoogleError("Google returned an unsupported credential.");
-                        return;
-                    }
-
-                    CustomCredential custom = (CustomCredential) credential;
-                    if (!GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(custom.getType())) {
-                        dispatchGoogleError("Google returned an unsupported credential.");
-                        return;
-                    }
-
-                    try {
-                        GoogleIdTokenCredential googleCredential = GoogleIdTokenCredential.createFrom(custom.getData());
-                        dispatchGoogleCredential(googleCredential.getIdToken());
-                    } catch (Exception e) {
-                        dispatchGoogleError("Could not read the Google credential.");
-                    }
-                }
-
-                @Override
-                public void onError(androidx.credentials.exceptions.GetCredentialException e) {
-                    nativeGoogleBusy = false;
-                    String detail = e.getMessage();
-                    if (detail == null || detail.trim().isEmpty()) detail = e.getClass().getSimpleName();
-                    dispatchGoogleError("Google sign-in failed: " + detail);
-                }
-            });
+            requestGoogleCredential(data.optString("clientId"), nonce, false);
         });
     }
 
-    private void dispatchGoogleCredential(String token) {
+    private void requestGoogleCredential(final String serverClientId, final String nonce, final boolean fallback) {
+        androidx.credentials.CredentialOption option = fallback
+            ? new GetGoogleIdOption.Builder()
+                .setServerClientId(serverClientId)
+                .setNonce(nonce)
+                .setFilterByAuthorizedAccounts(false)
+                .setAutoSelectEnabled(false)
+                .build()
+            : new GetSignInWithGoogleOption.Builder(serverClientId)
+                .setNonce(nonce)
+                .build();
+
+        GetCredentialRequest request = new GetCredentialRequest.Builder()
+            .addCredentialOption(option)
+            .build();
+
+        Executor executor = command -> runOnUiThread(command);
+        credentialManager.getCredentialAsync(this, request, null, executor, new CredentialManagerCallback<GetCredentialResponse, androidx.credentials.exceptions.GetCredentialException>() {
+            @Override
+            public void onResult(GetCredentialResponse response) {
+                nativeGoogleBusy = false;
+                Credential credential = response.getCredential();
+                if (!(credential instanceof CustomCredential)) {
+                    dispatchGoogleError("Google returned an unsupported credential.");
+                    return;
+                }
+
+                CustomCredential custom = (CustomCredential) credential;
+                if (!GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(custom.getType())) {
+                    dispatchGoogleError("Google returned an unsupported credential.");
+                    return;
+                }
+
+                try {
+                    GoogleIdTokenCredential googleCredential = GoogleIdTokenCredential.createFrom(custom.getData());
+                    dispatchGoogleCredential(googleCredential.getIdToken());
+                } catch (Exception e) {
+                    dispatchGoogleError("Could not read the Google credential.");
+                }
+            }
+
+            @Override
+            public void onError(androidx.credentials.exceptions.GetCredentialException e) {
+                String detail = e.getMessage();
+                if (detail == null || detail.trim().isEmpty()) detail = e.getClass().getSimpleName();
+                String lower = detail.toLowerCase(java.util.Locale.ROOT);
+
+                if (!fallback && (lower.contains("account reauth failed") || lower.contains("[16]") || e.getClass().getSimpleName().contains("Cancellation"))) {
+                    requestGoogleCredential(serverClientId, nonce, true);
+                    return;
+                }
+
+                nativeGoogleBusy = false;
+                if (lower.contains("account reauth failed") || lower.contains("[16]")) {
+                    dispatchGoogleError("Google sign-in could not verify this Android app configuration. Check the Android OAuth client package name and SHA-1 certificate.");
+                } else {
+                    dispatchGoogleError("Google sign-in failed: " + detail);
+                }
+            }
+        });
+    }
+
+        private void dispatchGoogleCredential(String token) {
         if (webView == null) return;
         String quoted = JSONObject.quote(token);
         webView.post(() -> webView.evaluateJavascript(
