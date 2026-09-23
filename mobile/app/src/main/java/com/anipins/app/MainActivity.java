@@ -252,10 +252,6 @@ public class MainActivity extends Activity {
         String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
         if ((scheme.equals("https") || scheme.equals("http")) && ("instagram.com".equals(host) || "www.instagram.com".equals(host))) { openInstagramFromNative(); return true; }
         if ((scheme.equals("https") || scheme.equals("http")) && (HOST.equals(host) || ("www." + HOST).equals(host))) {
-            if ("/login".equals(uri.getPath())) {
-                openGoogleBrowserLoginInternal();
-                return true;
-            }
             return false;
         }
 
@@ -427,11 +423,8 @@ public class MainActivity extends Activity {
     }
 
     private void requestGoogleCredential(final String serverClientId, final String nonce, final boolean fallback) {
-        GetGoogleIdOption option = new GetGoogleIdOption.Builder()
-            .setServerClientId(serverClientId)
+        GetSignInWithGoogleOption option = new GetSignInWithGoogleOption.Builder(serverClientId)
             .setNonce(nonce)
-            .setFilterByAuthorizedAccounts(!fallback)
-            .setAutoSelectEnabled(false)
             .build();
 
         GetCredentialRequest request = new GetCredentialRequest.Builder()
@@ -465,26 +458,15 @@ public class MainActivity extends Activity {
 
             @Override
             public void onError(androidx.credentials.exceptions.GetCredentialException e) {
+                nativeGoogleBusy = false;
                 String detail = e.getMessage();
                 if (detail == null || detail.trim().isEmpty()) detail = e.getClass().getSimpleName();
-                String lower = detail.toLowerCase(java.util.Locale.ROOT);
-
-                if (!fallback && (lower.contains("account reauth failed") || lower.contains("[16]") || e.getClass().getSimpleName().contains("Cancellation"))) {
-                    requestGoogleCredential(serverClientId, nonce, true);
-                    return;
-                }
-
-                nativeGoogleBusy = false;
-                if (lower.contains("account reauth failed") || lower.contains("[16]")) {
-                    dispatchGoogleError("Google sign-in could not verify this Android app configuration. Check the Android OAuth client package name and SHA-1 certificate.");
-                } else {
-                    dispatchGoogleError("Google sign-in failed: " + detail);
-                }
+                dispatchGoogleError("Google sign-in failed: " + detail);
             }
         });
     }
 
-        private void dispatchGoogleCredential(String token) {
+    private void dispatchGoogleCredential(String token) {
         if (webView == null) return;
         String quoted = JSONObject.quote(token);
         webView.post(() -> webView.evaluateJavascript(
