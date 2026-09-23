@@ -140,9 +140,12 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
     setError("");
     try {
       const nonce = await requestNonce();
-      const signIn = window.AniPinsAndroid?.signInWithGoogle;
-      if (typeof signIn !== "function") throw new Error("Native Google sign-in is unavailable.");
-      signIn(nonce);
+      if (typeof window.AniPinsAndroid?.signInWithGoogle !== "function") {
+        throw new Error("Native Google sign-in is unavailable.");
+      }
+      // Android WebView bridge methods must be called on the injected object.
+      // Calling a detached function reference throws "non-injected object".
+      window.AniPinsAndroid.signInWithGoogle(nonce);
     } catch (nativeError) {
       setBusy(false);
       setError(nativeError instanceof Error ? nativeError.message : "Google sign-in is unavailable.");
