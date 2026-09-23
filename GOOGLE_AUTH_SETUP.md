@@ -12,6 +12,11 @@ AniPins uses Google Identity Services (GIS) to obtain an ID token in the browser
    - `https://anipins.com`
    - `https://www.anipins.com` (only if this hostname is enabled)
    - `http://localhost:3000` for local development
+6. Create an **Android application OAuth client in the same Google Cloud project** used by the Web client. Use:
+   - Package name: `com.anipins.app`
+   - Release APK SHA-1: `3D:46:9A:90:11:AE:FF:72:6C:25:7A:2B:04:22:C9:30:FA:19:DC:A4`
+   
+   The Android client is required for Credential Manager to recognize the signed Android app. The Android implementation still uses the Web client ID as the `serverClientId`.
 
 This GIS ID-token flow does not use a redirect URI or client secret.
 
