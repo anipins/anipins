@@ -531,7 +531,7 @@ public class MainActivity extends Activity {
 
     private void openGoogleBrowserLoginInternal() {
         try {
-            Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse(HOME_URL + "login?mobile=1"));
+            Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse(HOME_URL + "login?mobile=1&google=1"));
             startActivity(browser);
         } catch (ActivityNotFoundException e) {
             Toast.makeText(this, "Could not open browser for Google sign-in.", Toast.LENGTH_LONG).show();
