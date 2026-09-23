@@ -106,6 +106,12 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
         },
       });
       renderButton();
+      const mobileGoogle = new URLSearchParams(window.location.search).get("google") === "1";
+      if (mobileGoogle) {
+        window.setTimeout(() => {
+          try { window.google?.accounts.id.prompt(); } catch {}
+        }, 250);
+      }
     } catch (initializationError) {
       setError(initializationError instanceof Error ? initializationError.message : "Google sign-in is unavailable.");
     } finally {
