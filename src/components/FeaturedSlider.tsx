@@ -19,6 +19,7 @@ function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: 
         fill
         sizes={sizes}
         priority={priority}
+        loading={priority ? "eager" : "lazy"}
         aria-hidden="true"
         className="scale-110 object-cover opacity-35 blur-2xl"
       />
@@ -28,6 +29,7 @@ function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: 
         fill
         sizes={sizes}
         priority={priority}
+        loading={priority ? "eager" : "lazy"}
         onLoad={() => setReady(true)}
         className={`object-contain transition-opacity duration-300 ${ready ? "opacity-100" : "opacity-0"}`}
       />
@@ -41,7 +43,7 @@ export default function FeaturedSlider({ initialArts = [] }: { initialArts?: any
   const [dir, setDir] = useState(1);
 
   useEffect(() => {
-    if (initialArts.length === 0) fetch("/api/artworks?featured=1&limit=8").then(r => r.json()).then(d => setArts(d.items || []));
+    if (initialArts.length === 0) fetch("/api/artworks?featured=1&limit=8", { cache: "force-cache" }).then(r => r.json()).then(d => setArts(d.items || []));
   }, [initialArts.length]);
 
   useEffect(() => {
