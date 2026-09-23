@@ -8,4 +8,10 @@
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowBackground">#000000</item>
     </style>
+    <style name="Theme.AniPins.Splash" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">#000000</item>
+    </style>
 </resources>
