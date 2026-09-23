@@ -1,4 +1,5 @@
 import { row, rows } from "@/lib/db";
+import { publicMediaUrl } from "@/lib/media";
 
 export const ARTWORK_CARD_COLUMNS =
   "id, title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, featured, thumb, width, height, views, downloads, created_at";
@@ -23,7 +24,8 @@ export async function getArtworkCards(options: {
   if (sort === "popular") order = "downloads DESC, views DESC, id DESC";
   if (sort === "featured") order = "views DESC, id DESC";
   if (sort === "random") order = "RANDOM()";
-  return rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ?`, ...args, limit);
+  const items = await rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ?`, ...args, limit);
+  return items.map((item: any) => ({ ...item, thumb_url: publicMediaUrl(item.thumb) }));
 }
 
 export async function getCharacters() {

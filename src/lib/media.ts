@@ -48,8 +48,10 @@ export async function saveImage(buffer: Buffer, origName: string) {
   const thumbBuf = await img.rotate().resize({ width: 480, withoutEnlargement: true, fastShrinkOnLoad: true }).webp({ quality: 68, effort: 4 }).toBuffer();
 
   if (USE_SUPABASE_STORAGE) {
-    await sbUpload(origKey, buffer, MIME[ext] || "application/octet-stream");
-    await sbUpload(thumbKey, thumbBuf, "image/webp");
+    await Promise.all([
+      sbUpload(origKey, buffer, MIME[ext] || "application/octet-stream"),
+      sbUpload(thumbKey, thumbBuf, "image/webp"),
+    ]);
   } else {
     fs.mkdirSync(path.join(UPLOADS_DIR, "o"), { recursive: true });
     fs.mkdirSync(path.join(UPLOADS_DIR, "t"), { recursive: true });

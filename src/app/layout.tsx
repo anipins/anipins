@@ -11,6 +11,7 @@ import PullToRefresh from "@/components/PullToRefresh";
 import AppUpdateBanner from "@/components/AppUpdateBanner";
 import ClientTelemetry from "@/components/ClientTelemetry";
 import JsonLd from "@/components/JsonLd";
+import NativeExternalLinks from "@/components/NativeExternalLinks";
 import { absoluteUrl, getSiteUrl, SITE_NAME } from "@/lib/site";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -70,6 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ArtLightbox />
         <AppUpdateBanner />
         <ClientTelemetry />
+        <NativeExternalLinks />
       </body>
     </html>
   );

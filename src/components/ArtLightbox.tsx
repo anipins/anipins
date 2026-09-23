@@ -91,7 +91,8 @@ export default function ArtLightbox() {
             if (Math.abs(dx) > 70) nav(dx > 0 ? "prev" : "next");
             touch.current = null;
           }}>
-          <button onClick={() => setId(null)} className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-lg hover:bg-gold hover:text-ink transition-colors" aria-label="Close">×</button>
+          <button onClick={() => setId(null)} className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-20 flex h-11 items-center gap-2 rounded-full bg-black/70 px-4 text-sm font-medium text-white backdrop-blur hover:bg-gold hover:text-ink transition-colors" aria-label="Go back"><span className="text-lg">←</span><span>Back</span></button>
+          <button onClick={() => setId(null)} className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20 grid h-11 w-11 place-items-center rounded-full bg-black/70 text-xl text-white backdrop-blur hover:bg-gold hover:text-ink transition-colors" aria-label="Close">×</button>
           {data?.prevId && <button onClick={e => { e.stopPropagation(); nav("prev"); }} className="absolute left-3 top-1/2 z-10 hidden md:grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-gold hover:text-ink transition-colors">←</button>}
           {data?.nextId && <button onClick={e => { e.stopPropagation(); nav("next"); }} className="absolute right-3 top-1/2 z-10 hidden md:grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-gold hover:text-ink transition-colors">→</button>}
 
