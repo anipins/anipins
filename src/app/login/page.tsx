@@ -61,7 +61,7 @@ export default function Login() {
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         className="min-w-0 overflow-hidden rounded-3xl bg-panel hairline p-6 sm:p-8">
         <h1 className="font-display text-2xl font-semibold">{challenge ? "Security verification" : mode === "login" ? "Welcome back" : "Join AniPins"}</h1>
-        <p className="mt-1 text-sm text-fog">{challenge ? "Enter the code from your authenticator app or a recovery code." : mode === "login" ? "Sign in to your account." : "Create an account to save artwork."}</p>
+        <p className="mt-1 text-sm text-fog">{challenge ? "Enter the code from your authenticator app or a recovery code." : new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").get("mobile") === "1" ? "Continue with Google to sign in to AniPins." : mode === "login" ? "Sign in to your account." : "Create an account to save artwork."}</p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           {challenge ? <div><label className="label">Authentication code</label><input className="input font-mono tracking-[.25em]" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={e=>setCode(e.target.value)} placeholder="000000" autoFocus /></div> : <>
           {mode === "register" && (
