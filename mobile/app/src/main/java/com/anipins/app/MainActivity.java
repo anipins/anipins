@@ -1,6 +1,7 @@
 package com.anipins.app;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.DownloadManager;
 import android.app.NotificationChannel;
@@ -81,6 +82,12 @@ public class MainActivity extends Activity {
         credentialManager = CredentialManager.create(this);
         setContentView(buildShell());
         configureWebView();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    this::navigateBack);
+        }
 
         if (state == null) {
             if (!handleAuthDeepLink(getIntent())) {
@@ -372,10 +379,15 @@ public class MainActivity extends Activity {
         super.onSaveInstanceState(outState);
     }
 
+    @SuppressLint("GestureBackNavigation")
     @Override
     public void onBackPressed() {
+        navigateBack();
+    }
+
+    private void navigateBack() {
         if (webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
+        else finish();
     }
 
     @Override

@@ -13,6 +13,6 @@ export default function SupportPage() {
       <article className="rounded-2xl border border-paper/10 bg-soft p-5"><h2 className="font-display text-lg text-paper">Report artwork</h2><p className="mt-2">Open an artwork and use Report. Rights holders can submit a formal request from the <Link href="/copyright" className="text-gold underline">copyright page</Link>.</p></article>
       <article className="rounded-2xl border border-paper/10 bg-soft p-5"><h2 className="font-display text-lg text-paper">Android app</h2><p className="mt-2">Use the latest AniPins release for the fastest feed, reliable downloads and current security updates.</p></article>
     </div>
-    <p className="mb-16 mt-8">Still need help? Email <a className="text-gold underline" href="mailto:anipins01@gmail.com">anipins01@gmail.com</a> or message <a className="text-gold underline" href="https://www.instagram.com/_anipins_/" target="_blank" rel="noopener noreferrer">@_anipins_ on Instagram</a>.</p>
+    <p className="mb-16 mt-8">Still need help? Email <a className="text-gold underline" href="mailto:anipins01@gmail.com">anipins01@gmail.com</a> or message <a className="text-gold underline" href="https://www.instagram.com/_anipinss_/" target="_blank" rel="noopener noreferrer">@_anipinss_ on Instagram</a>.</p>
   </section>;
 }

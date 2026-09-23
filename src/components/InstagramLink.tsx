@@ -3,7 +3,7 @@
 import type { AnchorHTMLAttributes, MouseEvent, ReactNode } from "react";
 
 export const INSTAGRAM_WEB_URL = "https://www.instagram.com/_anipinss_/";
-export const INSTAGRAM_APP_URL = "instagram://user?username=_anipins_";
+export const INSTAGRAM_APP_URL = "instagram://user?username=_anipinss_";
 
 type Props = AnchorHTMLAttributes<HTMLAnchorElement> & {
   children: ReactNode;

@@ -8,7 +8,7 @@ import ThemeToggle from "./ThemeToggle";
 import NotificationBell from "./NotificationBell";
 import InstagramLink from "./InstagramLink";
 
-const APP_URL = "/downloads/AniPins-2.5.10.apk";
+const APP_URL = "/downloads/AniPins-2.5.11.apk";
 const APP_DOWNLOAD_KEY = "anipins-app-download-requested-v1";
 const LINKS = [
   { href: "/", label: "Home" },
@@ -194,7 +194,7 @@ export default function Navbar() {
 </a>}
               <ThemeToggle mobile />
               <div className="py-1"><NotificationBell /></div>
-              <InstagramLink className="py-2.5 text-[15px] text-fog hover:text-gold">Instagram — @_anipins_</InstagramLink>
+              <InstagramLink className="py-2.5 text-[15px] text-fog hover:text-gold">Instagram — @_anipinss_</InstagramLink>
               {user ? (
                 <>
                   <Link href="/profile" className="flex items-center gap-3 py-2.5 text-[15px] text-fog hover:text-paper">
