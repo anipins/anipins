@@ -10,8 +10,8 @@ android {
         applicationId 'com.anipins.app'
         minSdk 24
         targetSdk 36
-        versionCode 34
-        versionName '2.5.13'
+        versionCode 35
+        versionName '2.5.14'
         buildConfigField 'String', 'API_BASE_URL', '"https://anipins.com"'
     }
 

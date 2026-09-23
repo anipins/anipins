@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 // Latest signed Android release metadata.
 export function GET() {
   return NextResponse.json(
-    { versionCode: 34, versionName: "2.5.13", apk: "/downloads/AniPins-2.5.13.apk" },
+    { versionCode: 35, versionName: "2.5.14", apk: "/downloads/AniPins-2.5.14.apk" },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

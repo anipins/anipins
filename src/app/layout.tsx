@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   description: "Anime artwork curated for inspiration. Discover, save, share and download high-quality anime character art.",
   applicationName: SITE_NAME,
   verification: process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : undefined,
-  icons: { icon: "/favicon.svg", apple: "/brand/ap-symbol-192.png" },
+  icons: { icon: "/favicon.png", apple: "/brand/ap-symbol-192.png" },
   openGraph: {
     title: "AniPins — Discover, Save and Download Anime Artwork",
     description: "Anime artwork curated for inspiration.",

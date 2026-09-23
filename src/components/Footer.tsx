@@ -8,7 +8,7 @@ export default function Footer() {
         <div className="grid gap-10 md:grid-cols-3">
           <div>
             <div className="flex items-center gap-2.5">
-              <img src="/brand/ap-symbol.svg" alt="" className="h-9 w-9 rounded-[10px]" />
+              <img src="/brand/ap-symbol-192.png" alt="" className="h-9 w-9 rounded-[10px]" />
               <span className="font-display text-2xl font-semibold">Ani<span className="text-gold">Pins</span></span>
             </div>
             <p className="mt-3 text-sm text-fog">Anime artwork for inspiration.</p>

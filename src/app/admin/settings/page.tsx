@@ -47,7 +47,7 @@ export default function AdminSettings() {
         <p className="text-[11px] uppercase tracking-widest text-gold/80">Branding assets</p>
         <p className="mt-2 text-sm text-fog">All AniPins brand files live in <code className="text-paper">/public/brand/</code> and are used across the site automatically.</p>
         <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-5">
-          {["ap-symbol.svg", "logo-horizontal-dark.svg", "instagram-profile-256.png", "og-image.png", "watermark-gold.png"].map(f => (
+          {["ap-symbol-transparent.png", "logo-horizontal-dark.png", "instagram-profile-256.png", "og-image.png", "watermark-gold.png"].map(f => (
             <a key={f} href={`/brand/${f}`} target="_blank" className="group rounded-xl border border-line p-2 hover:border-gold-dim transition-colors">
               <img src={`/brand/${f}`} alt={f} className="h-16 w-full object-contain" />
               <p className="mt-1.5 truncate text-center text-[10px] text-fog group-hover:text-paper">{f}</p>
