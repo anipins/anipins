@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const APK_NAMES = new Set(["AniPins.apk", "AniPins-2.4.3.apk", "AniPins-2.4.4.apk", "AniPins-2.5.0.apk", "AniPins-2.5.1.apk", "AniPins-2.5.2.apk", "AniPins-2.5.3.apk", "AniPins-2.5.4.apk", "AniPins-2.5.5.apk", "AniPins-2.5.6.apk", "AniPins-2.5.7.apk"]);
+const APK_NAMES = new Set(["AniPins.apk", "AniPins-2.4.3.apk", "AniPins-2.4.4.apk", "AniPins-2.5.0.apk", "AniPins-2.5.1.apk", "AniPins-2.5.2.apk", "AniPins-2.5.3.apk", "AniPins-2.5.4.apk", "AniPins-2.5.5.apk", "AniPins-2.5.6.apk", "AniPins-2.5.7.apk", "AniPins-2.5.8.apk"]);
 
 export async function GET(
   _req: Request,
