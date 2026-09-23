@@ -31,12 +31,30 @@ type Props = {
 };
 
 export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+  const [clientId, setClientId] = useState(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "");
+  const [configLoaded, setConfigLoaded] = useState(Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID));
   const buttonRef = useRef<HTMLDivElement>(null);
   const initializing = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [nativeGoogle, setNativeGoogle] = useState(false);
+
+  useEffect(() => {
+    if (clientId) return;
+    const controller = new AbortController();
+    fetch("/api/auth/google/client-id", { cache: "no-store", signal: controller.signal })
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok || !data.clientId) throw new Error(data.error || "Google sign-in is unavailable.");
+        setClientId(String(data.clientId));
+      })
+      .catch(error => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setError(error instanceof Error ? error.message : "Google sign-in is unavailable.");
+      })
+      .finally(() => setConfigLoaded(true));
+    return () => controller.abort();
+  }, [clientId]);
 
   const completeSignIn = useCallback(async (credential: string) => {
     setBusy(true);
@@ -117,17 +135,19 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
     }
   }, [clientId, completeSignIn, nativeGoogle, renderButton, requestNonce]);
 
-  const beginNativeGoogle = useCallback(() => {
+  const beginNativeGoogle = useCallback(async () => {
     setBusy(true);
     setError("");
-    const openBrowser = window.AniPinsAndroid?.openGoogleBrowserLogin;
-    if (typeof openBrowser === "function") {
-      openBrowser();
-      return;
+    try {
+      const nonce = await requestNonce();
+      const signIn = window.AniPinsAndroid?.signInWithGoogle;
+      if (typeof signIn !== "function") throw new Error("Native Google sign-in is unavailable.");
+      signIn(nonce);
+    } catch (nativeError) {
+      setBusy(false);
+      setError(nativeError instanceof Error ? nativeError.message : "Google sign-in is unavailable.");
     }
-    setBusy(false);
-    setError("Google sign-in is unavailable.");
-  }, []);
+  }, [requestNonce]);
 
   useEffect(() => {
     setNativeGoogle(typeof window.AniPinsAndroid?.signInWithGoogle === "function");
@@ -146,11 +166,6 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
     const onError = (event: Event) => {
       const message = (event as CustomEvent<{ message?: string }>).detail?.message || "Google sign-in failed.";
       setBusy(false);
-      if (nativeGoogle && typeof window.AniPinsAndroid?.openGoogleBrowserLogin === "function") {
-        setError("Opening secure Google sign-in…");
-        window.AniPinsAndroid.openGoogleBrowserLogin();
-        return;
-      }
       setError(message);
     };
     window.addEventListener("anipins-native-google-credential", onCredential);
@@ -159,7 +174,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
       window.removeEventListener("anipins-native-google-credential", onCredential);
       window.removeEventListener("anipins-native-google-error", onError);
     };
-  }, [completeSignIn, nativeGoogle]);
+  }, [completeSignIn]);
 
   useEffect(() => {
     if (!nativeGoogle && window.google) void initializeWebGoogle();
@@ -180,6 +195,10 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
     observer.observe(target);
     return () => observer.disconnect();
   }, [nativeGoogle, renderButton]);
+
+  if (!configLoaded) {
+    return <div className="h-11 w-full animate-pulse rounded-full bg-white/10" aria-label="Loading Google sign-in" />;
+  }
 
   if (!clientId) {
     return <p className="text-center text-xs text-fog">Google sign-in will appear after its client ID is configured.</p>;

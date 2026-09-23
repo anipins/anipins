@@ -430,11 +430,11 @@ public class MainActivity extends Activity {
                 dispatchGoogleError("Google sign-in is not configured.");
                 return;
             }
-            requestGoogleCredential(data.optString("clientId"), nonce, false);
+            requestGoogleCredential(data.optString("clientId"), nonce);
         });
     }
 
-    private void requestGoogleCredential(final String serverClientId, final String nonce, final boolean fallback) {
+    private void requestGoogleCredential(final String serverClientId, final String nonce) {
         GetSignInWithGoogleOption option = new GetSignInWithGoogleOption.Builder(serverClientId)
             .setNonce(nonce)
             .build();
@@ -567,7 +567,7 @@ public class MainActivity extends Activity {
     private final class NativeBridge {
         @JavascriptInterface
         public void signInWithGoogle(String nonce) {
-            runOnUiThread(() -> openGoogleBrowserLoginInternal());
+            runOnUiThread(() -> beginGoogleSignIn(nonce));
         }
 
         @JavascriptInterface
