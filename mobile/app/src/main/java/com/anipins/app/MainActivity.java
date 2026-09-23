@@ -1,11 +1,14 @@
 package com.anipins.app;
 
 import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
@@ -25,6 +28,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -39,6 +43,7 @@ import java.util.Random;
 
 public class MainActivity extends Activity {
     private static final String INSTAGRAM_URL = "https://www.instagram.com/_anipins_/";
+    private static final String NOTIFICATION_CHANNEL = "anipins_updates";
     private ApiClient api; private FrameLayout body; private TextView title, subtitle; private ProgressBar progress;
     private SwipeRefreshLayout swipe; private ArtworkAdapter adapter; private String currentPath = "/api/artworks?sort=for-you&limit=30";
     private int lastRandomFirstId = -1, feedPage = 0; private boolean feedLoading = false, feedHasMore = true;
@@ -47,7 +52,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state); requestWindowFeature(Window.FEATURE_NO_TITLE); getWindow().setStatusBarColor(Ui.INK); getWindow().setNavigationBarColor(Ui.INK);
-        api = new ApiClient(this); setContentView(buildShell()); handleDeepLink(getIntent()); if (state == null) showHome(); checkForUpdate();
+        api = new ApiClient(this); setContentView(buildShell()); handleDeepLink(getIntent()); if (state == null) showHome(); if (Build.VERSION.SDK_INT >= 33) requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 1001); checkForUpdate();
     }
 
     private View buildShell() {
@@ -147,6 +152,21 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void checkForNotifications(){
+        api.get("/api/notifications?unread=1&limit=1",(status,data,error)->{
+            if(status!=200||error!=null||data.optInt("unread",0)<=0)return;
+            JSONArray items=data.optJSONArray("notifications"); int artworkId=items!=null&&items.length()>0?items.optJSONObject(0).optInt("artwork_id",0):0;
+            if(Build.VERSION.SDK_INT>=26){NotificationManager manager=getSystemService(NotificationManager.class);manager.createNotificationChannel(new NotificationChannel(NOTIFICATION_CHANNEL,"AniPins updates",NotificationManager.IMPORTANCE_DEFAULT));}
+            Intent tap=new Intent(this,MainActivity.class); if(artworkId>0)tap.setData(Uri.parse(BuildConfig.API_BASE_URL+"/a/"+artworkId)); tap.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            android.app.PendingIntent pending=android.app.PendingIntent.getActivity(this,artworkId,tap,android.app.PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=23?android.app.PendingIntent.FLAG_IMMUTABLE:0));
+            android.app.Notification.Builder notification=Build.VERSION.SDK_INT>=26
+                ? new android.app.Notification.Builder(this,NOTIFICATION_CHANNEL)
+                : new android.app.Notification.Builder(this);
+            notification.setSmallIcon(R.drawable.ap_symbol).setContentTitle("AniPins").setContentText(data.optInt("unread",1)+" new notification"+(data.optInt("unread",1)==1?"":"s")).setContentIntent(pending).setAutoCancel(true);
+            try{getSystemService(NotificationManager.class).notify(1001,notification.build());}catch(SecurityException ignored){}
+        });
+    }
+
     private void checkForUpdate(){api.get("/api/app-version",(status,data,error)->{if(status!=200||error!=null||data.optInt("versionCode")<=BuildConfig.VERSION_CODE)return;String version=data.optString("versionName","new");String apk=data.optString("apk","/downloads/AniPins.apk");new AlertDialog.Builder(this).setTitle("AniPins update available").setMessage("Version "+version+" includes the latest speed, reliability and security improvements.").setNegativeButton("Later",null).setPositiveButton("Update",(dialog,which)->startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(apk.startsWith("http")?apk:BuildConfig.API_BASE_URL+apk)))).show();});}
     private void errorView(String message, Runnable retry) { body.removeAllViews(); LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setGravity(Gravity.CENTER);panel.setPadding(Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28),Ui.dp(this,28));TextView text=Ui.text(this,message,16,Ui.FOG,false);text.setGravity(Gravity.CENTER);panel.addView(text);Button button=button("Try again");button.setOnClickListener(v->retry.run());LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,Ui.dp(this,48));p.setMargins(0,Ui.dp(this,18),0,0);panel.addView(button,p);body.addView(panel); }
 
@@ -207,7 +227,13 @@ private void showProfile() { title.setText("Profile"); subtitle.setText("Account
     private void openLegal(String label,String path){Intent intent=new Intent(this,LegalActivity.class);intent.putExtra("title",label);intent.putExtra("path",path);startActivity(intent);}
     private void openArtwork(Artwork artwork){Intent intent=new Intent(this,ArtworkActivity.class);intent.putExtra("id",artwork.id);startActivity(intent);}
 
-    private void handleDeepLink(Intent intent){Uri uri=intent.getData();if(uri==null)return;List<String> parts=uri.getPathSegments();if(parts.size()>=2&&"a".equals(parts.get(0))){try{Intent art=new Intent(this,ArtworkActivity.class);art.putExtra("id",Integer.parseInt(parts.get(1)));startActivity(art);}catch(NumberFormatException ignored){}}}
+    private void handleDeepLink(Intent intent){
+        Uri uri=intent.getData(); if(uri==null)return;
+        List<String> parts=uri.getPathSegments();
+        if(parts.size()>=2 && "a".equals(parts.get(0))){
+            try{Intent art=new Intent(this,ArtworkActivity.class);art.putExtra("id",Integer.parseInt(parts.get(1)));startActivity(art);}catch(NumberFormatException ignored){}
+        }
+    }
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);handleDeepLink(intent);}
     @Override protected void onResume(){super.onResume(); if(title!=null&&"Profile".contentEquals(title.getText()))showProfile();}
 }
