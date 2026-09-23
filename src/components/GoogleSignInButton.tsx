@@ -22,10 +22,6 @@ type GoogleAccounts = {
 declare global {
   interface Window {
     google?: { accounts: GoogleAccounts };
-    AniPinsAndroid?: {
-      signInWithGoogle?: (nonce: string) => void;
-      openGoogleBrowserLogin?: () => void;
-    };
   }
 }
 
