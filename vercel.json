@@ -1,4 +1,16 @@
 {
+  "redirects": [
+    {
+      "source": "/downloads/AniPins-2.4.3.apk",
+      "destination": "https://synqmyiwjyvvrbrhcetw.supabase.co/storage/v1/object/public/anipins-downloads/AniPins-2.4.3.apk",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/AniPins.apk",
+      "destination": "https://synqmyiwjyvvrbrhcetw.supabase.co/storage/v1/object/public/anipins-downloads/AniPins.apk",
+      "permanent": false
+    }
+  ],
   "functions": {
     "src/app/api/setup/route.ts": { "maxDuration": 60 },
     "src/app/api/admin/upload/route.ts": { "maxDuration": 60 }
