@@ -39,7 +39,7 @@ export default function Intro() {
             {/* the logo itself */}
             <motion.img
               src="/brand/ap-symbol-intro.png" alt="AniPins"
-              className="h-32 w-32 select-none"
+              className="block h-32 w-32 select-none object-contain object-center"
               initial={{ opacity: 0, scale: 0.82, filter: "blur(6px)" }}
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}

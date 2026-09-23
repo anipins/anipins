@@ -34,7 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="mx-auto flex max-w-[1560px] gap-0 px-0 md:px-6 pt-20 md:pt-24 min-h-screen">
       <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-paper/[0.07] py-8 pr-5">
         <div className="flex items-center gap-3 px-3">
-          <img src="/brand/ap-symbol-192.png" alt="" className="h-10 w-10 rounded-xl shadow-[0_0_24px_rgba(198,161,91,0.15)]" />
+          <img src="/brand/ap-symbol-192.png" alt="" className="block h-10 w-10 rounded-xl object-contain object-center shadow-[0_0_24px_rgba(198,161,91,0.15)]" />
           <div>
             <p className="font-display font-semibold leading-none">Ani<span className="text-gold">Pins</span></p>
             <span className="badge-gold mt-1.5 !px-2 !py-0.5">Super Admin</span>

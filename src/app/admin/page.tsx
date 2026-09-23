@@ -70,7 +70,7 @@ export default function AdminOverview() {
       <div className="relative overflow-hidden rounded-3xl border border-line bg-gradient-to-br from-panel via-panel to-[#161310] p-7 md:p-9">
         <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-gold/[0.07] blur-3xl" />
         <div className="pointer-events-none absolute right-8 top-1/2 hidden -translate-y-1/2 md:block opacity-[0.16]">
-          <img src="/brand/ap-symbol-transparent.png" alt="" className="h-36 w-36 object-contain" />
+          <img src="/brand/ap-symbol-transparent.png" alt="" className="block h-36 w-36 object-contain object-center" />
         </div>
         <p className="text-[11px] uppercase tracking-[0.3em] text-gold/80">Dashboard</p>
         <h1 className="mt-2 font-display text-3xl font-semibold md:text-4xl">Welcome back<span className="text-gold">.</span></h1>
