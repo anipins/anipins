@@ -113,8 +113,10 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
     setBusy(true);
     setError("");
     try {
-      const nonce = await requestNonce();
-      window.AniPinsAndroid?.signInWithGoogle?.(nonce);
+      const response = await fetch("/api/auth/google/native-nonce", { cache: "no-store", credentials: "same-origin" });
+      const data = await response.json();
+      if (!response.ok || !data.nonce) throw new Error(data.error || "Google sign-in is unavailable.");
+      window.AniPinsAndroid?.signInWithGoogle?.(String(data.nonce));
     } catch (nativeError) {
       setBusy(false);
       setError(nativeError instanceof Error ? nativeError.message : "Google sign-in is unavailable.");
