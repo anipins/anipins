@@ -44,7 +44,7 @@ import androidx.credentials.CustomCredential;
 import androidx.credentials.GetCredentialRequest;
 import androidx.credentials.GetCredentialResponse;
 
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 
 import org.json.JSONException;
@@ -385,11 +385,8 @@ public class MainActivity extends Activity {
                 return;
             }
 
-            GetGoogleIdOption option = new GetGoogleIdOption.Builder()
-                .setServerClientId(data.optString("clientId"))
+            GetSignInWithGoogleOption option = new GetSignInWithGoogleOption.Builder(data.optString("clientId"))
                 .setNonce(nonce)
-                .setFilterByAuthorizedAccounts(false)
-                .setAutoSelectEnabled(false)
                 .build();
 
             GetCredentialRequest request = new GetCredentialRequest.Builder()
@@ -424,7 +421,9 @@ public class MainActivity extends Activity {
                 @Override
                 public void onError(androidx.credentials.exceptions.GetCredentialException e) {
                     nativeGoogleBusy = false;
-                    dispatchGoogleError("Google sign-in was cancelled or unavailable.");
+                    String detail = e.getMessage();
+                    if (detail == null || detail.trim().isEmpty()) detail = e.getClass().getSimpleName();
+                    dispatchGoogleError("Google sign-in failed: " + detail);
                 }
             });
         });
@@ -502,6 +501,22 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public int getVersionCode() {
             return BuildConfig.VERSION_CODE;
+        }
+
+        @JavascriptInterface
+        public void openInstagram() {
+            try {
+                Intent instagram = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/_anipinss_/"));
+                instagram.setPackage("com.instagram.android");
+                startActivity(instagram);
+            } catch (ActivityNotFoundException e) {
+                try {
+                    Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/_anipinss_/"));
+                    startActivity(browser);
+                } catch (ActivityNotFoundException ignored) {
+                    Toast.makeText(MainActivity.this, "Instagram could not be opened.", Toast.LENGTH_LONG).show();
+                }
+            }
         }
 
         @JavascriptInterface
