@@ -15,7 +15,23 @@ export default function Login() {
   const [code, setCode] = useState("");
   const router = useRouter();
 
-  const finishSignIn = useCallback((role: string) => {
+  const finishSignIn = useCallback(async (role: string) => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mobile") === "1") {
+      try {
+        const ticketResponse = await fetch("/api/auth/mobile-ticket", {
+          method: "POST",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        const ticket = await ticketResponse.json();
+        if (ticketResponse.ok && ticket.ticket) {
+          window.location.href = "anipins://auth?ticket=" + encodeURIComponent(String(ticket.ticket));
+          return;
+        }
+      } catch {}
+      setErr("Could not return to the AniPins app. Please reopen the app and try again.");
+      return;
+    }
     router.push(role === "ADMIN" ? "/admin" : "/");
     router.refresh();
   }, [router]);
