@@ -83,10 +83,13 @@ public class MainActivity extends Activity {
         configureWebView();
 
         if (state == null) {
-            String launchUrl = getDeepLink(getIntent());
-            loadUrl(launchUrl == null ? HOME_URL : launchUrl);
+            if (!handleAuthDeepLink(getIntent())) {
+                String launchUrl = getDeepLink(getIntent());
+                loadUrl(launchUrl == null ? HOME_URL : launchUrl);
+            }
         } else {
             webView.restoreState(state);
+            handleAuthDeepLink(getIntent());
         }
 
         checkForNotifications();
@@ -318,6 +321,34 @@ public class MainActivity extends Activity {
         webView.loadUrl(url);
     }
 
+    private boolean handleAuthDeepLink(Intent intent) {
+        if (intent == null || intent.getData() == null) return false;
+        Uri uri = intent.getData();
+        if (!"anipins".equalsIgnoreCase(uri.getScheme()) || !"auth".equalsIgnoreCase(uri.getHost())) return false;
+        String ticket = uri.getQueryParameter("ticket");
+        if (ticket == null || ticket.trim().isEmpty()) return false;
+
+        try {
+            JSONObject body = new JSONObject().put("ticket", ticket);
+            api.post("/api/auth/mobile-ticket/exchange", body, (status, data, error) -> {
+                String sessionToken = data.optString("sessionToken", "");
+                if (status != 200 || error != null || sessionToken.isEmpty()) {
+                    Toast.makeText(this, data.optString("error", "Could not finish Google sign-in."), Toast.LENGTH_LONG).show();
+                    loadUrl(HOME_URL);
+                    return;
+                }
+                String cookie = "anipins_session=" + sessionToken + "; Path=/; Secure; HttpOnly; SameSite=Lax";
+                CookieManager.getInstance().setCookie(HOME_URL, cookie, value -> {
+                    CookieManager.getInstance().flush();
+                    loadUrl(HOME_URL);
+                });
+            });
+        } catch (JSONException e) {
+            loadUrl(HOME_URL);
+        }
+        return true;
+    }
+
     private String getDeepLink(Intent intent) {
         if (intent == null || intent.getData() == null) return null;
         Uri uri = intent.getData();
@@ -330,6 +361,7 @@ public class MainActivity extends Activity {
     public void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        if (handleAuthDeepLink(intent)) return;
         String url = getDeepLink(intent);
         if (url != null) loadUrl(url);
     }
@@ -529,6 +561,18 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void signInWithGoogle(String nonce) {
             runOnUiThread(() -> beginGoogleSignIn(nonce));
+        }
+
+        @JavascriptInterface
+        public void openGoogleBrowserLogin() {
+            runOnUiThread(() -> {
+                try {
+                    Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse(HOME_URL + "login?mobile=1"));
+                    startActivity(browser);
+                } catch (ActivityNotFoundException e) {
+                    Toast.makeText(MainActivity.this, "Could not open browser.", Toast.LENGTH_LONG).show();
+                }
+            });
         }
 
         @JavascriptInterface
