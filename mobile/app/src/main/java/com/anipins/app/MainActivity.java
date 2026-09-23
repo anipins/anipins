@@ -574,7 +574,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void openGoogleBrowserLogin() {
-            runOnUiThread(this::openGoogleBrowserLoginInternal);
+            runOnUiThread(() -> openGoogleBrowserLoginInternal());
         }
 
         @JavascriptInterface
