@@ -527,3 +527,4 @@ public class MainActivity extends Activity {
             artworkId = value;
         }
 }
+}
