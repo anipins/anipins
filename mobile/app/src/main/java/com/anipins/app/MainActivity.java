@@ -28,8 +28,6 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
@@ -54,7 +52,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state); requestWindowFeature(Window.FEATURE_NO_TITLE); getWindow().setStatusBarColor(Ui.INK); getWindow().setNavigationBarColor(Ui.INK);
-        api = new ApiClient(this); setContentView(buildShell()); handleDeepLink(getIntent()); if (state == null) showHome(); checkForUpdate();
+        api = new ApiClient(this); setContentView(buildShell()); handleDeepLink(getIntent()); if (state == null) showHome(); if (Build.VERSION.SDK_INT >= 33) requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 1001); checkForUpdate();
     }
 
     private View buildShell() {
@@ -161,8 +159,11 @@ public class MainActivity extends Activity {
             if(Build.VERSION.SDK_INT>=26){NotificationManager manager=getSystemService(NotificationManager.class);manager.createNotificationChannel(new NotificationChannel(NOTIFICATION_CHANNEL,"AniPins updates",NotificationManager.IMPORTANCE_DEFAULT));}
             Intent tap=new Intent(this,MainActivity.class); if(artworkId>0)tap.setData(Uri.parse(BuildConfig.API_BASE_URL+"/a/"+artworkId)); tap.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
             android.app.PendingIntent pending=android.app.PendingIntent.getActivity(this,artworkId,tap,android.app.PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=23?android.app.PendingIntent.FLAG_IMMUTABLE:0));
-            NotificationCompat.Builder notification=new NotificationCompat.Builder(this,NOTIFICATION_CHANNEL).setSmallIcon(R.drawable.ap_symbol).setContentTitle("AniPins").setContentText(data.optInt("unread",1)+" new notification"+(data.optInt("unread",1)==1?"":"s")).setContentIntent(pending).setAutoCancel(true).setPriority(NotificationCompat.PRIORITY_DEFAULT);
-            try{NotificationManagerCompat.from(this).notify(1001,notification.build());}catch(SecurityException ignored){}
+            android.app.Notification.Builder notification=Build.VERSION.SDK_INT>=26
+                ? new android.app.Notification.Builder(this,NOTIFICATION_CHANNEL)
+                : new android.app.Notification.Builder(this);
+            notification.setSmallIcon(R.drawable.ap_symbol).setContentTitle("AniPins").setContentText(data.optInt("unread",1)+" new notification"+(data.optInt("unread",1)==1?"":"s")).setContentIntent(pending).setAutoCancel(true);
+            try{getSystemService(NotificationManager.class).notify(1001,notification.build());}catch(SecurityException ignored){}
         });
     }
 
