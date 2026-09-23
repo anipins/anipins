@@ -48,12 +48,16 @@ jobs:
         run: |
           APK=$(find mobile/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)
           test -n "$APK"
-          curl --fail-with-body --silent --show-error \
+          RESPONSE=$(curl --fail-with-body --silent --show-error \
             -X POST \
             -H "Authorization: Bearer $OIDC_TOKEN" \
             -H "Content-Type: application/vnd.android.package-archive" \
             --data-binary "@$APK" \
-            "https://synqmyiwjyvvrbrhcetw.supabase.co/functions/v1/anipins-apk-signer"
+            "https://synqmyiwjyvvrbrhcetw.supabase.co/functions/v1/anipins-apk-signer")
+          echo "$RESPONSE" > /tmp/anipins-signer-response.json
+          SIGNED_URL=$(python3 -c 'import json; print(json.load(open("/tmp/anipins-signer-response.json"))["apkUrl"])')
+          curl --fail-with-body --silent --show-error "$SIGNED_URL" -o mobile/app/build/outputs/apk/release/AniPins-signed.apk
+          test -s mobile/app/build/outputs/apk/release/AniPins-signed.apk
       - name: Upload release APK artifact
         uses: actions/upload-artifact@v4
         with:
