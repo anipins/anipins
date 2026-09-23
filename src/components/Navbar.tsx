@@ -8,7 +8,7 @@ import ThemeToggle from "./ThemeToggle";
 import NotificationBell from "./NotificationBell";
 import InstagramLink from "./InstagramLink";
 
-const APP_URL = "/downloads/AniPins-2.5.0.apk";
+const APP_URL = "/downloads/AniPins-2.5.1.apk";
 const APP_DOWNLOAD_KEY = "anipins-app-download-requested-v1";
 const LINKS = [
   { href: "/", label: "Home" },
