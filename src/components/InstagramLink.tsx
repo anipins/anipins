@@ -17,7 +17,7 @@ export default function InstagramLink({ children, onClick, ...props }: Props) {
     const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (!mobile) return;
 
-    const nativeInstagram = window.AniPinsAndroid?.openInstagram;
+    const nativeInstagram = (window as any).AniPinsAndroid?.openInstagram;
     if (typeof nativeInstagram === "function") {
       event.preventDefault();
       nativeInstagram();
