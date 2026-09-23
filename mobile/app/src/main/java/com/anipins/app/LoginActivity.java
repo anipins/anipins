@@ -239,7 +239,9 @@ public class LoginActivity extends Activity {
         });
     }
 
-    private java.util.concurrent.Executor commandExecutor() { return command -> runOnUiThread(command); }\n\n    private void completeGoogle(String idToken) {
+    private java.util.concurrent.Executor commandExecutor() { return command -> runOnUiThread(command); }
+
+    private void completeGoogle(String idToken) {
         try {
             JSONObject body = new JSONObject().put("credential", idToken).put("nonce", pendingGoogleNonce);
             api.post("/api/auth/google", body, (status, data, error) -> {
