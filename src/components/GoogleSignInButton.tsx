@@ -138,8 +138,15 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
       void completeSignIn(credential);
     };
     const onError = (event: Event) => {
+      const message = (event as CustomEvent<{ message?: string }>).detail?.message || "Google sign-in failed.";
       setBusy(false);
-      setError((event as CustomEvent<{ message?: string }>).detail?.message || "Google sign-in failed.");
+      const lower = message.toLowerCase();
+      if (nativeGoogle && (lower.includes("reauth") || lower.includes("[16]") || lower.includes("google sign-in failed"))) {
+        setError("");
+        setNativeGoogle(false);
+        return;
+      }
+      setError(message);
     };
     window.addEventListener("anipins-native-google-credential", onCredential);
     window.addEventListener("anipins-native-google-error", onError);
