@@ -21,6 +21,10 @@ type GoogleAccounts = {
 declare global {
   interface Window {
     google?: { accounts: GoogleAccounts };
+    AniPinsAndroid?: {
+      signInWithGoogle?: (nonce: string) => void;
+      openGoogleBrowserLogin?: () => void;
+    };
   }
 }
 
@@ -140,10 +144,9 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
     const onError = (event: Event) => {
       const message = (event as CustomEvent<{ message?: string }>).detail?.message || "Google sign-in failed.";
       setBusy(false);
-      const lower = message.toLowerCase();
-      if (nativeGoogle && (lower.includes("reauth") || lower.includes("[16]") || lower.includes("google sign-in failed"))) {
-        setError("");
-        setNativeGoogle(false);
+      if (nativeGoogle && typeof window.AniPinsAndroid?.openGoogleBrowserLogin === "function") {
+        setError("Opening secure Google sign-in…");
+        window.AniPinsAndroid.openGoogleBrowserLogin();
         return;
       }
       setError(message);
