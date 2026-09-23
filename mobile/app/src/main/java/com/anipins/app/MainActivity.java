@@ -511,6 +511,20 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void openInstagramFromNative() {
+        try {
+            Intent instagram = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/_anipinss_/"));
+            instagram.setPackage("com.instagram.android");
+            startActivity(instagram);
+        } catch (ActivityNotFoundException e) {
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/_anipinss_/")));
+            } catch (ActivityNotFoundException ignored) {
+                Toast.makeText(this, "Instagram could not be opened.", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     private final class NativeBridge {
         @JavascriptInterface
         public void signInWithGoogle(String nonce) {
@@ -524,21 +538,6 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void openInstagram() { openInstagramFromNative(); }
-
-    private void openInstagramFromNative() {
-            try {
-                Intent instagram = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/_anipinss_/"));
-                instagram.setPackage("com.instagram.android");
-                startActivity(instagram);
-            } catch (ActivityNotFoundException e) {
-                try {
-                    Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/_anipinss_/"));
-                    startActivity(browser);
-                } catch (ActivityNotFoundException ignored) {
-                    Toast.makeText(MainActivity.this, "Instagram could not be opened.", Toast.LENGTH_LONG).show();
-                }
-            }
-        }
 
         @JavascriptInterface
         public void openDownloads() {
