@@ -247,6 +247,7 @@ public class MainActivity extends Activity {
     private boolean routeUri(Uri uri) {
         String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
         String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
+        if ((scheme.equals("https") || scheme.equals("http")) && ("instagram.com".equals(host) || "www.instagram.com".equals(host))) { openInstagramFromNative(); return true; }
         if ((scheme.equals("https") || scheme.equals("http")) && (HOST.equals(host) || ("www." + HOST).equals(host))) {
             return false;
         }
@@ -526,7 +527,9 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
-        public void openInstagram() {
+        public void openInstagram() { openInstagramFromNative(); }
+
+    private void openInstagramFromNative() {
             try {
                 Intent instagram = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/_anipinss_/"));
                 instagram.setPackage("com.instagram.android");
