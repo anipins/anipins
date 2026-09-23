@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const ITEMS = [
@@ -19,14 +19,16 @@ const ADMIN_ITEM = {
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    router.prefetch("/");
     fetch("/api/auth/me", { cache: "no-store", credentials: "include" })
       .then(response => response.json())
       .then(data => setIsAdmin(data.user?.role === "ADMIN"))
       .catch(() => setIsAdmin(false));
-  }, [pathname]);
+  }, [router]);
 
   const items = isAdmin ? [...ITEMS, ADMIN_ITEM] : ITEMS;
 
@@ -37,7 +39,7 @@ export default function MobileBottomNav() {
       {items.map(item => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         return (
-          <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined}
+          <Link key={item.href} href={item.href} prefetch aria-current={active ? "page" : undefined}
             className={`group relative flex min-h-16 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl text-[11px] transition-all ${active ? "bg-gold/[0.08] text-gold" : "text-fog hover:bg-paper/[0.04] hover:text-paper"}`}>
             <span className={`absolute top-0 h-0.5 rounded-full bg-gold transition-all duration-300 ${active ? "w-8 opacity-100" : "w-0 opacity-0"}`} />
             <svg className="h-5 w-5" fill={active && item.href === "/" ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.9">
