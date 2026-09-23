@@ -252,6 +252,10 @@ public class MainActivity extends Activity {
         String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
         if ((scheme.equals("https") || scheme.equals("http")) && ("instagram.com".equals(host) || "www.instagram.com".equals(host))) { openInstagramFromNative(); return true; }
         if ((scheme.equals("https") || scheme.equals("http")) && (HOST.equals(host) || ("www." + HOST).equals(host))) {
+            if ("/login".equals(uri.getPath())) {
+                openGoogleBrowserLoginInternal();
+                return true;
+            }
             return false;
         }
 
