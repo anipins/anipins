@@ -207,7 +207,13 @@ private void showProfile() { title.setText("Profile"); subtitle.setText("Account
     private void openLegal(String label,String path){Intent intent=new Intent(this,LegalActivity.class);intent.putExtra("title",label);intent.putExtra("path",path);startActivity(intent);}
     private void openArtwork(Artwork artwork){Intent intent=new Intent(this,ArtworkActivity.class);intent.putExtra("id",artwork.id);startActivity(intent);}
 
-    private void handleDeepLink(Intent intent){Uri uri=intent.getData();if(uri==null)return;List<String> parts=uri.getPathSegments();if(parts.size()>=2&&"a".equals(parts.get(0))){try{Intent art=new Intent(this,ArtworkActivity.class);art.putExtra("id",Integer.parseInt(parts.get(1)));startActivity(art);}catch(NumberFormatException ignored){}}}
+    private void handleDeepLink(Intent intent){
+        Uri uri=intent.getData(); if(uri==null)return;
+        List<String> parts=uri.getPathSegments();
+        if(parts.size()>=2 && "a".equals(parts.get(0))){
+            try{Intent art=new Intent(this,ArtworkActivity.class);art.putExtra("id",Integer.parseInt(parts.get(1)));startActivity(art);}catch(NumberFormatException ignored){}
+        }
+    }
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);handleDeepLink(intent);}
     @Override protected void onResume(){super.onResume(); if(title!=null&&"Profile".contentEquals(title.getText()))showProfile();}
 }
