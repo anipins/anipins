@@ -15,8 +15,8 @@ module.exports = {
         gold: { DEFAULT: "#C6A15B", bright: "#D4AF37", deep: "#B8954F", dim: "rgba(198,161,91,0.35)" }
       },
       fontFamily: {
-        display: ["'Space Grotesk'", "Inter", "sans-serif"],
-        body: ["Inter", "system-ui", "sans-serif"]
+        display: ["var(--font-grotesk)", "var(--font-lexend)", "sans-serif"],
+        body: ["var(--font-lexend)", "system-ui", "sans-serif"]
       }
     }
   },

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Lexend, Space_Grotesk } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Intro from "@/components/Intro";
@@ -14,7 +14,7 @@ import JsonLd from "@/components/JsonLd";
 import NativeExternalLinks from "@/components/NativeExternalLinks";
 import { absoluteUrl, getSiteUrl, SITE_NAME } from "@/lib/site";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const lexend = Lexend({ subsets: ["latin"], variable: "--font-lexend", display: "swap" });
 const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-grotesk" });
 
 export const metadata: Metadata = {
@@ -45,7 +45,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${grotesk.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${lexend.variable} ${grotesk.variable}`} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
