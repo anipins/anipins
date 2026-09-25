@@ -75,7 +75,10 @@ export async function saveImage(buffer: Buffer, origName: string) {
  * while local installations keep using the authenticated application route. */
 export function publicMediaUrl(rel: string) {
   if (!isSafeMediaKey(rel)) return "";
-  if (USE_SUPABASE_STORAGE) return sbPublicUrl(rel);
+  // New thumbnails are compact immutable WebP files and can use the storage
+  // CDN directly. Older JPEG/PNG thumbnails were uploaded with no-cache, so
+  // send those through our permanently cached WebP compatibility endpoint.
+  if (USE_SUPABASE_STORAGE && (!rel.startsWith("t/") || rel.toLowerCase().endsWith(".webp"))) return sbPublicUrl(rel);
   return `/api/img/${rel}`;
 }
 

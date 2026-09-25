@@ -90,7 +90,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
         setPage(next);
         load(next, false);
       }
-    }, { rootMargin: "900px" });
+    }, { rootMargin: "500px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, [hasMore, loading, page, initial, load]);

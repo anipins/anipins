@@ -47,6 +47,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${lexend.variable} ${grotesk.variable}`} suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://synqmyiwjyvvrbrhcetw.supabase.co" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://synqmyiwjyvvrbrhcetw.supabase.co" />
         <script
           dangerouslySetInnerHTML={{
             __html: `try{var t=localStorage.getItem("anipins-theme");document.documentElement.dataset.theme=t==="light"?"light":"dark"}catch(e){document.documentElement.dataset.theme="dark"}`,
