@@ -10,7 +10,6 @@ const limits = [
   { path: "/api/auth/google/nonce", requests: 30, windowMs: 15 * 60_000 },
   { path: "/api/takedown", requests: 5, windowMs: 60 * 60_000 },
   { path: "/api/reports", requests: 20, windowMs: 60 * 60_000 },
-  { path: "/api/admin/upload", requests: 30, windowMs: 10 * 60_000 },
   { path: "/api/admin/security", requests: 40, windowMs: 10 * 60_000 },
   { path: "/api/telemetry", requests: 120, windowMs: 60_000 },
 ];
