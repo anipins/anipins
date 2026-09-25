@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { row, rows, run } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { recordActivity } from "@/lib/activity";
@@ -38,9 +38,14 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
        FROM artworks WHERE published=1`,
       id, id,
     ),
-    run("UPDATE artworks SET views = views + 1 WHERE id=?", id),
-    user ? recordActivity(user.id, id, "view") : Promise.resolve(),
   ]);
+
+  after(async () => {
+    await Promise.allSettled([
+      run("UPDATE artworks SET views = views + 1 WHERE id=?", id),
+      user ? recordActivity(user.id, id, "view") : Promise.resolve(),
+    ]);
+  });
 
   return NextResponse.json({
     art: { ...art, thumb_url: publicMediaUrl(art.thumb), original_url: publicMediaUrl(art.orig) },
