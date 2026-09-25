@@ -82,7 +82,7 @@ export default function ArtLightbox() {
     <AnimatePresence>
       {id !== null && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 backdrop-blur-md md:p-8"
+          className="fixed inset-0 z-[80] overflow-y-auto bg-black/90 px-0 pb-[max(1rem,env(safe-area-inset-bottom))] pt-0 backdrop-blur-md md:px-32 md:py-6"
           onClick={() => setId(null)}
           onTouchStart={e => (touch.current = e.touches[0].clientX)}
           onTouchEnd={e => {
@@ -103,13 +103,13 @@ export default function ArtLightbox() {
             transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
             style={{ transformPerspective: 1100 }}
             onClick={e => e.stopPropagation()}
-            className="h-full w-full max-w-6xl overflow-y-auto bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.7)] md:h-auto md:max-h-[92vh] md:rounded-3xl md:hairline">
-            <div className="grid md:grid-cols-[1.35fr,1fr]">
-              <div className="relative flex min-h-[52vh] max-h-[68vh] items-center justify-center bg-black md:min-h-0 md:max-h-[82vh]">
-                {art && fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} className="max-h-[68vh] w-full md:max-h-[82vh]" />
+            className="mx-auto min-h-full w-full max-w-[1500px] overflow-hidden bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.7)] md:min-h-0 md:rounded-3xl md:hairline">
+            <div className="grid md:min-h-[min(820px,calc(100dvh-3rem))] md:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
+              <div className="relative flex h-[58dvh] min-h-[380px] items-center justify-center overflow-hidden bg-black md:h-[min(820px,calc(100dvh-3rem))] md:min-h-0">
+                {art && fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} className="mx-auto max-h-full w-full" />
                   : <div className="skeleton h-[50vh] w-full" />}
               </div>
-              <div className="flex min-h-80 flex-col p-6 md:p-8">
+              <div className="flex min-h-80 flex-col p-6 pb-[max(2rem,env(safe-area-inset-bottom))] md:p-8">
                 {art && (
                   <>
                     <h2 className="font-display text-2xl font-semibold">{art.title || art.character_name}</h2>

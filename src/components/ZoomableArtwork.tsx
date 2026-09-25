@@ -13,8 +13,8 @@ export default function ZoomableArtwork({ src, previewSrc, alt, onSwipe, classNa
   const toggle=()=>{haptic();if(scale>1){setScale(1);setPoint({x:0,y:0});}else setScale(2.5);};
   const transform=`translate(${point.x}px,${point.y}px) scale(${scale})`;
   return <div className="relative h-full w-full touch-none overflow-hidden" onTouchStart={touchStart} onTouchMove={touchMove} onTouchEnd={touchEnd} onDoubleClick={toggle}>
-    {previewSrc ? <img src={previewSrc} alt="" aria-hidden="true" draggable={false} className={`${className} select-none object-contain transition-[opacity,transform] duration-300 ${loaded?"opacity-0":"opacity-100"}`} style={{transform}} /> : null}
-    <img src={src} alt={alt} draggable={false} decoding="async" fetchPriority="high" onLoad={()=>setLoadedSrc(src)} className={`${className} ${previewSrc?"absolute inset-0 mx-auto":""} select-none object-contain transition-[opacity,transform] duration-300 ${loaded||!previewSrc?"opacity-100":"opacity-0"}`} style={{transform}} />
+    {previewSrc ? <img src={previewSrc} alt="" aria-hidden="true" draggable={false} className={`${className} mx-auto block select-none object-contain transition-[opacity,transform] duration-300 ${loaded?"opacity-0":"opacity-100"}`} style={{transform}} /> : null}
+    <img src={src} alt={alt} draggable={false} decoding="async" fetchPriority="high" onLoad={()=>setLoadedSrc(src)} className={`${className} ${previewSrc?"absolute inset-0":""} mx-auto block select-none object-contain transition-[opacity,transform] duration-300 ${loaded||!previewSrc?"opacity-100":"opacity-0"}`} style={{transform}} />
     {!loaded&&previewSrc?<span className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] text-white">Loading full quality…</span>:null}
     <button type="button" onClick={toggle} className="absolute bottom-3 right-3 rounded-full bg-black/65 px-3 py-2 text-xs text-white backdrop-blur">{scale>1?"Reset":"Zoom"}</button>
     {scale>1&&<span className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] text-white">{scale.toFixed(1)}× · drag to move</span>}
