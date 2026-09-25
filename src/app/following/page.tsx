@@ -10,7 +10,7 @@ export default function FollowingPage() {
       if (d.guest) setState("guest"); else if (!(d.follows || []).length) setState("empty"); else setState("ready");
     }).catch(() => setState("guest"));
   }, []);
-  return <section className="mx-auto max-w-[1600px] px-4 pt-28 md:px-8 md:pt-32">
+  return <section className="w-full px-3 pt-28 sm:px-4 md:px-6 md:pt-32 xl:px-8">
     <h1 className="font-display text-3xl font-semibold md:text-4xl">Following</h1>
     <p className="mb-6 mt-1 text-sm text-fog">The newest artwork from characters and series you follow.</p>
     {state === "loading" && <div className="skeleton h-80 rounded-3xl" />}

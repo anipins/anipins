@@ -24,7 +24,7 @@ export default async function AnimePage(props: { params: Promise<{ slug: string 
   if (!anime) notFound();
   const [artworks, characters] = await Promise.all([getArtworkCards({ anime: params.slug, limit: 20 }), getCharactersForAnime(params.slug)]);
   return (
-    <section className="mx-auto max-w-[1600px] px-4 pt-28 md:px-8 md:pt-32">
+    <section className="w-full px-3 pt-28 sm:px-4 md:px-6 md:pt-32 xl:px-8">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Anime", href: "/anime" }, { label: anime.name }]} />
       <JsonLd data={{ "@context": "https://schema.org", "@type": "CollectionPage", name: `${anime.name} anime artwork`, url: absoluteUrl(`/anime/${params.slug}`), description: `Curated artwork from ${anime.name}.`, mainEntity: { "@type": "ItemList", itemListElement: artworks.map((art: any, index: number) => ({ "@type": "ListItem", position: index + 1, name: art.title || art.character_name, url: absoluteUrl(`/a/${art.id}`), image: absoluteUrl(`/api/img/${art.thumb}`) })) } }} />
       <p className="text-[12px] uppercase tracking-[0.25em] text-fog">Anime</p>

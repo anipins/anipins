@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function Trending() {
   const items = await getArtworkCards({ sort: "trending", limit: 20 });
   return (
-    <section className="mx-auto max-w-[1600px] px-4 md:px-8 pt-28 md:pt-32">
+    <section className="w-full px-3 pt-28 sm:px-4 md:px-6 md:pt-32 xl:px-8">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Trending" }]} />
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>

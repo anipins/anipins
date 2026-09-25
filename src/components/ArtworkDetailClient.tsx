@@ -46,7 +46,7 @@ export default function ArtworkDetailClient({ params, initialData }: { params: {
 
   const art = data?.art;
   return (
-    <section className="mx-auto max-w-[1400px] px-4 md:px-8 pt-24 md:pt-28"
+    <section className="w-full px-3 pt-24 sm:px-4 md:px-6 md:pt-28 xl:px-8"
       onTouchStart={e => (touch.current = e.touches[0].clientX)}
       onTouchEnd={e => {
         if (touch.current === null) return;

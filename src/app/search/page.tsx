@@ -7,7 +7,7 @@ function SearchInner() {
   const q = useSearchParams().get("q") || "";
   const gender = useSearchParams().get("gender") || "";
   return (
-    <section className="mx-auto max-w-[1600px] px-4 md:px-8 pt-28 md:pt-32">
+    <section className="w-full px-3 pt-28 sm:px-4 md:px-6 md:pt-32 xl:px-8">
       <h1 className="font-display text-3xl font-semibold md:text-4xl">
         {q ? <>Results for <span className="text-fog">“{q}”</span></> : "Search"}
       </h1>
