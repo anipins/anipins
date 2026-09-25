@@ -7,6 +7,7 @@ import Logo from "./Logo";
 import ThemeToggle from "./ThemeToggle";
 import NotificationBell from "./NotificationBell";
 import InstagramLink from "./InstagramLink";
+import { toast } from "./Toaster";
 
 const APP_URL = "/downloads/AniPins-2.5.15.apk";
 const APP_DOWNLOAD_KEY = "anipins-app-download-requested-v1";
@@ -17,7 +18,6 @@ const LINKS = [
   { href: "/characters", label: "Characters" },
   { href: "/anime", label: "Anime" },
   { href: "/trending", label: "Trending" },
-  { href: "/visual-search", label: "Visual Search" },
 ];
 
 export default function Navbar() {
@@ -32,6 +32,8 @@ export default function Navbar() {
   const router = useRouter();
   const path = usePathname();
   const boxRef = useRef<HTMLDivElement>(null);
+  const visualInput = useRef<HTMLInputElement>(null);
+  const [visualLoading, setVisualLoading] = useState(false);
 
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 24);
@@ -76,6 +78,26 @@ export default function Navbar() {
     setShowAppDownload(false);
   };
 
+  const visualSearch = async (file?: File) => {
+    if (!file) return;
+    setVisualLoading(true);
+    const form = new FormData();
+    form.set("image", file);
+    try {
+      const response = await fetch("/api/search/visual", { method: "POST", body: form });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Visual search failed.");
+      sessionStorage.setItem("anipins-visual-results", JSON.stringify(data.items || []));
+      router.push("/visual-search?uploaded=1");
+      setFocus(false);
+    } catch (error: any) {
+      toast(error.message || "Visual search failed.", "err");
+    } finally {
+      setVisualLoading(false);
+      if (visualInput.current) visualInput.current.value = "";
+    }
+  };
+
   return (
     <header className={`site-navbar fixed top-0 z-50 w-full transition-all duration-500 ${scrolled ? "site-navbar--scrolled glass border-b border-paper/10 pb-2" : "pb-4"}`}>
       <div className="mx-auto flex max-w-[1600px] items-center gap-2 px-3 sm:gap-4 sm:px-4 md:px-8">
@@ -107,8 +129,12 @@ export default function Navbar() {
           <form onSubmit={go}>
             <input value={q} onChange={e => setQ(e.target.value)} onFocus={() => setFocus(true)}
               placeholder="Search characters, anime, tags…"
-              className="min-h-11 w-full rounded-full bg-soft/80 hairline px-4 py-2.5 pl-9 text-sm text-paper placeholder:text-fog/60 outline-none focus:border-gold-dim transition-colors" />
+              className="min-h-11 w-full rounded-full bg-soft/80 hairline px-11 py-2.5 pl-9 text-sm text-paper placeholder:text-fog/60 outline-none focus:border-gold-dim transition-colors" />
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-fog" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" strokeLinecap="round"/></svg>
+            <input ref={visualInput} type="file" accept="image/*" className="sr-only" onChange={e=>visualSearch(e.target.files?.[0])}/>
+            <button type="button" onClick={()=>visualInput.current?.click()} disabled={visualLoading} aria-label="Search using an image" title="Search using an image" className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-fog transition-colors hover:bg-paper/5 hover:text-gold disabled:animate-pulse">
+              <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7.5h3l1.5-2h7l1.5 2h3v11H4z"/><circle cx="12" cy="13" r="3.25"/></svg>
+            </button>
           </form>
           <AnimatePresence>
             {focus && (sugs.length > 0 || recent.length > 0) && (
