@@ -64,6 +64,9 @@ export const PG_SCHEMA: string[] = [
   `CREATE TABLE IF NOT EXISTS interactions (
     id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, artwork_id INTEGER NOT NULL, kind TEXT NOT NULL,
     strength INTEGER DEFAULT 1, updated_at TIMESTAMPTZ DEFAULT now(), UNIQUE(user_id, artwork_id, kind))`,
+  `CREATE TABLE IF NOT EXISTS hidden_artworks (
+    user_id INTEGER NOT NULL, artwork_id INTEGER NOT NULL, reason TEXT DEFAULT 'not-interested',
+    created_at TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (user_id, artwork_id))`,
   `CREATE TABLE IF NOT EXISTS follows (
     id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, kind TEXT NOT NULL, value TEXT NOT NULL, label TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT now(), UNIQUE(user_id, kind, value))`,
@@ -80,6 +83,7 @@ export const PG_SCHEMA: string[] = [
     id SERIAL PRIMARY KEY, kind TEXT NOT NULL, path TEXT DEFAULT '', value INTEGER DEFAULT 0, detail TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT now())`,
   `CREATE INDEX IF NOT EXISTS idx_interactions_user ON interactions(user_id, updated_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_hidden_artworks_user ON hidden_artworks(user_id, artwork_id)`,
   `CREATE INDEX IF NOT EXISTS idx_follows_target ON follows(kind, value)`,
   `CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at, id)`,
   `CREATE INDEX IF NOT EXISTS idx_push_devices_user ON push_devices(user_id)`,
@@ -89,6 +93,7 @@ export const PG_SCHEMA: string[] = [
   `ALTER TABLE public.saves ENABLE ROW LEVEL SECURITY`,
   `ALTER TABLE public.likes ENABLE ROW LEVEL SECURITY`,
   `ALTER TABLE public.interactions ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE public.hidden_artworks ENABLE ROW LEVEL SECURITY`,
   `ALTER TABLE public.follows ENABLE ROW LEVEL SECURITY`,
   `ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY`,
   `ALTER TABLE public.content_reports ENABLE ROW LEVEL SECURITY`,
@@ -97,7 +102,7 @@ export const PG_SCHEMA: string[] = [
   `ALTER TABLE public.security_alerts ENABLE ROW LEVEL SECURITY`,
   `ALTER TABLE public.admin_audit_log ENABLE ROW LEVEL SECURITY`,
   `ALTER TABLE public.auth_identities ENABLE ROW LEVEL SECURITY`,
-  `REVOKE ALL ON TABLE public.users, public.auth_identities, public.collections, public.saves, public.likes, public.interactions, public.follows, public.notifications, public.content_reports, public.push_devices, public.login_challenges, public.security_alerts, public.admin_audit_log FROM anon, authenticated`,
+  `REVOKE ALL ON TABLE public.users, public.auth_identities, public.collections, public.saves, public.likes, public.interactions, public.hidden_artworks, public.follows, public.notifications, public.content_reports, public.push_devices, public.login_challenges, public.security_alerts, public.admin_audit_log FROM anon, authenticated`,
   `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`,
   `INSERT INTO settings (key, value) VALUES
     ('site_name','AniPins'),

@@ -49,6 +49,7 @@ export async function DELETE(req: NextRequest) {
   await run("DELETE FROM notifications WHERE user_id=?", user.id);
   await run("DELETE FROM follows WHERE user_id=?", user.id);
   await run("DELETE FROM interactions WHERE user_id=?", user.id);
+  await run("DELETE FROM hidden_artworks WHERE user_id=?", user.id);
   await run("DELETE FROM likes WHERE user_id=?", user.id);
   await run("DELETE FROM saves WHERE user_id=?", user.id);
   await run("DELETE FROM collections WHERE user_id=?", user.id);

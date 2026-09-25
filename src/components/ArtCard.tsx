@@ -8,6 +8,7 @@ import ShareMenu from "./ShareMenu";
 import Tilt from "./Tilt";
 import { toast } from "./Toaster";
 import { artworkAlt } from "@/lib/site";
+import ReportArtwork from "./ReportArtwork";
 
 export function openArtwork(id: number, art?: any) {
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("anipins:open-art", { detail: { id, art } }));
@@ -18,6 +19,11 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
   const [share, setShare] = useState(false);
   const [imageReady, setImageReady] = useState(false);
   const ratio = art.width && art.height ? art.height / art.width : 1.3;
+  const hideArtwork = async () => {
+    window.dispatchEvent(new CustomEvent("anipins:hide-art", { detail: { id: art.id } }));
+    try { await fetch("/api/hides", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artworkId: art.id }) }); } catch {}
+    toast("We’ll show fewer artworks like this");
+  };
 
   return (
     <>
@@ -51,11 +57,18 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
               <button onClick={() => setShare(true)} title="Share" className="grid h-8 w-8 place-items-center rounded-full bg-white/15 backdrop-blur hover:bg-gold hover:text-ink transition-colors">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="m8.2 10.9 7.6-3.8m-7.6 6 7.6 3.8"/></svg>
               </button>
+              <Link href={`/visual-search?artworkId=${art.id}`} title="Find visually similar artwork" className="grid h-8 w-8 place-items-center rounded-full bg-white/15 backdrop-blur hover:bg-gold hover:text-ink transition-colors">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M6.3 6.3l2.1 2.1m7.2 7.2 2.1 2.1m0-11.4-2.1 2.1m-7.2 7.2-2.1 2.1"/><circle cx="12" cy="12" r="3"/></svg>
+              </Link>
+              <button onClick={hideArtwork} title="Not interested" className="grid h-8 w-8 place-items-center rounded-full bg-white/15 backdrop-blur hover:bg-red-500/80 transition-colors">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 5l14 14M19 5 5 19"/></svg>
+              </button>
               <Link href={`/a/${art.id}`} title="Open full page" className="ml-auto grid h-8 w-8 place-items-center rounded-full bg-gold text-ink hover:bg-gold-bright transition-colors">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M7 17 17 7m0 0H9m8 0v8"/></svg>
               </Link>
             </div>
           </div>
+          <div className="absolute right-3 top-3 hidden rounded-full bg-black/65 px-2.5 py-1.5 backdrop-blur group-hover:block pointer-events-auto"><ReportArtwork artworkId={art.id} compact /></div>
         </Tilt>
       </div>
       <AnimatePresence>

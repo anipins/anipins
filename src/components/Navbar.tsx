@@ -17,6 +17,7 @@ const LINKS = [
   { href: "/characters", label: "Characters" },
   { href: "/anime", label: "Anime" },
   { href: "/trending", label: "Trending" },
+  { href: "/visual-search", label: "Visual Search" },
 ];
 
 export default function Navbar() {
@@ -114,7 +115,7 @@ export default function Navbar() {
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
                 transition={{ duration: 0.18 }}
                 className="absolute top-full mt-2 w-full overflow-hidden rounded-2xl glass hairline shadow-2xl">
-                {!q.trim() && recent.length > 0 && <div className="border-b border-paper/10 px-4 py-2 text-[10px] uppercase tracking-widest text-fog">Recent searches</div>}
+                {!q.trim() && recent.length > 0 && <div className="flex items-center justify-between border-b border-paper/10 px-4 py-2 text-[10px] uppercase tracking-widest text-fog"><span>Recent searches</span><button type="button" onClick={()=>{setRecent([]);localStorage.removeItem("anipins-recent-searches");}} className="normal-case tracking-normal hover:text-paper">Clear</button></div>}
                 {!q.trim() && recent.map((term, i) => <button key={`r-${i}`} onClick={()=>{setQ(term);router.push(`/search?q=${encodeURIComponent(term)}`);setFocus(false);}} className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-paper/5"><span className="w-16 shrink-0 text-[10px] uppercase tracking-wider text-fog">Recent</span><span>{term}</span></button>)}
                 {sugs.map((s, i) => (
                   <button key={i} onClick={() => { router.push(s.href); setFocus(false); setQ(""); }}

@@ -48,11 +48,12 @@ img, video, canvas, svg { max-width: 100%; }
 .hairline-t { border-top: 1px solid var(--hairline); }
 .gold-line { border-color: rgba(198,161,91,.35) !important; }
 
-.masonry { column-gap: 14px; column-count: 2; }
+.masonry { width: 100%; max-width: none !important; margin-inline: 0 !important; column-gap: 14px; column-count: 2; }
 @media (min-width: 640px) { .masonry { column-count: 3; } }
 @media (min-width: 1024px) { .masonry { column-count: 4; } }
-@media (min-width: 1440px) { .masonry { column-count: 5; } }
-@media (min-width: 1800px) { .masonry { column-count: 6; } }
+@media (min-width: 1360px) { .masonry { column-count: 5; } }
+@media (min-width: 1680px) { .masonry { column-count: 6; } }
+@media (min-width: 2200px) { .masonry { column-count: 7; } }
 .masonry > * { break-inside: avoid; margin-bottom: 14px; }
 .art-card { break-inside: avoid; content-visibility: auto; contain-intrinsic-size: 280px 420px; }
 .masonry > * { content-visibility: auto; contain-intrinsic-size: 280px 420px; }

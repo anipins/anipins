@@ -95,8 +95,17 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     return () => obs.disconnect();
   }, [hasMore, loading, page, initial, load]);
 
+  useEffect(() => {
+    const hide = (event: Event) => {
+      const id = Number((event as CustomEvent).detail?.id);
+      if (id) setItems(current => current.filter(item => item.id !== id));
+    };
+    window.addEventListener("anipins:hide-art", hide);
+    return () => window.removeEventListener("anipins:hide-art", hide);
+  }, []);
+
   return (
-    <div>
+    <div className="w-full max-w-none">
       {initial ? (
         <div className="masonry">
           {Array.from({ length: 8 }).map((_, i) => (

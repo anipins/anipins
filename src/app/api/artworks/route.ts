@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
   const rawSeed = parseInt(sp.get("seed") || "1", 10);
   const seed = Number.isFinite(rawSeed) && rawSeed > 0 ? rawSeed % 2_147_483_647 : 1;
   const featured = sp.get("featured");
+  const user = await getUser();
 
   let where = "published = 1";
   const args: any[] = [];
@@ -33,10 +34,10 @@ export async function GET(req: NextRequest) {
   if (category) { where += " AND category = ?"; args.push(category); }
   if (gender) { where += " AND lower(gender) = ?"; args.push(gender.toLowerCase()); }
   if (featured === "1") { where += " AND featured = 1"; }
+  if (user) { where += " AND id NOT IN (SELECT artwork_id FROM hidden_artworks WHERE user_id=?)"; args.push(user.id); }
 
   const cols = "id, title, character_name, character_slug, anime_name, anime_slug, tags, gender, category, featured, thumb, width, height, views, downloads";
   if (sort === "following") {
-    const user = await getUser();
     if (!user) return NextResponse.json({ items: [], hasMore: false, guest: true }, { headers: { "Cache-Control": "private, no-store" } });
     const followed = await rows("SELECT kind, value FROM follows WHERE user_id=?", user.id);
     if (!followed.length) return NextResponse.json({ items: [], hasMore: false, emptyFollows: true }, { headers: { "Cache-Control": "private, no-store" } });
@@ -46,11 +47,10 @@ export async function GET(req: NextRequest) {
     const followArgs: any[] = [];
     if (characterValues.length) { clauses.push(`character_slug IN (${characterValues.map(() => "?").join(",")})`); followArgs.push(...characterValues); }
     if (animeValues.length) { clauses.push(`anime_slug IN (${animeValues.map(() => "?").join(",")})`); followArgs.push(...animeValues); }
-    const items = await rows(`SELECT ${cols} FROM artworks WHERE published=1 AND (${clauses.join(" OR ")}) ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`, ...followArgs, limit + 1, page * limit);
+    const items = await rows(`SELECT ${cols} FROM artworks WHERE published=1 AND id NOT IN (SELECT artwork_id FROM hidden_artworks WHERE user_id=?) AND (${clauses.join(" OR ")}) ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`, user.id, ...followArgs, limit + 1, page * limit);
     return NextResponse.json({ items: clientItems(items.slice(0, limit)), hasMore: items.length > limit }, { headers: { "Cache-Control": "private, no-store" } });
   }
   if (sort === "for-you") {
-    const user = await getUser();
     if (user) {
       const signals = await rows(
         `SELECT i.kind, i.strength, a.character_slug, a.anime_slug, a.gender, a.category

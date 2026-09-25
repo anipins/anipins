@@ -134,6 +134,14 @@ CREATE TABLE IF NOT EXISTS interactions (
   updated_at TEXT DEFAULT (datetime('now')),
   UNIQUE(user_id, artwork_id, kind)
 );
+CREATE TABLE IF NOT EXISTS hidden_artworks (
+  user_id INTEGER NOT NULL,
+  artwork_id INTEGER NOT NULL,
+  reason TEXT DEFAULT 'not-interested',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  PRIMARY KEY (user_id, artwork_id)
+);
+CREATE INDEX IF NOT EXISTS idx_hidden_artworks_user ON hidden_artworks(user_id, artwork_id);
 CREATE INDEX IF NOT EXISTS idx_interactions_user ON interactions(user_id, updated_at);
 CREATE INDEX IF NOT EXISTS idx_interactions_artwork ON interactions(artwork_id);
 CREATE TABLE IF NOT EXISTS follows (
