@@ -116,16 +116,16 @@ export default function Navbar() {
         )}
         <Logo responsive />
         <nav className="hidden lg:flex items-center gap-1 ml-4">
-          {LINKS.map(l => (
+          {LINKS.map((l, index) => (
             <Link key={l.href} href={l.href}
-              className={`relative rounded-full px-4 py-2 text-sm transition-colors ${path === l.href ? "text-gold" : "text-fog hover:text-paper hover:bg-paper/5"}`}>
+              className={`relative rounded-full px-3 py-2 text-sm transition-colors ${index >= 3 ? "hidden min-[1800px]:block" : ""} ${path === l.href ? "text-gold" : "text-fog hover:text-paper hover:bg-paper/5"}`}>
               {l.label}
               {path === l.href && <span className="absolute inset-x-4 -bottom-0.5 h-px bg-gold/70" />}
             </Link>
           ))}
         </nav>
 
-        <div ref={boxRef} className="relative ml-auto min-w-0 flex-1 md:max-w-sm">
+        <div ref={boxRef} className="relative ml-auto min-w-0 flex-1 lg:min-w-[260px] lg:max-w-sm">
           <form onSubmit={go}>
             <input value={q} onChange={e => setQ(e.target.value)} onFocus={() => setFocus(true)}
               placeholder="Search characters, anime, tags…"
@@ -177,12 +177,12 @@ export default function Navbar() {
                 <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-soft text-xs font-semibold text-gold hairline">
                   {user.avatar ? <img src={`/api/img/${user.avatar}`} alt="" className="h-full w-full object-cover" /> : (user.nickname || user.name || user.email || "A").slice(0, 1).toUpperCase()}
                 </span>
-                <span className="max-w-24 truncate">{user.nickname || user.name || "Profile"}</span>
+                <span className="hidden max-w-24 truncate min-[1800px]:block">{user.nickname || user.name || "Profile"}</span>
               </Link>
-              <Link href="/saves" className="rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors">Saves</Link>
+              <Link href="/saves" className="hidden rounded-full px-3 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors min-[1650px]:block">Saves</Link>
               {user.role === "ADMIN" && (
                 <Link href="/admin" className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors">
-                  AniPins Admin <span className="badge-gold !px-2 !py-0.5">Owner</span>
+                  <span className="hidden min-[1450px]:inline">AniPins </span>Admin <span className="badge-gold !hidden !px-2 !py-0.5 min-[1800px]:!inline-flex">Owner</span>
                 </Link>
               )}
               <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }}
