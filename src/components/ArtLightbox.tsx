@@ -148,7 +148,7 @@ export default function ArtLightbox() {
               <section className="border-t border-paper/10 p-5 md:p-8">
                 <h3 className="font-display text-xl font-semibold">More to explore</h3>
                 <p className="mt-1 text-xs text-fog">Fresh picks from every series—choose any image to continue.</p>
-                <div className="mt-5"><MasonryFeed query={{ sort: "random" }} randomize initialItems={data.related} initialHasMore /></div>
+                <div className="mt-5"><MasonryFeed key={art.id} query={{ sort: "random" }} randomize initialItems={data.related} initialHasMore /></div>
               </section>
             )}
           </motion.div>

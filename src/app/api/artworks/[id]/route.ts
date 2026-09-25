@@ -26,12 +26,11 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       `SELECT id, title, character_name, character_slug, anime_name, anime_slug, gender, category, thumb, width, height
        FROM artworks
        WHERE published=1 AND id != ?
-         AND (character_slug = ? OR anime_slug = ?)
        ORDER BY
-         CASE WHEN character_slug = ? THEN 0 ELSE 1 END,
-         views DESC, id DESC
+         CASE WHEN character_slug = ? THEN 0 WHEN anime_slug = ? THEN 1 ELSE 2 END,
+         ((CAST(id AS BIGINT) * ?) % 2147483647), id
        LIMIT 36`,
-      id, art.character_slug || "", art.anime_slug || "", art.character_slug || "",
+      id, art.character_slug || "", art.anime_slug || "", discoveryMultiplier,
     ),
     row(
       `SELECT MAX(CASE WHEN id < ? THEN id END) AS prev_id,
