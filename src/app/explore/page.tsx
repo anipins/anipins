@@ -12,7 +12,7 @@ function ExploreInner() {
   if (category) query.category = category;
   const title = category || (sort ? sort.charAt(0).toUpperCase() + sort.slice(1) : "Explore");
   return (
-    <section className="mx-auto max-w-[1600px] px-4 md:px-8 pt-28 md:pt-32">
+    <section className="w-full px-3 pt-28 sm:px-4 md:px-6 md:pt-32 xl:px-8">
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="font-display text-3xl font-semibold md:text-4xl">{title}</h1>
