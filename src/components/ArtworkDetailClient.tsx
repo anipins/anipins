@@ -16,7 +16,6 @@ const IG_URL = "https://www.instagram.com/_anipinss_/";
 
 export default function ArtworkDetailClient({ params, initialData }: { params: { id: string }; initialData: any }) {
   const [data, setData] = useState<any>(initialData);
-  const [notFound, setNotFound] = useState(false);
   const [save, setSave] = useState(false);
   const [share, setShare] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -25,7 +24,10 @@ export default function ArtworkDetailClient({ params, initialData }: { params: {
   const touch = useRef<number | null>(null);
 
   useEffect(() => {
-    fetch(`/api/artworks/${params.id}`).then(r => r.ok ? r.json() : Promise.reject()).then((d) => { setData(d); setLiked(!!d.liked); setLikeCount(d.likeCount || 0); }).catch(() => setNotFound(true));
+    const controller = new AbortController();
+    setData(initialData);
+    fetch(`/api/artworks/${params.id}`, { signal: controller.signal }).then(r => r.ok ? r.json() : Promise.reject()).then((d) => { setData(d); setLiked(!!d.liked); setLikeCount(d.likeCount || 0); }).catch(() => { /* Keep valid server-rendered content on transient network errors. */ });
+    return () => controller.abort();
   }, [params.id]);
 
   const nav = useCallback((dir: "prev" | "next") => {
@@ -42,7 +44,6 @@ export default function ArtworkDetailClient({ params, initialData }: { params: {
     return () => window.removeEventListener("keydown", h);
   }, [nav]);
 
-  if (notFound) return <div className="pt-40 text-center text-fog">Artwork not found. <Link className="underline" href="/explore">Back to Explore</Link></div>;
 
   const art = data?.art;
   return (
@@ -58,7 +59,7 @@ export default function ArtworkDetailClient({ params, initialData }: { params: {
         <div className="grid gap-8 md:grid-cols-[1.2fr,1fr]"><div className="skeleton h-[70vh] rounded-3xl" /><div className="space-y-4"><div className="skeleton h-10 w-2/3 rounded-lg" /><div className="skeleton h-6 w-1/3 rounded-lg" /><div className="skeleton h-24 rounded-lg" /></div></div>
       ) : (
         <AnimatePresence mode="wait">
-          <motion.div key={art.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+          <motion.div key={art.id} initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="grid gap-8 lg:grid-cols-[1.15fr,1fr]">
             <div className="relative">
               <div className="overflow-hidden rounded-3xl hairline bg-soft">

@@ -21,6 +21,7 @@ export default function Footer() {
             <div className="flex flex-col gap-2.5">
               <span className="text-[11px] uppercase tracking-widest text-gold/70 mb-1">Browse</span>
               <Link href="/explore" className="text-fog hover:text-paper transition-colors">Explore</Link>
+              <Link href="/gallery" className="text-fog hover:text-paper transition-colors">All artwork</Link>
               <Link href="/characters" className="text-fog hover:text-paper transition-colors">Characters</Link>
               <Link href="/anime" className="text-fog hover:text-paper transition-colors">Anime</Link>
               <InstagramLink className="text-fog hover:text-paper transition-colors">Instagram</InstagramLink>
