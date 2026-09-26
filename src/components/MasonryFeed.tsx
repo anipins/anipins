@@ -130,6 +130,6 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       : <div className="masonry">{items.map((art, index) => <ArtCard key={art.id} art={art} index={index} />)}</div>}
     <div ref={sentinel} className="h-10" aria-hidden="true" />
     {loading && !initial && <div className="py-6 text-center text-sm text-fog">Loading more artwork…</div>}
-    {(loadError || (hasMore && !loading)) && <div className="py-5 text-center"><button type="button" className="chip" onClick={loadNext}>{loadError ? "Retry loading artwork" : "Load more artwork"}</button></div>}
+    {loadError && !loading && <div className="py-5 text-center"><button type="button" className="chip" onClick={loadNext}>Retry loading artwork</button></div>}
   </div>;
 }
