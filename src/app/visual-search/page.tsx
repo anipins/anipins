@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ArtCard from "@/components/ArtCard";
 
-export default function VisualSearchPage() {
+function VisualSearchContent() {
   const params = useSearchParams();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -24,4 +24,8 @@ export default function VisualSearchPage() {
     <div className="mx-auto mb-8 max-w-2xl text-center"><span className="badge-gold">Visual search</span><h1 className="mt-4 font-display text-3xl font-semibold md:text-5xl">Find artwork that looks similar</h1><p className="mt-3 text-fog">Choose an image to find the closest visual matches already on AniPins. Your image is analyzed temporarily and is not saved.</p><label className="btn-primary mt-6 cursor-pointer"><input type="file" accept="image/*" className="sr-only" onChange={e=>upload(e.target.files?.[0])}/>{loading ? "Searching…" : "Choose an image"}</label>{error && <p className="mt-4 text-sm text-red-400">{error}</p>}</div>
     {!!items.length && <><p className="mb-4 text-sm text-fog">Closest matches</p><div className="masonry">{items.map((art, index)=><ArtCard key={art.id} art={art} index={index}/>)}</div></>}
   </section>;
+}
+
+export default function VisualSearchPage() {
+  return <Suspense fallback={<main className="min-h-[70vh] pt-28" />}><VisualSearchContent /></Suspense>;
 }
