@@ -22,7 +22,10 @@ export default async function AnimePage(props: { params: Promise<{ slug: string 
   const params = await props.params;
   const anime = await getAnimeBySlug(params.slug);
   if (!anime) notFound();
-  const [artworks, characters] = await Promise.all([getArtworkCards({ anime: params.slug, limit: 36 }), getCharactersForAnime(params.slug)]);
+  // Collection pages are naturally bounded (for example Fire Force has 41
+  // artworks). Render the complete collection on the server so a visitor is
+  // never left waiting for a second scrolling request for the final items.
+  const [artworks, characters] = await Promise.all([getArtworkCards({ anime: params.slug, limit: 2000 }), getCharactersForAnime(params.slug)]);
   return (
     <section className="w-full px-3 pt-28 sm:px-4 md:px-6 md:pt-32 xl:px-8">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Anime", href: "/anime" }, { label: anime.name }]} />
@@ -31,7 +34,7 @@ export default async function AnimePage(props: { params: Promise<{ slug: string 
       <h1 className="mt-1 font-display text-4xl font-semibold md:text-5xl">{anime.name}</h1>
       <div className="mt-3 flex flex-wrap items-center gap-3"><p className="text-sm text-fog">{anime.count} artworks · {anime.characters} characters</p><FollowButton kind="anime" value={params.slug} label={anime.name} /></div>
       {characters.length ? <div className="mt-5 flex flex-wrap items-center gap-2"><span className="mr-1 text-xs text-fog">Characters:</span>{characters.map((item: any) => <Link key={item.slug} href={`/c/${item.slug}`} className="chip">{item.name}</Link>)}</div> : null}
-      <div className="mt-8"><MasonryFeed query={{ anime: params.slug }} initialItems={artworks} initialHasMore={artworks.length === 36} /></div>
+      <div className="mt-8"><MasonryFeed query={{ anime: params.slug }} initialItems={artworks} initialHasMore={false} /></div>
     </section>
   );
 }
