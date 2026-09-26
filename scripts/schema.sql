@@ -170,5 +170,5 @@ CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
 INSERT OR IGNORE INTO settings (key, value) VALUES
  ('site_name','AniPins'),
  ('tagline','Anime artwork for inspiration.'),
- ('instagram_handle','@_anipins_'),
- ('instagram_url','https://www.instagram.com/_anipins_?igsi=dzZzem42bnBha3Y=');
+ ('instagram_handle','@anipins.art'),
+ ('instagram_url','https://www.instagram.com/anipins.art/');

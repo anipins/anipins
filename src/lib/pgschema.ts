@@ -107,7 +107,7 @@ export const PG_SCHEMA: string[] = [
   `INSERT INTO settings (key, value) VALUES
     ('site_name','AniPins'),
     ('tagline','Anime artwork for inspiration.'),
-    ('instagram_handle','@_anipinss_'),
-    ('instagram_url','https://www.instagram.com/_anipinss_/')
+    ('instagram_handle','@anipins.art'),
+    ('instagram_url','https://www.instagram.com/anipins.art/')
    ON CONFLICT (key) DO NOTHING`,
 ];

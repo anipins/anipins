@@ -167,7 +167,7 @@ export default function Navbar() {
 </a>}
           <ThemeToggle />
           <NotificationBell />
-          <InstagramLink title="Instagram — @_anipinss_"
+          <InstagramLink title="Instagram — @anipins.art"
             className="rounded-full p-2.5 text-fog hover:text-gold hover:bg-paper/5 transition-colors">
             <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>
           </InstagramLink>
@@ -221,7 +221,7 @@ export default function Navbar() {
 </a>}
               <ThemeToggle mobile />
               <div className="py-1"><NotificationBell /></div>
-              <InstagramLink className="py-2.5 text-[15px] text-fog hover:text-gold">Instagram — @_anipinss_</InstagramLink>
+              <InstagramLink className="py-2.5 text-[15px] text-fog hover:text-gold">Instagram — @anipins.art</InstagramLink>
               {user ? (
                 <>
                   <Link href="/profile" className="flex items-center gap-3 py-2.5 text-[15px] text-fog hover:text-paper">

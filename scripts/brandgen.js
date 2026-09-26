@@ -64,7 +64,7 @@ async function makeTransparent(size) {
       <clipPath id="r"><rect x="10" y="10" width="100" height="100" rx="24"/></clipPath>
       <image x="10" y="10" width="100" height="100" clip-path="url(#r)" href="data:image/png;base64,${sym.toString("base64")}"/>
       <text x="130" y="72" font-family="Georgia, 'Times New Roman', serif" font-size="46" font-weight="700" fill="${textColor}">Ani<tspan fill="#C6A15B">Pins</tspan></text>
-      <text x="132" y="98" font-family="Arial, Helvetica, sans-serif" font-size="15" letter-spacing="6" fill="${subColor}">@_anipins_</text>
+      <text x="132" y="98" font-family="Arial, Helvetica, sans-serif" font-size="15" letter-spacing="6" fill="${subColor}">@anipins.art</text>
     </svg>`;
   fs.writeFileSync(path.join(BRAND, "logo-horizontal-dark.svg"), lock("#F5F0E6", "#8a8a8a"));
   fs.writeFileSync(path.join(BRAND, "logo-horizontal-light.svg"), lock("#111111", "#666666"));
@@ -79,7 +79,7 @@ async function makeTransparent(size) {
     </radialGradient></defs>
     <text x="560" y="290" font-family="Georgia, serif" font-size="92" font-weight="700" fill="#F5F0E6">Ani<tspan fill="#C6A15B">Pins</tspan></text>
     <text x="565" y="352" font-family="Arial, sans-serif" font-size="30" fill="#9a9a9a">Premium anime artwork · Discover &amp; download</text>
-    <text x="565" y="412" font-family="Arial, sans-serif" font-size="26" letter-spacing="4" fill="#C6A15B">@_anipins_</text>
+    <text x="565" y="412" font-family="Arial, sans-serif" font-size="26" letter-spacing="4" fill="#C6A15B">@anipins.art</text>
     <rect x="565" y="440" width="120" height="3" fill="#C6A15B" opacity="0.6"/>
   </svg>`);
   await sharp(ogText).composite([{ input: ogLogo, left: 90, top: 100 }]).png().toFile(path.join(BRAND, "og-image.png"));
@@ -93,7 +93,7 @@ async function makeTransparent(size) {
     </radialGradient></defs>
     <rect width="1080" height="1920" fill="url(#g)"/>
     <text x="540" y="1210" text-anchor="middle" font-family="Georgia, serif" font-size="88" font-weight="700" fill="#F5F0E6">Ani<tspan fill="#C6A15B">Pins</tspan></text>
-    <text x="540" y="1280" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" letter-spacing="8" fill="#9a9a9a">@_anipins_</text>
+    <text x="540" y="1280" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" letter-spacing="8" fill="#9a9a9a">@anipins.art</text>
   </svg>`);
   await sharp(stBg).composite([{ input: stLogo, left: 220, top: 420 }]).png().toFile(path.join(BRAND, "instagram-story-template.png"));
 
