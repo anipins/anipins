@@ -34,12 +34,12 @@ export default async function Home() {
       <section className="w-full px-3 pt-12 sm:px-4 md:px-6 xl:px-8">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <div className="flex items-center gap-3"><span className="badge-gold">Personalized</span><h2 className="font-display text-2xl font-semibold md:text-3xl">For You</h2></div>
-            <p className="mt-1 text-sm text-fog">Artwork shaped by what you open, like, save and download.</p>
+            <div className="flex items-center gap-3"><span className="badge-gold">Latest</span><h2 className="font-display text-2xl font-semibold md:text-3xl">Discover artwork</h2></div>
+            <p className="mt-1 text-sm text-fog">Fresh anime artwork, continuously loaded as you explore.</p>
           </div>
           <FilterChips />
         </div>
-        <MasonryFeed query={{ sort: "for-you" }} randomize initialItems={latest} initialHasMore={latest.length === 36} />
+        <MasonryFeed query={{ sort: "latest" }} initialItems={latest} initialHasMore={latest.length === 36} />
       </section>
       <section className="w-full px-3 py-12 sm:px-4 md:px-6 xl:px-8" aria-labelledby="browse-anipins">
         <h2 id="browse-anipins" className="font-display text-2xl font-semibold md:text-3xl">Browse anime art by series and character</h2>
