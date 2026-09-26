@@ -20,7 +20,12 @@ export async function GET(req: NextRequest) {
   const rawSeed = parseInt(sp.get("seed") || "1", 10);
   const seed = Number.isFinite(rawSeed) && rawSeed > 0 ? rawSeed % 2_147_483_647 : 1;
   const featured = sp.get("featured");
-  const user = await getUser();
+  // Browse feeds must stay independent of an account session. Resolving a
+  // session and hidden-items query for every scroll request made authenticated
+  // browsing slower and could stall the complete feed. Account data is only
+  // needed for Following and the optional For You route.
+  const needsUser = sort === "following" || sort === "for-you";
+  const user = needsUser ? await getUser() : null;
 
   let where = "published = 1";
   const args: any[] = [];
@@ -34,7 +39,6 @@ export async function GET(req: NextRequest) {
   if (category) { where += " AND category = ?"; args.push(category); }
   if (gender) { where += " AND lower(gender) = ?"; args.push(gender.toLowerCase()); }
   if (featured === "1") { where += " AND featured = 1"; }
-  if (user) { where += " AND id NOT IN (SELECT artwork_id FROM hidden_artworks WHERE user_id=?)"; args.push(user.id); }
 
   const cols = "id, title, character_name, character_slug, anime_name, anime_slug, tags, gender, category, featured, thumb, width, height, views, downloads";
   if (sort === "following") {
