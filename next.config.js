@@ -17,6 +17,8 @@ module.exports = {
     ];
     return [
       { source: "/:path*", headers: securityHeaders },
+      { source: "/favicon.png", headers: [{ key: "Cache-Control", value: "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800" }] },
+      { source: "/brand/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800" }] },
       ...privateRoutes.map(source => ({ source, headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }] })),
     ];
   }

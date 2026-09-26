@@ -23,7 +23,14 @@ export const metadata: Metadata = {
   description: "Anime artwork curated for inspiration. Discover, save, share and download high-quality anime character art.",
   applicationName: SITE_NAME,
   verification: process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : undefined,
-  icons: { icon: "/favicon.png", apple: "/brand/ap-symbol-192.png" },
+  icons: {
+    icon: [
+      { url: "/favicon.png", type: "image/png", sizes: "512x512" },
+      { url: "/brand/ap-symbol-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    shortcut: "/favicon.png",
+    apple: [{ url: "/brand/ap-symbol-192.png", sizes: "192x192", type: "image/png" }],
+  },
   openGraph: {
     title: "AniPins — Discover, Save and Download Anime Artwork",
     description: "Anime artwork curated for inspiration.",

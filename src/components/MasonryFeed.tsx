@@ -18,13 +18,15 @@ function shuffled(items: any[]) {
 const memoryCache = new Map<string, { items: any[]; hasMore: boolean; savedAt: number }>();
 const CACHE_TTL = 2 * 60 * 1000;
 
-export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true }: { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean }) {
+export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, eagerLoad = false }: { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean }) {
   const [items, setItems] = useState<any[]>(initialItems);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [initial, setInitial] = useState(initialItems.length === 0);
   const sentinel = useRef<HTMLDivElement>(null);
+  const inFlight = useRef(new Set<string>());
   const randomSeed = useRef(createFeedSeed());
   const key = JSON.stringify(query);
 
@@ -34,8 +36,9 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     if (randomize && initialItems.length > 1) setItems(shuffled(initialItems));
   }, [randomize, initialItems]);
 
-  const load = useCallback(async (p: number, reset: boolean, forceFresh = false) => {
+  const load = useCallback(async (p: number, reset: boolean, forceFresh = false, silent = false) => {
     const requestKey = `${key}:${randomize ? randomSeed.current : "fixed"}:${p}`;
+    if (inFlight.current.has(requestKey)) return;
     const cached = !forceFresh ? memoryCache.get(requestKey) : undefined;
     if (cached && Date.now() - cached.savedAt < CACHE_TTL) {
       setItems(prev => reset ? cached.items : [...prev, ...cached.items.filter(item => !prev.some(existing => existing.id === item.id))]);
@@ -43,7 +46,9 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       setInitial(false);
       return;
     }
-    setLoading(true);
+    inFlight.current.add(requestKey);
+    if (!silent) setLoading(true);
+    setLoadError(false);
     const sp = new URLSearchParams({ ...query, page: String(p), limit: "20" });
     if (randomize) {
       if (!sp.has("sort")) sp.set("sort", "random");
@@ -61,14 +66,26 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       });
       setHasMore(d.hasMore);
       setInitial(false);
+    } catch {
+      if (!silent) setLoadError(true);
     } finally {
-      setLoading(false);
+      inFlight.current.delete(requestKey);
+      if (!silent) setLoading(false);
     }
   }, [key, randomize]);
 
   useEffect(() => {
     if (initialItems.length === 0) load(0, true);
   }, [load, initialItems.length]);
+
+  // Detail pages arrive with 36 server-rendered recommendations. Fetch the
+  // first independent discovery batch in the background so more cards are
+  // already present before a fast scroller reaches the sentinel.
+  useEffect(() => {
+    if (!eagerLoad || initialItems.length === 0) return;
+    const timer = window.setTimeout(() => load(0, false, false, true), 150);
+    return () => window.clearTimeout(timer);
+  }, [eagerLoad, initialItems.length, load]);
 
   useEffect(() => {
     const refresh = () => {
@@ -121,6 +138,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       )}
       <div ref={sentinel} className="h-8" />
       {loading && !initial && <div className="py-6 text-center text-sm text-fog">Loading more…</div>}
+      {loadError && !loading && <div className="py-5 text-center"><button type="button" className="chip" onClick={() => load(page, false, true)}>Retry loading more</button></div>}
     </div>
   );
 }
