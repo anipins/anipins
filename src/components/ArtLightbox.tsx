@@ -19,6 +19,8 @@ export default function ArtLightbox() {
   const [share, setShare] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [detailError, setDetailError] = useState(false);
+  const [detailRetry, setDetailRetry] = useState(0);
   const touch = useRef<number | null>(null);
   const panel = useRef<HTMLDivElement>(null);
 
@@ -38,14 +40,19 @@ export default function ArtLightbox() {
     setData(null);
     setLiked(false);
     setLikeCount(0);
+    setDetailError(false);
     setSave(false);
     setShare(false);
     panel.current?.scrollTo({ top: 0 });
     fetch(`/api/artworks/${id}`, { signal: controller.signal }).then(r => r.ok ? r.json() : Promise.reject()).then(d => {
       setData(d); setLiked(d.liked); setLikeCount(d.likeCount);
-    }).catch(error => { if (error?.name !== "AbortError") setId(null); });
+    }).catch(error => {
+      // Keep the preview open if a transient request fails. Closing the artwork
+      // made valid cards look broken even though their image was already loaded.
+      if (error?.name !== "AbortError") setDetailError(true);
+    });
     return () => controller.abort();
-  }, [id]);
+  }, [id, detailRetry]);
 
   const nav = useCallback((dir: "prev" | "next") => {
     const nid = dir === "prev" ? data?.prevId : data?.nextId;
@@ -110,6 +117,7 @@ export default function ArtLightbox() {
                   : <div className="skeleton h-[50vh] w-full" />}
               </div>
               <div className="flex min-h-80 flex-col p-6 pb-[max(2rem,env(safe-area-inset-bottom))] md:p-8">
+                {detailError && <div className="mb-4 rounded-xl border border-gold/30 bg-gold/10 p-3 text-sm text-paper">Artwork details are taking longer than usual. <button type="button" onClick={() => setDetailRetry(value => value + 1)} className="ml-2 text-gold underline underline-offset-4">Retry</button></div>}
                 {art && (
                   <>
                     <h2 className="font-display text-2xl font-semibold">{art.title || art.character_name}</h2>

@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 const getHomeData = unstable_cache(
   () => Promise.all([
     getArtworkCards({ sort: "featured", limit: 8 }),
-    getArtworkCards({ sort: "latest", limit: 20 }),
+    getArtworkCards({ sort: "latest", limit: 36 }),
     getAnime(),
     getCharacters(),
   ]),
@@ -39,7 +39,7 @@ export default async function Home() {
           </div>
           <FilterChips />
         </div>
-        <MasonryFeed query={{ sort: "for-you" }} randomize initialItems={latest} initialHasMore={latest.length === 20} />
+        <MasonryFeed query={{ sort: "for-you" }} randomize initialItems={latest} initialHasMore={latest.length === 36} />
       </section>
       <section className="w-full px-3 py-12 sm:px-4 md:px-6 xl:px-8" aria-labelledby="browse-anipins">
         <h2 id="browse-anipins" className="font-display text-2xl font-semibold md:text-3xl">Browse anime art by series and character</h2>

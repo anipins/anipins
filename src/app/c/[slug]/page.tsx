@@ -29,7 +29,7 @@ export default async function CharacterPage(props: { params: Promise<{ slug: str
   const character = await getCharacter(params.slug);
   if (!character) notFound();
   const [artworks, related] = await Promise.all([
-    getArtworkCards({ character: params.slug, limit: 20 }),
+    getArtworkCards({ character: params.slug, limit: 36 }),
     getCharactersForAnime(character.anime_slug),
   ]);
   return (
@@ -40,7 +40,7 @@ export default async function CharacterPage(props: { params: Promise<{ slug: str
       <h1 className="mt-1 font-display text-4xl font-semibold md:text-5xl">{character.name}</h1>
       <div className="mt-3 flex flex-wrap items-center gap-3"><p className="text-sm text-fog"><Link href={`/anime/${character.anime_slug}`} className="underline decoration-white/20 underline-offset-4 hover:text-paper">{character.anime}</Link> · {character.count} artwork{character.count > 1 ? "s" : ""}</p><FollowButton kind="character" value={params.slug} label={character.name} /></div>
       {related.length > 1 ? <div className="mt-5 flex flex-wrap items-center gap-2"><span className="mr-1 text-xs text-fog">Related:</span>{related.filter((item: any) => item.slug !== params.slug).slice(0, 8).map((item: any) => <Link key={item.slug} href={`/c/${item.slug}`} className="chip">{item.name}</Link>)}</div> : null}
-      <div className="mt-8"><MasonryFeed query={{ character: params.slug }} initialItems={artworks} initialHasMore={artworks.length === 20} /></div>
+      <div className="mt-8"><MasonryFeed query={{ character: params.slug }} initialItems={artworks} initialHasMore={artworks.length === 36} /></div>
     </section>
   );
 }

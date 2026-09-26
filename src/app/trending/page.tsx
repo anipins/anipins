@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Trending Anime Artwork", description
 export const dynamic = "force-dynamic";
 
 export default async function Trending() {
-  const items = await getArtworkCards({ sort: "trending", limit: 20 });
+  const items = await getArtworkCards({ sort: "trending", limit: 36 });
   return (
     <section className="w-full px-3 pt-28 sm:px-4 md:px-6 md:pt-32 xl:px-8">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Trending" }]} />
@@ -19,7 +19,7 @@ export default async function Trending() {
         </div>
         <FilterChips />
       </div>
-      <MasonryFeed query={{ sort: "trending" }} initialItems={items} initialHasMore={items.length === 20} />
+      <MasonryFeed query={{ sort: "trending" }} initialItems={items} initialHasMore={items.length === 36} />
     </section>
   );
 }

@@ -48,7 +48,9 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     inFlight.current = true;
     if (!silent) setLoading(true);
     setLoadError(false);
-    const params = new URLSearchParams({ ...queryRef.current, page: String(page), limit: "20" });
+    // 36 is large enough to keep scrolling continuous, while pagination keeps
+    // the first render and each network request lightweight.
+    const params = new URLSearchParams({ ...queryRef.current, page: String(page), limit: "36" });
     if (randomize) { if (!params.has("sort")) params.set("sort", "random"); params.set("seed", String(randomSeed.current)); }
     try {
       let data: any;
