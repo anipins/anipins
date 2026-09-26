@@ -20,7 +20,7 @@ const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-grotesk" }
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: { default: "AniPins — Discover, Save and Download Anime Artwork", template: "%s | AniPins" },
-  description: "Anime artwork curated for inspiration. Discover, save, share and download high-quality anime character art.",
+  description: "Anime artwork references for sketching, character study and creative inspiration. Discover, save, share and download high-quality anime character art.",
   applicationName: SITE_NAME,
   verification: process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : undefined,
   icons: {
@@ -33,13 +33,13 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "AniPins — Discover, Save and Download Anime Artwork",
-    description: "Anime artwork curated for inspiration.",
+    description: "Anime artwork references for sketching, character study and creative inspiration.",
     images: ["/brand/og-image.png"],
     siteName: SITE_NAME,
     type: "website",
     url: "/",
   },
-  twitter: { card: "summary_large_image", title: "AniPins — Anime Artwork", description: "Discover, save and download high-quality anime character art.", images: ["/brand/og-image.png"] },
+  twitter: { card: "summary_large_image", title: "AniPins — Anime Artwork References", description: "Discover, save and download anime artwork references for sketching and creative inspiration.", images: ["/brand/og-image.png"] },
 };
 
 export const viewport: Viewport = {

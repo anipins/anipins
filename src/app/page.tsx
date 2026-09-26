@@ -29,13 +29,13 @@ export default async function Home() {
   const [featured, latest, anime, characters] = await getHomeData();
   return (
     <div className="pt-28 md:pt-32">
-      <JsonLd data={{ "@context": "https://schema.org", "@type": "CollectionPage", name: "AniPins anime artwork", url: getSiteUrl(), description: "Discover, save and download curated anime character artwork.", numberOfItems: latest.length }} />
+      <JsonLd data={{ "@context": "https://schema.org", "@type": "CollectionPage", name: "AniPins anime artwork references", url: getSiteUrl(), description: "Discover, save and download curated anime character artwork references for drawing inspiration.", numberOfItems: latest.length }} />
       <FeaturedSlider initialArts={featured} />
       <section className="w-full px-3 pt-12 sm:px-4 md:px-6 xl:px-8">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="flex items-center gap-3"><span className="badge-gold">Latest</span><h2 className="font-display text-2xl font-semibold md:text-3xl">Discover artwork</h2></div>
-            <p className="mt-1 text-sm text-fog">Fresh anime artwork, continuously loaded as you explore.</p>
+            <p className="mt-1 text-sm text-fog">Anime artwork references for sketching, character study and creative inspiration—continuously loaded as you explore.</p>
           </div>
           <FilterChips />
         </div>
@@ -43,7 +43,7 @@ export default async function Home() {
       </section>
       <section className="w-full px-3 py-12 sm:px-4 md:px-6 xl:px-8" aria-labelledby="browse-anipins">
         <h2 id="browse-anipins" className="font-display text-2xl font-semibold md:text-3xl">Browse anime art by series and character</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-fog">Explore AniPins collections with direct links to artwork from popular anime series and characters. New uploads appear automatically in every collection.</p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-fog">Explore AniPins collections for anime sketch references, character study and creative inspiration, with direct links to artwork from popular series and characters. New uploads appear automatically in every collection.</p>
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           <div className="rounded-2xl bg-soft p-5 hairline">
             <h3 className="font-display text-lg font-semibold">Popular anime series</h3>
