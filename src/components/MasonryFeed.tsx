@@ -99,6 +99,25 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     return () => observer.disconnect();
   }, [loadNext]);
   useEffect(() => {
+    // Some mobile WebViews do not reliably notify IntersectionObserver after
+    // masonry images change height. Keep the observer for efficient browsers,
+    // but use the document scroll position as a dependable fallback.
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const remaining = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
+        if (remaining < 1200) loadNext();
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    onScroll();
+    return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); };
+  }, [loadNext]);
+  useEffect(() => {
     const hide = (event: Event) => { const id = Number((event as CustomEvent).detail?.id); if (id) setItems(current => current.filter(item => item.id !== id)); };
     window.addEventListener("anipins:hide-art", hide);
     return () => window.removeEventListener("anipins:hide-art", hide);
@@ -110,6 +129,6 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       : <div className="masonry">{items.map((art, index) => <ArtCard key={art.id} art={art} index={index} />)}</div>}
     <div ref={sentinel} className="h-10" aria-hidden="true" />
     {loading && !initial && <div className="py-6 text-center text-sm text-fog">Loading more artwork…</div>}
-    {loadError && !loading && <div className="py-5 text-center"><button type="button" className="chip" onClick={loadNext}>Retry loading artwork</button></div>}
+    {(loadError || (hasMore && !loading)) && <div className="py-5 text-center"><button type="button" className="chip" onClick={loadNext}>{loadError ? "Retry loading artwork" : "Load more artwork"}</button></div>}
   </div>;
 }
