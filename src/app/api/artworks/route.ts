@@ -16,6 +16,8 @@ export async function GET(req: NextRequest) {
   const anime = sp.get("anime") || "";
   const category = sp.get("category") || "";
   const gender = sp.get("gender") || "";
+  const wallpaper = sp.get("wallpaper") === "1";
+  const orientation = sp.get("orientation") || "";
   const sort = sp.get("sort") || "latest";
   const rawSeed = parseInt(sp.get("seed") || "1", 10);
   const seed = Number.isFinite(rawSeed) && rawSeed > 0 ? rawSeed % 2_147_483_647 : 1;
@@ -38,6 +40,14 @@ export async function GET(req: NextRequest) {
   if (anime) { where += " AND anime_slug = ?"; args.push(anime); }
   if (category) { where += " AND category = ?"; args.push(category); }
   if (gender) { where += " AND lower(gender) = ?"; args.push(gender.toLowerCase()); }
+  // Wallpaper is a deliberate publishing category. Do not treat every
+  // portrait artwork as a wallpaper: that would make this section misleading.
+  if (wallpaper) {
+    where += " AND (lower(category) = 'wallpapers' OR lower(tags) LIKE ?)";
+    args.push("%wallpaper%");
+  }
+  if (orientation === "phone") where += " AND height > width";
+  if (orientation === "desktop") where += " AND width >= height";
   if (featured === "1") { where += " AND featured = 1"; }
 
   const cols = "id, title, character_name, character_slug, anime_name, anime_slug, tags, gender, category, featured, thumb, width, height, views, downloads";

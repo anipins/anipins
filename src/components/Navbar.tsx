@@ -17,6 +17,7 @@ const LINKS = [
   { href: "/following", label: "Following" },
   { href: "/characters", label: "Characters" },
   { href: "/anime", label: "Anime" },
+  { href: "/wallpapers", label: "Wallpapers" },
   { href: "/trending", label: "Trending" },
 ];
 

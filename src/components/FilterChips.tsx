@@ -10,6 +10,7 @@ const CHIPS = [
   { label: "Popular", href: "/explore?sort=popular" },
   { label: "Characters", href: "/characters" },
   { label: "Anime", href: "/anime" },
+  { label: "Wallpapers", href: "/wallpapers" },
   { label: "Male Characters", href: "/explore?category=Male%20Characters" },
   { label: "Female Characters", href: "/explore?category=Female%20Characters" },
 ];

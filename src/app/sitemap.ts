@@ -12,7 +12,7 @@ function validDate(value: unknown) {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [anime, characters, artworks] = await Promise.all([getAnime(), getCharacters(), getArtworkSitemapRows()]);
   const staticPages = [
-    ["/", 1, "daily"], ["/gallery", 0.9, "daily"], ["/explore", 0.9, "daily"], ["/trending", 0.9, "daily"],
+    ["/", 1, "daily"], ["/gallery", 0.9, "daily"], ["/explore", 0.9, "daily"], ["/wallpapers", 0.9, "daily"], ["/trending", 0.9, "daily"],
     ["/anime", 0.8, "daily"], ["/characters", 0.8, "daily"],
     ["/about", 0.5, "monthly"], ["/support", 0.5, "monthly"],
     ["/privacy", 0.3, "monthly"], ["/terms", 0.3, "monthly"], ["/copyright", 0.3, "monthly"], ["/delete-account", 0.3, "monthly"],
