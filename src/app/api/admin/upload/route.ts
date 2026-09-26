@@ -11,6 +11,7 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   const u = await getUser();
   if (!isAdmin(u)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  try {
   const form = await req.formData();
   const files = form.getAll("files") as File[];
   if (!files.length) return NextResponse.json({ error: "No files" }, { status: 400 });
@@ -66,4 +67,13 @@ export async function POST(req: NextRequest) {
   }
   await audit(u!.id, "ARTWORK_UPLOAD", "artwork", ids.join(","), `${ids.length} artwork(s): ${character} · ${anime}`, requestInfo(req).ip);
   return NextResponse.json({ ok: true, ids });
+  } catch (error) {
+    // Return a retryable response rather than dropping the browser connection.
+    // Never expose storage/database details to the public upload UI.
+    console.error("Artwork upload failed", error);
+    return NextResponse.json(
+      { error: "The upload service was temporarily unavailable. This image can be retried safely." },
+      { status: 503, headers: { "Retry-After": "2" } },
+    );
+  }
 }

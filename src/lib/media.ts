@@ -21,19 +21,29 @@ export function sbPublicUrl(rel: string) {
 async function sbUpload(key: string, buf: Buffer, contentType: string) {
   const attempts = 5;
   for (let attempt = 0; attempt < attempts; attempt++) {
-    const r = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${key}`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${SB_KEY}`, "Content-Type": contentType, "Cache-Control": "public, max-age=31536000, immutable", "x-upsert": "true" },
-      body: new Uint8Array(buf),
-    });
-    if (r.ok) return;
-    const detail = await r.text();
-    if (![429, 500, 502, 503, 504].includes(r.status) || attempt === attempts - 1) {
-      throw new Error(`Storage upload failed (${r.status}): ${detail}`);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const controller = new AbortController();
+      timeout = setTimeout(() => controller.abort(), 40_000);
+      const r = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${key}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${SB_KEY}`, "Content-Type": contentType, "Cache-Control": "public, max-age=31536000, immutable", "x-upsert": "true" },
+        body: new Uint8Array(buf),
+        signal: controller.signal,
+      });
+      if (r.ok) return;
+      const detail = await r.text();
+      if (![429, 500, 502, 503, 504].includes(r.status)) throw new Error(`Storage upload failed (${r.status}): ${detail}`);
+      if (attempt === attempts - 1) throw new Error(`Storage upload failed (${r.status}). Please retry this image.`);
+      const retryAfter = Number(r.headers.get("retry-after"));
+      const delay = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 750 * 2 ** attempt;
+      await new Promise(resolve => setTimeout(resolve, Math.min(delay, 10_000)));
+    } catch (error) {
+      if (attempt === attempts - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 750 * 2 ** attempt));
+    } finally {
+      if (timeout) clearTimeout(timeout);
     }
-    const retryAfter = Number(r.headers.get("retry-after"));
-    const delay = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 750 * 2 ** attempt;
-    await new Promise(resolve => setTimeout(resolve, Math.min(delay, 10_000)));
   }
 }
 

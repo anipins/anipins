@@ -33,13 +33,30 @@ export default function AdminUpload() {
     data.append("tags", item.tags); data.append("description", item.description); data.append("creator", item.creator); data.append("sourceUrl", item.sourceUrl); data.append("category", item.category); data.append("gender", item.gender);
     if (item.featured) data.append("featured", "1"); if (item.published) data.append("published", "1"); if (allowDuplicate) data.append("allowDuplicate", "1");
     for (let attempt = 0; attempt < 5; attempt++) {
-      const response = await fetch("/api/admin/upload", { method: "POST", body: data });
-      const result = await response.json().catch(() => ({ error: `Upload failed (${response.status})` }));
-      if (response.ok || response.status === 409 || ![429, 500, 502, 503, 504].includes(response.status) || attempt === 4) return { response, result };
-      const retryAfter = Number(response.headers.get("retry-after"));
-      const delay = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1000 * 2 ** attempt;
-      setProgress(`Server busy; retrying ${item.file.name} (${attempt + 2} of 5)…`);
-      await new Promise(resolve => setTimeout(resolve, Math.min(delay, 15_000)));
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      try {
+        // Browser-level connection failures used to skip the retry logic entirely.
+        // A separate controller per attempt also prevents one stalled request from
+        // holding a large queue forever.
+        const controller = new AbortController();
+        timeout = setTimeout(() => controller.abort(), 55_000);
+        const response = await fetch("/api/admin/upload", { method: "POST", body: data, signal: controller.signal });
+        const result = await response.json().catch(() => ({ error: `Upload failed (${response.status})` }));
+        if (response.ok || response.status === 409 || ![429, 500, 502, 503, 504].includes(response.status) || attempt === 4) return { response, result };
+        const retryAfter = Number(response.headers.get("retry-after"));
+        const delay = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1000 * 2 ** attempt;
+        setProgress(`Server busy; retrying ${item.file.name} (${attempt + 2} of 5)…`);
+        await new Promise(resolve => setTimeout(resolve, Math.min(delay, 15_000)));
+      } catch (error) {
+        if (attempt === 4) {
+          const timedOut = error instanceof DOMException && error.name === "AbortError";
+          throw new Error(timedOut ? "Upload timed out after 55 seconds. Please retry this image." : "Connection interrupted. Please retry this image.");
+        }
+        setProgress(`Connection interrupted; retrying ${item.file.name} (${attempt + 2} of 5)…`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * 2 ** attempt));
+      } finally {
+        if (timeout) clearTimeout(timeout);
+      }
     }
     throw new Error("Upload failed after retries");
   };
@@ -62,7 +79,8 @@ export default function AdminUpload() {
     }
     setItems(previous => previous.filter(item => !uploaded.has(item.key))); setBusy(false); setProgress("");
     if (uploaded.size) { toast(`${uploaded.size} artwork${uploaded.size === 1 ? "" : "s"} published`); router.refresh(); }
-    setMessage(failures.length ? `Published ${uploaded.size}. ${failures.join(" · ")}` : `✓ Published ${uploaded.size} artwork${uploaded.size === 1 ? "" : "s"}. Each kept its own metadata.`);
+    const failureSummary = failures.length > 6 ? `${failures.slice(0, 6).join(" · ")} · ${failures.length - 6} more image${failures.length - 6 === 1 ? "" : "s"} can be retried.` : failures.join(" · ");
+    setMessage(failures.length ? `Published ${uploaded.size}. ${failureSummary}` : `✓ Published ${uploaded.size} artwork${uploaded.size === 1 ? "" : "s"}. Each kept its own metadata.`);
   };
 
   return (
