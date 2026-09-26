@@ -10,7 +10,7 @@ function shuffled(items: any[]) {
 }
 const memoryCache = new Map<string, { items: any[]; hasMore: boolean; savedAt: number }>();
 const CACHE_TTL = 120_000;
-const REQUEST_TIMEOUT = 12_000;
+const REQUEST_TIMEOUT = 25_000;
 type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean };
 
 export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, eagerLoad = false }: Props) {
@@ -54,7 +54,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     if (randomize) { if (!params.has("sort")) params.set("sort", "random"); params.set("seed", String(randomSeed.current)); }
     try {
       let data: any;
-      for (let attempt = 0; attempt < 2; attempt++) {
+      for (let attempt = 0; attempt < 4; attempt++) {
         const controller = new AbortController();
         const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
         try {
@@ -63,7 +63,8 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
           data = await response.json();
           break;
         } catch (error) {
-          if (attempt === 1) throw error;
+          if (attempt === 3) throw error;
+          await new Promise(resolve => window.setTimeout(resolve, 500 * 2 ** attempt));
         } finally { window.clearTimeout(timeout); }
       }
       if (!data?.items) throw new Error("Artwork response was incomplete");

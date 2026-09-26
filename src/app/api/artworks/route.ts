@@ -50,7 +50,11 @@ export async function GET(req: NextRequest) {
     const items = await rows(`SELECT ${cols} FROM artworks WHERE published=1 AND id NOT IN (SELECT artwork_id FROM hidden_artworks WHERE user_id=?) AND (${clauses.join(" OR ")}) ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`, user.id, ...followArgs, limit + 1, page * limit);
     return NextResponse.json({ items: clientItems(items.slice(0, limit)), hasMore: items.length > limit }, { headers: { "Cache-Control": "private, no-store" } });
   }
-  if (sort === "for-you") {
+  // The home page already server-renders its first personal discovery set.
+  // For later pages, use the fast indexed feed below instead of repeatedly
+  // sorting hundreds of rows in a serverless request. This is what makes
+  // continuous scrolling reliable for signed-in users.
+  if (sort === "for-you" && page === 0) {
     if (user) {
       const signals = await rows(
         `SELECT i.kind, i.strength, a.character_slug, a.anime_slug, a.gender, a.category
