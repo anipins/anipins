@@ -32,15 +32,29 @@ export default function AdminUpload() {
     const data = new FormData(); data.append("files", item.file); data.append("title", item.title); data.append("character", item.character); data.append("anime", item.anime);
     data.append("tags", item.tags); data.append("description", item.description); data.append("creator", item.creator); data.append("sourceUrl", item.sourceUrl); data.append("category", item.category); data.append("gender", item.gender);
     if (item.featured) data.append("featured", "1"); if (item.published) data.append("published", "1"); if (allowDuplicate) data.append("allowDuplicate", "1");
+    const payload = { title: item.title, character: item.character, anime: item.anime, tags: item.tags, description: item.description, creator: item.creator, sourceUrl: item.sourceUrl, category: item.category, gender: item.gender, featured: item.featured, published: item.published, allowDuplicate, fileName: item.file.name, fileType: item.file.type, fileSize: item.file.size };
     for (let attempt = 0; attempt < 5; attempt++) {
       let timeout: ReturnType<typeof setTimeout> | undefined;
       try {
-        // Browser-level connection failures used to skip the retry logic entirely.
-        // A separate controller per attempt also prevents one stalled request from
-        // holding a large queue forever.
         const controller = new AbortController();
-        timeout = setTimeout(() => controller.abort(), 55_000);
-        const response = await fetch("/api/admin/upload", { method: "POST", body: data, signal: controller.signal });
+        // The file itself now goes directly to a one-time protected storage URL.
+        // That avoids Vercel's request body ceiling which returned HTTP 413 for
+        // high-resolution PNGs. The final app request is only small JSON.
+        timeout = setTimeout(() => controller.abort(), 180_000);
+        const signedResponse = await fetch("/api/admin/upload/sign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: item.file.name, type: item.file.type, size: item.file.size }), signal: controller.signal });
+        const signed = await signedResponse.json().catch(() => ({ error: `Upload preparation failed (${signedResponse.status})` }));
+        if (!signedResponse.ok) return { response: signedResponse, result: signed };
+        let response: Response;
+        if (signed.direct) {
+          setProgress(`Sending ${item.file.name} directly to secure artwork storage…`);
+          const storageResponse = await fetch(signed.uploadUrl, { method: "PUT", headers: { "Content-Type": item.file.type, "Cache-Control": "public, max-age=31536000, immutable", "x-upsert": "false" }, body: item.file, signal: controller.signal });
+          if (!storageResponse.ok) return { response: storageResponse, result: { error: `Artwork storage upload failed (${storageResponse.status}). Please retry this image.` } };
+          setProgress(`Processing ${item.file.name}…`);
+          response = await fetch("/api/admin/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, storageKey: signed.key }), signal: controller.signal });
+        } else {
+          // Local development fallback when no object storage is configured.
+          response = await fetch("/api/admin/upload", { method: "POST", body: data, signal: controller.signal });
+        }
         const result = await response.json().catch(() => ({ error: `Upload failed (${response.status})` }));
         if (response.ok || response.status === 409 || ![429, 500, 502, 503, 504].includes(response.status) || attempt === 4) return { response, result };
         const retryAfter = Number(response.headers.get("retry-after"));
@@ -50,7 +64,7 @@ export default function AdminUpload() {
       } catch (error) {
         if (attempt === 4) {
           const timedOut = error instanceof DOMException && error.name === "AbortError";
-          throw new Error(timedOut ? "Upload timed out after 55 seconds. Please retry this image." : "Connection interrupted. Please retry this image.");
+          throw new Error(timedOut ? "Upload timed out after 3 minutes. Please retry this image." : "Connection interrupted. Please retry this image.");
         }
         setProgress(`Connection interrupted; retrying ${item.file.name} (${attempt + 2} of 5)…`);
         await new Promise(resolve => setTimeout(resolve, 1000 * 2 ** attempt));
@@ -85,7 +99,7 @@ export default function AdminUpload() {
 
   return (
     <form onSubmit={submit} className="space-y-7">
-      <div><label className="label">Artwork upload</label><div onDragOver={event => { event.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={event => { event.preventDefault(); setDrag(false); addFiles(event.dataTransfer.files); }} onClick={() => inputRef.current?.click()} className={`grid min-h-44 cursor-pointer place-items-center rounded-2xl border-2 border-dashed p-8 text-center transition-colors ${drag ? "border-gold bg-gold/5" : "border-paper/15 hover:border-paper/30"}`}><div><p className="text-sm">Drag and drop all images here, or click to browse</p><p className="mt-1 text-xs text-fog">JPG, PNG or WebP · large batches of 1,000+ are queued safely · keep this page open until complete</p></div><input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={event => { if (event.target.files) addFiles(event.target.files); event.target.value = ""; }} /></div></div>
+      <div><label className="label">Artwork upload</label><div onDragOver={event => { event.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={event => { event.preventDefault(); setDrag(false); addFiles(event.dataTransfer.files); }} onClick={() => inputRef.current?.click()} className={`grid min-h-44 cursor-pointer place-items-center rounded-2xl border-2 border-dashed p-8 text-center transition-colors ${drag ? "border-gold bg-gold/5" : "border-paper/15 hover:border-paper/30"}`}><div><p className="text-sm">Drag and drop all images here, or click to browse</p><p className="mt-1 text-xs text-fog">JPG, PNG or WebP · up to 40 MB each · large batches of 1,000+ are queued safely · keep this page open until complete</p></div><input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={event => { if (event.target.files) addFiles(event.target.files); event.target.value = ""; }} /></div></div>
       {items.length > 1 ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-soft p-4 hairline"><p className="text-sm text-fog">Uploading one character or series? Fill the first card, then copy its shared details.</p><button type="button" onClick={applyFirstToAll} className="btn-ghost !px-4 !py-2">Apply first card details to all</button></div> : null}
       <div className="space-y-5">{items.map((item, index) => <article key={item.key} style={{ contentVisibility: "auto", containIntrinsicSize: "280px" }} className="grid gap-5 rounded-3xl bg-panel p-5 hairline md:grid-cols-[180px,1fr]">
         <div><img src={item.preview} alt={`Preview ${index + 1}`} className="aspect-square w-full rounded-2xl object-cover" /><p className="mt-2 truncate text-xs text-fog">{item.file.name}</p><button type="button" onClick={() => remove(item.key)} className="mt-2 text-xs text-red-300 hover:underline">Remove</button></div>

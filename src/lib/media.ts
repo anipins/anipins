@@ -57,6 +57,52 @@ async function sbDelete(keys: string[]) {
 
 const MIME: Record<string, string> = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif" };
 
+/** Create an unguessable destination for a browser upload. The browser only ever
+ * receives a short-lived signed URL for this one key; the service role key stays
+ * on the server. */
+export function newArtworkUploadKey(origName: string) {
+  const ext = (path.extname(origName) || ".jpg").toLowerCase().replace(/[^a-z0-9.]/g, "") || ".jpg";
+  if (!(ext in MIME)) throw new Error("Unsupported image type");
+  return `o/${crypto.randomBytes(16).toString("hex")}${ext}`;
+}
+
+export async function createSignedArtworkUpload(key: string) {
+  if (!USE_SUPABASE_STORAGE || !isSafeMediaKey(key) || !key.startsWith("o/")) return null;
+  const response = await fetch(`${SB_URL}/storage/v1/object/upload/sign/${BUCKET}/${key}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  if (!response.ok) throw new Error(`Unable to prepare storage upload (${response.status})`);
+  const data = await response.json() as { url?: string; token?: string };
+  if (!data.url) throw new Error("Storage did not return an upload URL");
+  return { key, uploadUrl: data.url.startsWith("http") ? data.url : `${SB_URL}/storage/v1${data.url}`, token: data.token || "" };
+}
+
+/** Read a direct-to-storage original back on the server for validation,
+ * duplicate detection and thumbnail generation. */
+export async function readArtworkUpload(key: string) {
+  if (!USE_SUPABASE_STORAGE || !isSafeMediaKey(key) || !key.startsWith("o/")) throw new Error("Invalid staged artwork");
+  const response = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${key}`, {
+    headers: { Authorization: `Bearer ${SB_KEY}` },
+  });
+  if (!response.ok) throw new Error(`Uploaded artwork could not be read (${response.status})`);
+  return Buffer.from(await response.arrayBuffer());
+}
+
+/** Finish an original which has already been uploaded directly to storage.
+ * This deliberately does not upload the original again. */
+export async function processUploadedArtwork(buffer: Buffer, origKey: string) {
+  if (!USE_SUPABASE_STORAGE || !isSafeMediaKey(origKey) || !origKey.startsWith("o/")) throw new Error("Invalid staged artwork");
+  const id = path.basename(origKey, path.extname(origKey));
+  const thumbKey = `t/${id}.webp`;
+  const img = sharp(buffer);
+  const meta = await img.metadata();
+  const thumbBuf = await img.rotate().resize({ width: 480, withoutEnlargement: true, fastShrinkOnLoad: true }).webp({ quality: 68, effort: 4 }).toBuffer();
+  await sbUpload(thumbKey, thumbBuf, "image/webp");
+  return { orig: origKey, thumb: thumbKey, width: meta.width || 0, height: meta.height || 0 };
+}
+
 export async function saveImage(buffer: Buffer, origName: string) {
   const id = crypto.randomBytes(8).toString("hex");
   const ext = (path.extname(origName) || ".jpg").toLowerCase().replace(/[^a-z0-9.]/g, "") || ".jpg";
