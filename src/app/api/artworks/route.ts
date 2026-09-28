@@ -123,6 +123,8 @@ export async function GET(req: NextRequest) {
   const hasMore = items.length > limit;
   return NextResponse.json(
     { items: clientItems(items.slice(0, limit)), hasMore },
-    { headers: { "Cache-Control": "public, max-age=15, s-maxage=30, stale-while-revalidate=60" } },
+    // Feed metadata is intentionally fresh so publishing is visible immediately
+    // on the site and Android WebView. Artwork image files remain CDN cached.
+    { headers: { "Cache-Control": "no-store" } },
   );
 }

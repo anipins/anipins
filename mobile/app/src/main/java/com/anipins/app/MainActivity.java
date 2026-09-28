@@ -70,6 +70,7 @@ public class MainActivity extends Activity {
     private CredentialManager credentialManager;
     private ValueCallback<Uri[]> pendingFileCallback;
     private boolean nativeGoogleBusy;
+    private boolean refreshOnResume;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -101,6 +102,23 @@ public class MainActivity extends Activity {
 
         checkForNotifications();
         checkForUpdate();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        refreshOnResume = true;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Returning from the browser after an owner upload must show the current
+        // feed, rather than the WebView document preserved in memory.
+        if (refreshOnResume && webView != null && webView.getUrl() != null) {
+            refreshOnResume = false;
+            webView.reload();
+        }
     }
 
     private View buildShell() {
@@ -168,7 +186,9 @@ public class MainActivity extends Activity {
         settings.setUseWideViewPort(false);
         settings.setTextZoom(100);
         settings.setMediaPlaybackRequiresUserGesture(true);
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        // The web app's artwork data changes whenever the owner publishes.
+        // Do not let a persisted WebView document hide a newly uploaded image.
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         if (Build.VERSION.SDK_INT >= 21) {
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         }

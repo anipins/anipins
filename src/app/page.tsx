@@ -7,26 +7,20 @@ import JsonLd from "@/components/JsonLd";
 import { getAnime, getArtworkCards, getCharacters } from "@/lib/content";
 import { getSiteUrl } from "@/lib/site";
 import type { Metadata } from "next";
-import { unstable_cache } from "next/cache";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 export const dynamic = "force-dynamic";
 
-// The page remains runtime-rendered for the project's SQLite/Postgres
-// compatibility, while its expensive public data queries stay warm.
-const getHomeData = unstable_cache(
-  () => Promise.all([
+export default async function Home() {
+  // New artwork must be visible as soon as the page is refreshed. Images still
+  // use immutable CDN caching, but this small indexed data query is deliberately
+  // live rather than serving a minute-old home feed.
+  const [featured, latest, anime, characters] = await Promise.all([
     getArtworkCards({ sort: "featured", limit: 8 }),
     getArtworkCards({ sort: "latest", limit: 36 }),
     getAnime(),
     getCharacters(),
-  ]),
-  ["home-data-v2"],
-  { revalidate: 60, tags: ["home-artwork"] },
-);
-
-export default async function Home() {
-  const [featured, latest, anime, characters] = await getHomeData();
+  ]);
   return (
     <div className="pt-28 md:pt-32">
       <JsonLd data={{ "@context": "https://schema.org", "@type": "CollectionPage", name: "AniPins anime artwork references", url: getSiteUrl(), description: "Discover, save and download curated anime character artwork references for drawing inspiration.", numberOfItems: latest.length }} />

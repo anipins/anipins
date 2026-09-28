@@ -9,7 +9,7 @@ function shuffled(items: any[]) {
   return copy;
 }
 const memoryCache = new Map<string, { items: any[]; hasMore: boolean; savedAt: number }>();
-const CACHE_TTL = 120_000;
+const CACHE_TTL = 15_000;
 const REQUEST_TIMEOUT = 25_000;
 type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean };
 
@@ -29,7 +29,16 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   queryRef.current = query;
 
   useEffect(() => () => { mounted.current = false; }, []);
-  useEffect(() => { if (randomize && initialItems.length > 1) setItems(shuffled(initialItems)); }, [randomize, initialItems]);
+  useEffect(() => {
+    // router.refresh() supplies fresh server-rendered cards. Keep the client
+    // grid in sync rather than leaving the original list on screen.
+    if (!initialItems.length) return;
+    setItems(randomize ? shuffled(initialItems) : initialItems);
+    setHasMore(initialHasMore);
+    nextPage.current = 1;
+    setInitial(false);
+    setLoadError(false);
+  }, [randomize, initialHasMore, initialItems]);
 
   const requestPage = useCallback(async (page: number, reset = false, forceFresh = false, silent = false) => {
     if (inFlight.current) return false;
@@ -91,6 +100,26 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     const refresh = () => { if (randomize) randomSeed.current = createFeedSeed(); nextPage.current = 0; setHasMore(true); void requestPage(0, true, true); };
     window.addEventListener("anipins:refresh", refresh);
     return () => window.removeEventListener("anipins:refresh", refresh);
+  }, [randomize, requestPage]);
+  useEffect(() => {
+    // A mobile WebView can keep a page alive while the user switches to the
+    // admin browser to publish artwork. Fetch current cards as soon as that
+    // view becomes active again instead of requiring a second manual reload.
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "hidden") return;
+      if (randomize) randomSeed.current = createFeedSeed();
+      nextPage.current = 0;
+      setHasMore(true);
+      void requestPage(0, true, true, true);
+    };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("pageshow", refreshWhenVisible);
+    window.addEventListener("focus", refreshWhenVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("pageshow", refreshWhenVisible);
+      window.removeEventListener("focus", refreshWhenVisible);
+    };
   }, [randomize, requestPage]);
   useEffect(() => {
     const element = sentinel.current;
