@@ -4,7 +4,6 @@ import MasonryFeed from "@/components/MasonryFeed";
 import TrendingRow from "@/components/TrendingRow";
 import Link from "next/link";
 import JsonLd from "@/components/JsonLd";
-import PremiumHero from "@/components/PremiumHero";
 import { getAnime, getArtworkCards, getCharacters } from "@/lib/content";
 import { getSiteUrl } from "@/lib/site";
 import type { Metadata } from "next";
@@ -25,8 +24,7 @@ export default async function Home() {
   return (
     <div className="pt-28 md:pt-32">
       <JsonLd data={{ "@context": "https://schema.org", "@type": "CollectionPage", name: "AniPins anime artwork references", url: getSiteUrl(), description: "Discover, save and download curated anime character artwork references for drawing inspiration.", numberOfItems: latest.length }} />
-      <PremiumHero />
-      <div className="mt-10"><FeaturedSlider initialArts={featured} /></div>
+      <FeaturedSlider initialArts={featured} />
       <section className="w-full px-3 pt-12 sm:px-4 md:px-6 xl:px-8">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
