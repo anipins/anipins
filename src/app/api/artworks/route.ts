@@ -115,11 +115,34 @@ export async function GET(req: NextRequest) {
 
   // Listing surfaces use the optimized thumbnail. Full originals are reserved
   // for the artwork detail and download routes so the homepage stays fast.
-  const items = await rows(
-    `SELECT ${cols}
-     FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ? OFFSET ?`,
-    ...args, limit + 1, page * limit
-  );
+  // Keep the main Latest feed useful after a large wallpaper upload. Wallpapers
+  // still appear there, but every fourth slot is reserved for them so recent
+  // character-reference artwork remains discoverable. Dedicated wallpaper,
+  // search, category and collection pages always retain their natural order.
+  const balanceLatest = sort === "latest" && !q && !character && !anime && !category && !gender && !wallpaper && !orientation && featured !== "1";
+  const items = balanceLatest
+    ? await rows(
+      `SELECT ${cols} FROM (
+        SELECT ${cols},
+          CASE WHEN lower(category) = 'wallpapers' OR lower(tags) LIKE '%wallpaper%' THEN 1 ELSE 0 END AS is_wallpaper,
+          ROW_NUMBER() OVER (
+            PARTITION BY CASE WHEN lower(category) = 'wallpapers' OR lower(tags) LIKE '%wallpaper%' THEN 1 ELSE 0 END
+            ORDER BY created_at DESC, id DESC
+          ) AS segment_rank
+        FROM artworks WHERE ${where}
+      ) balanced
+      ORDER BY CASE
+        WHEN is_wallpaper = 1 THEN ((segment_rank - 1) * 4) + 3
+        ELSE (((segment_rank - 1) / 3) * 4) + ((segment_rank - 1) % 3)
+      END, is_wallpaper ASC
+      LIMIT ? OFFSET ?`,
+      ...args, limit + 1, page * limit,
+    )
+    : await rows(
+      `SELECT ${cols}
+       FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ? OFFSET ?`,
+      ...args, limit + 1, page * limit,
+    );
   const hasMore = items.length > limit;
   return NextResponse.json(
     { items: clientItems(items.slice(0, limit)), hasMore },
