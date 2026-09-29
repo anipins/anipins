@@ -84,15 +84,6 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
 
 .tilt { transform-style: preserve-3d; will-change: transform; }
 
-.anipins-flow { opacity: .8; mix-blend-mode: screen; }
-.anipins-flow__glow { stroke-width: 4; opacity: .2; }
-.anipins-flow__line { stroke-width: 1.2; stroke-dasharray: 12 18; animation: flow-drift 12s linear infinite; }
-.anipins-flow__line--two { opacity: .58; animation-delay: -4s; animation-duration: 16s; }
-.anipins-flow__line--three { opacity: .38; animation-delay: -8s; animation-duration: 20s; }
-.anipins-flow__stars { animation: star-breathe 4.8s ease-in-out infinite; transform-origin: center; }
-@keyframes flow-drift { to { stroke-dashoffset: -360; } }
-@keyframes star-breathe { 50% { opacity: .35; transform: scale(.82); } }
-
 /* A restrained visual signature keeps the artwork—not interface effects—in focus. */
 @media (hover: hover) and (pointer: fine) {
   .art-card { transition: transform 220ms cubic-bezier(.22, 1, .36, 1), filter 220ms ease; }
