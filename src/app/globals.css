@@ -30,7 +30,7 @@
 }
 
 html { width: 100%; max-width: 100%; overflow-x: clip; scroll-behavior: smooth; overscroll-behavior-x: none; }
-body { @apply bg-ink text-paper font-body antialiased; width: 100%; max-width: 100%; overflow-x: clip; overscroll-behavior-x: none; touch-action: pan-y; }
+body { @apply bg-ink text-paper font-body antialiased; width: 100%; max-width: 100%; overflow-x: clip; overscroll-behavior-x: none; touch-action: pan-y; background-image: radial-gradient(68rem 38rem at 100% -12%, rgba(198, 161, 91, .09), transparent 62%), radial-gradient(48rem 32rem at -10% 45%, rgba(100, 72, 160, .06), transparent 68%); background-attachment: fixed; }
 body { line-height: 1.55; text-rendering: optimizeLegibility; }
 main { width: 100%; max-width: 100%; overflow-x: clip; }
 img, video, canvas, svg { max-width: 100%; }
@@ -83,6 +83,19 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
 .badge-gold { @apply inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold; }
 
 .tilt { transform-style: preserve-3d; will-change: transform; }
+
+/* A restrained visual signature keeps the artwork—not interface effects—in focus. */
+@media (hover: hover) and (pointer: fine) {
+  .art-card { transition: transform 220ms cubic-bezier(.22, 1, .36, 1), filter 220ms ease; }
+  .art-card:hover { transform: translateY(-3px); filter: drop-shadow(0 16px 24px rgba(0, 0, 0, .22)); }
+}
+
+@media (min-width: 768px) {
+  ::-webkit-scrollbar { width: 11px; }
+  ::-webkit-scrollbar-track { background: rgb(var(--color-ink)); }
+  ::-webkit-scrollbar-thumb { border: 3px solid rgb(var(--color-ink)); border-radius: 999px; background: rgba(198, 161, 91, .45); }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(198, 161, 91, .72); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
