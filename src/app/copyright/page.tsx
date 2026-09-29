@@ -14,7 +14,7 @@ export default function Copyright() {
         body: JSON.stringify({
           name: fd.get("name"), email: fd.get("email"), artworkUrl: fd.get("url"),
           copyrightedWork: fd.get("work"), authority: fd.get("authority"), reason: fd.get("reason"),
-          signature: fd.get("signature"), goodFaith: fd.get("goodFaith") === "on", accuracy: fd.get("accuracy") === "on",
+          signature: fd.get("signature"), website: fd.get("website"), goodFaith: fd.get("goodFaith") === "on", accuracy: fd.get("accuracy") === "on",
         }),
       });
       const result = await r.json().catch(() => ({}));
@@ -37,6 +37,7 @@ export default function Copyright() {
         <div className="mt-8 rounded-2xl bg-panel hairline p-6 text-sm">✓ Your request has been received. We'll review it and respond via email.</div>
       ) : (
         <form onSubmit={submit} className="mt-8 space-y-4 rounded-2xl bg-panel hairline p-6">
+          <div className="hidden" aria-hidden="true"><label htmlFor="copyright-website">Website</label><input id="copyright-website" name="website" tabIndex={-1} autoComplete="off" /></div>
           <div><label className="label">Your legal name *</label><input name="name" required className="input" placeholder="Full name" /></div>
           <div><label className="label">Email *</label><input name="email" type="email" required className="input" placeholder="you@example.com" /></div>
           <div><label className="label">Copyrighted work *</label><textarea name="work" required rows={3} className="input resize-none" placeholder="Identify the original work and, if available, provide an official or source URL…" /></div>

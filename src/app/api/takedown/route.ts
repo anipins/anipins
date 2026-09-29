@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { run } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
-  const { name, email, artworkUrl, copyrightedWork, authority, reason, signature, goodFaith, accuracy } = await req.json();
+  const { name, email, artworkUrl, copyrightedWork, authority, reason, signature, website, goodFaith, accuracy } = await req.json();
+  // Hidden field: real users never see or fill it, while basic form bots do.
+  if (String(website || "").trim()) return NextResponse.json({ ok: true });
   const cleanName = String(name || "").trim().slice(0, 120);
   const cleanEmail = String(email || "").trim().slice(0, 254);
   const cleanUrl = String(artworkUrl || "").trim().slice(0, 1000);

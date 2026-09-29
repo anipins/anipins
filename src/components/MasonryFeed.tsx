@@ -28,7 +28,13 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   const queryRef = useRef(query);
   queryRef.current = query;
 
-  useEffect(() => () => { mounted.current = false; }, []);
+  useEffect(() => {
+    // React development mode deliberately mounts, cleans up, and mounts again.
+    // Resetting this flag on every mount prevents a later pagination response
+    // from being discarded after that harmless development-mode cycle.
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   useEffect(() => {
     // router.refresh() supplies fresh server-rendered cards. Keep the client
     // grid in sync rather than leaving the original list on screen.
@@ -159,6 +165,6 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       : <div className="masonry">{items.map((art, index) => <ArtCard key={art.id} art={art} index={index} />)}</div>}
     <div ref={sentinel} className="h-10" aria-hidden="true" />
     {loading && !initial && <div className="py-6 text-center text-sm text-fog">Loading more artwork…</div>}
-    {loadError && !loading && <div className="py-5 text-center"><button type="button" className="chip" onClick={loadNext}>Retry loading artwork</button></div>}
+    {loadError && !loading && <div className="py-5 text-center"><p className="mb-3 text-sm text-fog">More artwork could not load.</p><button type="button" className="chip" onClick={loadNext}>Retry loading artwork</button></div>}
   </div>;
 }
