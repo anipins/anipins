@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { openArtwork } from "./ArtCard";
 import { toast } from "./Toaster";
 import { artworkAlt } from "@/lib/site";
+import AniPinsFlow from "./AniPinsFlow";
 
 function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: boolean; sizes: string }) {
   const [ready, setReady] = useState(false);
@@ -103,6 +104,7 @@ export default function FeaturedSlider({ initialArts = [] }: { initialArts?: any
               </motion.div>
             </motion.div>
           </AnimatePresence>
+          <AniPinsFlow />
           <div className="absolute right-5 top-5 flex gap-2">
             <button onClick={() => { setDir(-1); setIdx(i => (i - 1 + arts.length) % arts.length); }}
               aria-label="Previous featured artwork"
