@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import SaveMenu from "./SaveMenu";
 import ShareMenu from "./ShareMenu";
@@ -18,6 +18,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
   const [save, setSave] = useState(false);
   const [share, setShare] = useState(false);
   const [imageReady, setImageReady] = useState(false);
+  const reduceMotion = useReducedMotion();
   const ratio = art.width && art.height ? art.height / art.width : 1.3;
   const hideArtwork = async () => {
     window.dispatchEvent(new CustomEvent("anipins:hide-art", { detail: { id: art.id } }));
@@ -27,7 +28,13 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
 
   return (
     <>
-      <div className="art-card">
+      <motion.div
+        className="art-card"
+        initial={reduceMotion ? false : { opacity: 0, y: 34, scale: 0.975, filter: "blur(5px)" }}
+        whileInView={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+        viewport={{ once: true, amount: 0.14 }}
+        transition={{ duration: 0.62, delay: reduceMotion ? 0 : (index % 8) * 0.045, ease: [0.22, 1, 0.36, 1] }}
+      >
         <Tilt max={3.5} className="group relative overflow-hidden rounded-2xl bg-soft hairline hover:border-gold-dim transition-colors duration-200">
           <button onClick={() => openArtwork(art.id, art)} className="block w-full text-left cursor-zoom-in">
             <div style={{ aspectRatio: `1 / ${ratio}` }} className={`relative w-full overflow-hidden bg-soft ${imageReady ? "" : "skeleton"}`}>
@@ -70,7 +77,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
           </div>
           <div className="absolute right-3 top-3 hidden rounded-full bg-black/65 px-2.5 py-1.5 backdrop-blur group-hover:block pointer-events-auto"><ReportArtwork artworkId={art.id} compact /></div>
         </Tilt>
-      </div>
+      </motion.div>
       <AnimatePresence>
         {save && <SaveMenu artworkId={art.id} onClose={() => setSave(false)} />}
         {share && <ShareMenu url={typeof location !== "undefined" ? `${location.origin}/a/${art.id}` : `/a/${art.id}`} title={art.character_name} onClose={() => setShare(false)} />}
