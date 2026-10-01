@@ -101,6 +101,14 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
   /* Fixed background repainting and heavy motion are common WebView scroll-jank sources. */
   body { background-attachment: scroll; }
   .art-card { contain-intrinsic-size: 180px 270px; }
+  /* The Android app draws behind the system gesture area. Extend the dock to
+     the physical bottom and keep its controls above that gesture area. */
+  html[data-native-app="true"] .mobile-bottom-nav {
+    bottom: 0;
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem) !important;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

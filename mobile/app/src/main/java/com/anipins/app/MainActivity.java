@@ -37,6 +37,8 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.credentials.Credential;
 import androidx.credentials.CredentialManager;
 import androidx.credentials.CredentialManagerCallback;
@@ -75,8 +77,17 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setStatusBarColor(Color.rgb(8, 8, 8));
-        getWindow().setNavigationBarColor(Color.rgb(8, 8, 8));
+        // Make the WebView genuinely edge-to-edge. Previously Android reserved
+        // its navigation-bar area as an empty black strip below the web dock.
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(Color.TRANSPARENT);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
+        WindowInsetsControllerCompat systemBars = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        systemBars.setAppearanceLightStatusBars(false);
+        systemBars.setAppearanceLightNavigationBars(false);
 
         api = new ApiClient(this);
         credentialManager = CredentialManager.create(this);

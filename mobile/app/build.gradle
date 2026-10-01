@@ -13,8 +13,8 @@ android {
         applicationId 'com.anipins.app'
         minSdk 24
         targetSdk 36
-        versionCode 37
-        versionName '2.5.16'
+        versionCode 38
+        versionName '2.5.17'
         buildConfigField 'String', 'API_BASE_URL', '"https://anipins.com"'
     }
 
@@ -51,6 +51,7 @@ android {
 }
 
 dependencies {
+    implementation 'androidx.core:core:1.16.0'
     implementation platform('org.jetbrains.kotlin:kotlin-bom:1.8.22')
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'androidx.credentials:credentials:1.7.0-alpha03'

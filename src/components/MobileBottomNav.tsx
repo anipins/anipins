@@ -34,7 +34,7 @@ export default function MobileBottomNav() {
 
   return (
     <nav aria-label="Primary mobile navigation"
-      className={`fixed inset-x-3 bottom-3 z-[60] grid ${isAdmin ? "grid-cols-5" : "grid-cols-4"} rounded-2xl glass hairline shadow-[0_12px_44px_rgba(0,0,0,0.35)] md:hidden`}
+      className={`mobile-bottom-nav fixed inset-x-3 bottom-3 z-[60] grid ${isAdmin ? "grid-cols-5" : "grid-cols-4"} rounded-2xl glass hairline shadow-[0_12px_44px_rgba(0,0,0,0.35)] md:hidden`}
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       {items.map(item => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
