@@ -4,7 +4,10 @@ plugins {
 
 android {
     namespace 'com.anipins.app'
-    compileSdk 36
+    // Build against the locally installed Android 37 platform while retaining
+    // API 36 as the Play-facing target requirement.
+    compileSdk 37
+    buildToolsVersion "36.0.0"
 
     defaultConfig {
         applicationId 'com.anipins.app'
