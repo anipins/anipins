@@ -54,6 +54,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.concurrent.Executor;
+import java.util.Locale;
 
 public class MainActivity extends Activity {
     private static final String HOME_URL = "https://anipins.com/";
@@ -192,6 +193,9 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 21) {
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            settings.setSafeBrowsingEnabled(true);
+        }
         settings.setUserAgentString(settings.getUserAgentString() + USER_AGENT_SUFFIX);
 
         CookieManager cookies = CookieManager.getInstance();
@@ -275,8 +279,8 @@ public class MainActivity extends Activity {
     }
 
     private boolean routeUri(Uri uri) {
-        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
-        String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
+        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+        String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
         if ((scheme.equals("https") || scheme.equals("http")) && ("instagram.com".equals(host) || "www.instagram.com".equals(host))) { openInstagramFromNative(); return true; }
         if ((scheme.equals("https") || scheme.equals("http")) && (HOST.equals(host) || ("www." + HOST).equals(host))) {
             return false;
@@ -379,8 +383,8 @@ public class MainActivity extends Activity {
     private String getDeepLink(Intent intent) {
         if (intent == null || intent.getData() == null) return null;
         Uri uri = intent.getData();
-        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
-        String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
+        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+        String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
         return ("https".equals(scheme) && (HOST.equals(host) || ("www." + HOST).equals(host))) ? uri.toString() : null;
     }
 
@@ -491,6 +495,10 @@ public class MainActivity extends Activity {
             @Override
             public void onError(androidx.credentials.exceptions.GetCredentialException e) {
                 nativeGoogleBusy = false;
+                if (e instanceof androidx.credentials.exceptions.NoCredentialException) {
+                    dispatchGoogleError("No Google account is available on this device.");
+                    return;
+                }
                 String detail = e.getMessage();
                 if (detail == null || detail.trim().isEmpty()) detail = e.getClass().getSimpleName();
                 dispatchGoogleError("Google sign-in failed: " + detail);

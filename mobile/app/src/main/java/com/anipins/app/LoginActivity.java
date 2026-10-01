@@ -19,6 +19,7 @@ import androidx.credentials.CredentialManagerCallback;
 import androidx.credentials.GetCredentialRequest;
 import androidx.credentials.GetCredentialResponse;
 import androidx.credentials.exceptions.GetCredentialException;
+import androidx.credentials.exceptions.NoCredentialException;
 
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
@@ -233,7 +234,11 @@ public class LoginActivity extends Activity {
                             completeGoogle(googleCredential.getIdToken());
                         } catch (Exception e) { googleFailed("Could not read the Google credential."); }
                     }
-                    @Override public void onError(GetCredentialException e) { googleFailed("Google sign-in was cancelled or unavailable."); }
+                    @Override public void onError(GetCredentialException e) {
+                        googleFailed(e instanceof NoCredentialException
+                            ? "No Google account is available on this device."
+                            : "Google sign-in was cancelled or unavailable.");
+                    }
                 });
             });
         });
