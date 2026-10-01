@@ -9,6 +9,10 @@ export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // The Android app is a first-party WebView rather than a public browser.
+    // It uses only essential storage, so a browser cookie banner is not useful
+    // there and would cover the app's navigation.
+    if ("AniPinsAndroid" in window) return;
     try { setVisible(!localStorage.getItem(STORAGE_KEY)); } catch { /* Browsing still works when storage is unavailable. */ }
   }, []);
 
