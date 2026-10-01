@@ -10,7 +10,10 @@ function shuffled(items: any[]) {
 }
 const memoryCache = new Map<string, { items: any[]; hasMore: boolean; savedAt: number }>();
 const CACHE_TTL = 15_000;
-const REQUEST_TIMEOUT = 25_000;
+// A failed request must become actionable quickly. Waiting through four 25s
+// attempts made a transient network problem look like an endless feed loader.
+const REQUEST_TIMEOUT = 10_000;
+const MAX_REQUEST_ATTEMPTS = 3;
 type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean };
 
 export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, eagerLoad = false }: Props) {
@@ -63,13 +66,13 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     inFlight.current = true;
     if (!silent) setLoading(true);
     setLoadError(false);
-    // 36 is large enough to keep scrolling continuous, while pagination keeps
-    // the first render and each network request lightweight.
+    // 36 is the payload size for one request, not a feed limit. Pages keep
+    // loading until the API explicitly reports that there is no more artwork.
     const params = new URLSearchParams({ ...queryRef.current, page: String(page), limit: "36" });
     if (randomize) { if (!params.has("sort")) params.set("sort", "random"); params.set("seed", String(randomSeed.current)); }
     try {
       let data: any;
-      for (let attempt = 0; attempt < 4; attempt++) {
+      for (let attempt = 0; attempt < MAX_REQUEST_ATTEMPTS; attempt++) {
         const controller = new AbortController();
         const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
         try {
@@ -78,7 +81,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
           data = await response.json();
           break;
         } catch (error) {
-          if (attempt === 3) throw error;
+          if (attempt === MAX_REQUEST_ATTEMPTS - 1) throw error;
           await new Promise(resolve => window.setTimeout(resolve, 500 * 2 ** attempt));
         } finally { window.clearTimeout(timeout); }
       }
