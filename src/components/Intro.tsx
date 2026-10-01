@@ -31,13 +31,14 @@ const brandLetters = ["A", "n", "i", "P", "i", "n", "s"];
 export default function Intro() {
   const [show, setShow] = useState(false);
   useEffect(() => {
-    const nativeApp = "AniPinsAndroid" in window;
-    if (!nativeApp && sessionStorage.getItem("anipins_intro")) return;
+    // A Google sign-in return reloads the Android WebView. The intro belongs
+    // only to the first page of an app/browser session, never that auth return.
+    if (sessionStorage.getItem("anipins_intro")) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      if (!nativeApp) sessionStorage.setItem("anipins_intro", "1");
+      sessionStorage.setItem("anipins_intro", "1");
       return;
     }
-    if (!nativeApp) sessionStorage.setItem("anipins_intro", "1");
+    sessionStorage.setItem("anipins_intro", "1");
     setShow(true);
     const t = setTimeout(() => setShow(false), 3000);
     return () => clearTimeout(t);
