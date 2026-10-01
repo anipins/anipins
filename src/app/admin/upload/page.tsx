@@ -15,6 +15,18 @@ const blank = (file: File, index: number): UploadItem => ({
   description: "", creator: "", sourceUrl: "", category: "", gender: "", featured: false, published: true,
 });
 
+const retryableStatus = (status: number) => [408, 425, 429, 500, 502, 503, 504].includes(status);
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 export default function AdminUpload() {
   const [items, setItems] = useState<UploadItem[]>([]), [drag, setDrag] = useState(false), [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(""), [message, setMessage] = useState("");
@@ -33,30 +45,42 @@ export default function AdminUpload() {
     data.append("tags", item.tags); data.append("description", item.description); data.append("creator", item.creator); data.append("sourceUrl", item.sourceUrl); data.append("category", item.category); data.append("gender", item.gender);
     if (item.featured) data.append("featured", "1"); if (item.published) data.append("published", "1"); if (allowDuplicate) data.append("allowDuplicate", "1");
     const payload = { title: item.title, character: item.character, anime: item.anime, tags: item.tags, description: item.description, creator: item.creator, sourceUrl: item.sourceUrl, category: item.category, gender: item.gender, featured: item.featured, published: item.published, allowDuplicate, fileName: item.file.name, fileType: item.file.type, fileSize: item.file.size };
+    let signed: { direct?: boolean; uploadUrl?: string; key?: string } | null = null;
+    let stored = false;
     for (let attempt = 0; attempt < 5; attempt++) {
-      let timeout: ReturnType<typeof setTimeout> | undefined;
       try {
-        const controller = new AbortController();
         // The file itself now goes directly to a one-time protected storage URL.
         // That avoids Vercel's request body ceiling which returned HTTP 413 for
         // high-resolution PNGs. The final app request is only small JSON.
-        timeout = setTimeout(() => controller.abort(), 180_000);
-        const signedResponse = await fetch("/api/admin/upload/sign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: item.file.name, type: item.file.type, size: item.file.size }), signal: controller.signal });
-        const signed = await signedResponse.json().catch(() => ({ error: `Upload preparation failed (${signedResponse.status})` }));
-        if (!signedResponse.ok) return { response: signedResponse, result: signed };
+        if (!signed) {
+          const signedResponse = await fetchWithTimeout("/api/admin/upload/sign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: item.file.name, type: item.file.type, size: item.file.size }) }, 30_000);
+          const prepared = await signedResponse.json().catch(() => ({ error: `Upload preparation failed (${signedResponse.status})` }));
+          if (!signedResponse.ok) {
+            if (!retryableStatus(signedResponse.status)) return { response: signedResponse, result: prepared };
+            throw new Error(prepared.error || `Upload preparation failed (${signedResponse.status})`);
+          }
+          signed = prepared;
+        }
         let response: Response;
         if (signed.direct) {
           setProgress(`Sending ${item.file.name} directly to secure artwork storage…`);
-          const storageResponse = await fetch(signed.uploadUrl, { method: "PUT", headers: { "Content-Type": item.file.type, "Cache-Control": "public, max-age=31536000, immutable", "x-upsert": "false" }, body: item.file, signal: controller.signal });
-          if (!storageResponse.ok) return { response: storageResponse, result: { error: `Artwork storage upload failed (${storageResponse.status}). Please retry this image.` } };
+          if (!stored) {
+            const storageResponse = await fetchWithTimeout(signed.uploadUrl!, { method: "PUT", headers: { "Content-Type": item.file.type, "Cache-Control": "public, max-age=31536000, immutable", "x-upsert": "false" }, body: item.file }, 10 * 60_000);
+            if (!storageResponse.ok) {
+              if (!retryableStatus(storageResponse.status)) return { response: storageResponse, result: { error: `Artwork storage upload failed (${storageResponse.status}). Please retry this image.` } };
+              signed = null;
+              throw new Error(`Artwork storage upload failed (${storageResponse.status})`);
+            }
+            stored = true;
+          }
           setProgress(`Processing ${item.file.name}…`);
-          response = await fetch("/api/admin/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, storageKey: signed.key }), signal: controller.signal });
+          response = await fetchWithTimeout("/api/admin/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, storageKey: signed.key }) }, 5 * 60_000);
         } else {
           // Local development fallback when no object storage is configured.
-          response = await fetch("/api/admin/upload", { method: "POST", body: data, signal: controller.signal });
+          response = await fetchWithTimeout("/api/admin/upload", { method: "POST", body: data }, 5 * 60_000);
         }
         const result = await response.json().catch(() => ({ error: `Upload failed (${response.status})` }));
-        if (response.ok || response.status === 409 || ![429, 500, 502, 503, 504].includes(response.status) || attempt === 4) return { response, result };
+        if (response.ok || response.status === 409 || !retryableStatus(response.status) || attempt === 4) return { response, result };
         const retryAfter = Number(response.headers.get("retry-after"));
         const delay = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1000 * 2 ** attempt;
         setProgress(`Server busy; retrying ${item.file.name} (${attempt + 2} of 5)…`);
@@ -64,12 +88,10 @@ export default function AdminUpload() {
       } catch (error) {
         if (attempt === 4) {
           const timedOut = error instanceof DOMException && error.name === "AbortError";
-          throw new Error(timedOut ? "Upload timed out after 3 minutes. Please retry this image." : "Connection interrupted. Please retry this image.");
+          throw new Error(timedOut ? `Upload timed out while ${stored ? "processing" : "sending"} this image. Please retry this image.` : `Connection interrupted while ${stored ? "processing" : "sending"} this image. Please retry this image.`);
         }
         setProgress(`Connection interrupted; retrying ${item.file.name} (${attempt + 2} of 5)…`);
         await new Promise(resolve => setTimeout(resolve, 1000 * 2 ** attempt));
-      } finally {
-        if (timeout) clearTimeout(timeout);
       }
     }
     throw new Error("Upload failed after retries");

@@ -6,7 +6,10 @@ import { notifyFollowers } from "@/lib/activity";
 import { audit, requestInfo } from "@/lib/admin-security";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+// High-resolution source images need server-side hashing plus a WebP thumbnail.
+// Keep the function alive long enough to finish that work after the browser has
+// already completed its direct storage upload.
+export const maxDuration = 300;
 
 const MAX_ARTWORK_BYTES = 40 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
