@@ -29,7 +29,7 @@
   --skeleton: #e8e5dd;
 }
 
-html { width: 100%; max-width: 100%; overflow-x: clip; scroll-behavior: smooth; overscroll-behavior-x: none; }
+html { width: 100%; max-width: 100%; overflow-x: clip; scroll-behavior: auto; overscroll-behavior-x: none; }
 body { @apply bg-ink text-paper font-body antialiased; width: 100%; max-width: 100%; overflow-x: clip; overscroll-behavior-x: none; touch-action: pan-y; background-image: radial-gradient(68rem 38rem at 100% -12%, rgba(198, 161, 91, .09), transparent 62%), radial-gradient(48rem 32rem at -10% 45%, rgba(100, 72, 160, .06), transparent 68%); background-attachment: fixed; }
 body { line-height: 1.55; text-rendering: optimizeLegibility; }
 main { width: 100%; max-width: 100%; overflow-x: clip; }
@@ -95,6 +95,12 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
   ::-webkit-scrollbar-track { background: rgb(var(--color-ink)); }
   ::-webkit-scrollbar-thumb { border: 3px solid rgb(var(--color-ink)); border-radius: 999px; background: rgba(198, 161, 91, .45); }
   ::-webkit-scrollbar-thumb:hover { background: rgba(198, 161, 91, .72); }
+}
+
+@media (max-width: 767px) {
+  /* Fixed background repainting and heavy motion are common WebView scroll-jank sources. */
+  body { background-attachment: scroll; }
+  .art-card { contain-intrinsic-size: 180px 270px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

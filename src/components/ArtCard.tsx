@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import SaveMenu from "./SaveMenu";
 import ShareMenu from "./ShareMenu";
 import Tilt from "./Tilt";
@@ -19,6 +19,8 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
   const [share, setShare] = useState(false);
   const [imageReady, setImageReady] = useState(false);
   const reduceMotion = useReducedMotion();
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const suppressOpen = useRef(false);
   const ratio = art.width && art.height ? art.height / art.width : 1.3;
   const hideArtwork = async () => {
     window.dispatchEvent(new CustomEvent("anipins:hide-art", { detail: { id: art.id } }));
@@ -30,13 +32,30 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
     <>
       <motion.div
         className="art-card"
-        initial={reduceMotion ? false : { opacity: 0, y: 34, scale: 0.975, filter: "blur(5px)" }}
-        whileInView={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+        initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+        whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.14 }}
-        transition={{ duration: 0.62, delay: reduceMotion ? 0 : (index % 8) * 0.045, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.38, delay: reduceMotion ? 0 : (index % 8) * 0.025, ease: [0.22, 1, 0.36, 1] }}
       >
         <Tilt max={3.5} className="group relative overflow-hidden rounded-2xl bg-soft hairline hover:border-gold-dim transition-colors duration-200">
-          <button onClick={() => openArtwork(art.id, art)} className="block w-full text-left cursor-zoom-in">
+          <button
+            onTouchStart={event => {
+              const touch = event.touches[0];
+              touchStart.current = { x: touch.clientX, y: touch.clientY };
+              suppressOpen.current = false;
+            }}
+            onTouchMove={event => {
+              const start = touchStart.current;
+              const touch = event.touches[0];
+              if (start && Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 12) suppressOpen.current = true;
+            }}
+            onTouchEnd={() => {
+              touchStart.current = null;
+              if (suppressOpen.current) window.setTimeout(() => { suppressOpen.current = false; }, 250);
+            }}
+            onTouchCancel={() => { touchStart.current = null; suppressOpen.current = false; }}
+            onClick={() => { if (!suppressOpen.current) openArtwork(art.id, art); }}
+            className="block w-full touch-pan-y text-left cursor-zoom-in">
             <div style={{ aspectRatio: `1 / ${ratio}` }} className={`relative w-full overflow-hidden bg-soft ${imageReady ? "" : "skeleton"}`}>
               <Image
                 src={art.thumb_url || `/api/img/${art.thumb}`}

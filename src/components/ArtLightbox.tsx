@@ -112,8 +112,8 @@ export default function ArtLightbox() {
             onClick={e => e.stopPropagation()}
             className="min-h-full w-full max-w-none overflow-hidden bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
             <div className="grid md:min-h-dvh md:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
-              <div className="relative flex h-[58dvh] min-h-[380px] items-center justify-center overflow-hidden bg-black md:h-dvh md:min-h-0">
-                {art && fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} className="mx-auto max-h-full w-full" />
+              <div className="relative flex min-h-0 w-full items-center justify-center overflow-hidden bg-black md:h-dvh">
+                {art && fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} className="mx-auto h-auto w-full max-h-none md:max-h-full" />
                   : <div className="skeleton h-[50vh] w-full" />}
               </div>
               <div className="flex min-h-80 flex-col p-6 pb-[max(2rem,env(safe-area-inset-bottom))] md:p-8">
