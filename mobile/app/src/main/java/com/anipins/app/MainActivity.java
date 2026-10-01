@@ -71,7 +71,6 @@ public class MainActivity extends Activity {
     private CredentialManager credentialManager;
     private ValueCallback<Uri[]> pendingFileCallback;
     private boolean nativeGoogleBusy;
-    private boolean refreshOnResume;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -112,23 +111,6 @@ public class MainActivity extends Activity {
 
         checkForNotifications();
         checkForUpdate();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        refreshOnResume = true;
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Returning from the browser after an owner upload must show the current
-        // feed, rather than the WebView document preserved in memory.
-        if (refreshOnResume && webView != null && webView.getUrl() != null) {
-            refreshOnResume = false;
-            webView.reload();
-        }
     }
 
     private View buildShell() {
