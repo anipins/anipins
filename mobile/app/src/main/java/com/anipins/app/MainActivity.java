@@ -32,7 +32,6 @@ import android.webkit.WebViewClient;
 import android.webkit.URLUtil;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Button;
 import android.widget.Toast;
@@ -65,7 +64,6 @@ public class MainActivity extends Activity {
     private static final String NOTIFICATION_CHANNEL = "anipins_updates";
 
     private WebView webView;
-    private ProgressBar progress;
     private View errorPanel;
     private ApiClient api;
     private CredentialManager credentialManager;
@@ -129,13 +127,6 @@ public class MainActivity extends Activity {
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(8, 8, 8));
         root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
-
-        progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        progress.setMax(100);
-        progress.setVisibility(View.GONE);
-        FrameLayout.LayoutParams progressParams = new FrameLayout.LayoutParams(-1, Ui.dp(this, 2));
-        progressParams.topMargin = 0;
-        root.addView(progress, progressParams);
 
         errorPanel = buildErrorPanel();
         errorPanel.setVisibility(View.GONE);
@@ -208,13 +199,6 @@ public class MainActivity extends Activity {
         webView.setHorizontalScrollBarEnabled(false);
 
         webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public void onProgressChanged(WebView view, int newProgress) {
-                progress.setProgress(newProgress);
-                progress.setVisibility(newProgress >= 100 ? View.GONE : View.VISIBLE);
-                super.onProgressChanged(view, newProgress);
-            }
-
             @Override
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (pendingFileCallback != null) pendingFileCallback.onReceiveValue(null);
@@ -343,7 +327,6 @@ public class MainActivity extends Activity {
     private void showLoadError() {
         webView.setVisibility(View.GONE);
         errorPanel.setVisibility(View.VISIBLE);
-        progress.setVisibility(View.GONE);
     }
 
     private void loadUrl(String url) {

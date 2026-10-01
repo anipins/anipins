@@ -40,6 +40,15 @@ export default function MobileBottomNav() {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         return (
           <Link key={item.href} href={item.href} prefetch aria-current={active ? "page" : undefined}
+            onClick={event => {
+              // Pinterest-style home behavior: Home returns to the feed from
+              // elsewhere, while a second tap on Home refreshes that feed.
+              if (item.href !== "/" || pathname !== "/") return;
+              event.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+              window.dispatchEvent(new Event("anipins:refresh"));
+              router.refresh();
+            }}
             className={`group relative flex min-h-16 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl text-[11px] transition-all ${active ? "bg-gold/[0.08] text-gold" : "text-fog hover:bg-paper/[0.04] hover:text-paper"}`}>
             <span className={`absolute top-0 h-0.5 rounded-full bg-gold transition-all duration-300 ${active ? "w-8 opacity-100" : "w-0 opacity-0"}`} />
             <svg className="h-5 w-5" fill={active && item.href === "/" ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.9">
