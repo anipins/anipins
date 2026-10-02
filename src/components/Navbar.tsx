@@ -22,6 +22,10 @@ const LINKS = [
   { href: "/trending", label: "Trending" },
 ];
 
+function PremiumMark() {
+  return <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m4 8 4 4 4-7 4 7 4-4-2 10H6L4 8Z" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 21h10" strokeLinecap="round"/></svg>;
+}
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -120,8 +124,8 @@ export default function Navbar() {
         <nav className="hidden lg:flex items-center gap-1 ml-4">
           {LINKS.map((l, index) => (
             <Link key={l.href} href={l.href}
-              className={`relative rounded-full px-3 py-2 text-sm transition-colors ${index >= 3 ? "hidden min-[1800px]:block" : ""} ${path === l.href ? "text-gold" : "text-fog hover:text-paper hover:bg-paper/5"}`}>
-              {l.label}
+              className={`relative rounded-full px-3 py-2 text-sm transition-colors ${index >= 3 ? "hidden min-[1800px]:block" : ""} ${l.href === "/premium" ? "inline-flex items-center gap-1.5 border border-gold/35 bg-gold/10 text-gold hover:bg-gold/20" : path === l.href ? "text-gold" : "text-fog hover:text-paper hover:bg-paper/5"}`}>
+              {l.href === "/premium" && <PremiumMark />}{l.label}
               {path === l.href && <span className="absolute inset-x-4 -bottom-0.5 h-px bg-gold/70" />}
             </Link>
           ))}
@@ -211,7 +215,7 @@ export default function Navbar() {
             transition={{ duration: 0.3, ease: "easeInOut" }} className="lg:hidden overflow-hidden glass border-b border-paper/10">
             <div className="flex flex-col px-6 py-4 gap-1">
               {LINKS.map(l => (
-                <Link key={l.href} href={l.href} className={`py-2.5 text-[15px] ${path === l.href ? "text-gold" : "text-fog hover:text-paper"}`}>{l.label}</Link>
+                <Link key={l.href} href={l.href} className={`py-2.5 text-[15px] ${l.href === "/premium" ? "flex items-center gap-2 font-medium text-gold" : path === l.href ? "text-gold" : "text-fog hover:text-paper"}`}>{l.href === "/premium" && <PremiumMark />}{l.label}</Link>
               ))}
              {showAppDownload && <a
   href={APP_URL}
