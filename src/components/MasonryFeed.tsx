@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ArtCard from "./ArtCard";
-import { shouldRequestNextPage } from "@/lib/feed-pagination";
+import { shouldLoadFromFeedSignal } from "@/lib/feed-pagination";
 
 function createFeedSeed() { return Math.floor(Math.random() * 2_147_483_646) + 1; }
 function shuffled(items: any[]) {
@@ -26,7 +26,8 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   const sentinel = useRef<HTMLDivElement>(null);
   const inFlight = useRef(false);
   const nextPage = useRef(initialItems.length ? 1 : 0);
-  const lastPageRequestScrollY = useRef<number | null>(null);
+  const visitorScrollArmed = useRef(false);
+  const canPrimeShortFeed = useRef(initialItems.length === 0);
   const randomSeed = useRef(createFeedSeed());
   const mounted = useRef(true);
   const key = JSON.stringify(query);
@@ -102,9 +103,9 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
 
   const loadNext = useCallback((force = false) => {
     if (!hasMore || inFlight.current) return;
-    const scrollY = window.scrollY;
-    if (!force && !shouldRequestNextPage(lastPageRequestScrollY.current, scrollY)) return;
-    lastPageRequestScrollY.current = scrollY;
+    if (!force && !shouldLoadFromFeedSignal({ armed: visitorScrollArmed.current, canPrime: canPrimeShortFeed.current })) return;
+    visitorScrollArmed.current = false;
+    canPrimeShortFeed.current = false;
     void requestPage(nextPage.current);
   }, [hasMore, requestPage]);
   useEffect(() => { if (!initialItems.length) void requestPage(0, true); }, [initialItems.length, requestPage]);
@@ -114,7 +115,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     return () => window.clearTimeout(timer);
   }, [eagerLoad, initialItems.length, requestPage]);
   useEffect(() => {
-    const refresh = () => { if (randomize) randomSeed.current = createFeedSeed(); nextPage.current = 0; lastPageRequestScrollY.current = null; setHasMore(true); void requestPage(0, true, true); };
+    const refresh = () => { if (randomize) randomSeed.current = createFeedSeed(); nextPage.current = 0; canPrimeShortFeed.current = true; setHasMore(true); void requestPage(0, true, true); };
     window.addEventListener("anipins:refresh", refresh);
     return () => window.removeEventListener("anipins:refresh", refresh);
   }, [randomize, requestPage]);
@@ -125,7 +126,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     const refreshRecent = () => {
       if (document.visibilityState === "visible" && window.scrollY < 700) {
         nextPage.current = 0;
-        lastPageRequestScrollY.current = null;
+        canPrimeShortFeed.current = true;
         setHasMore(true);
         void requestPage(0, true, true, true);
       }
@@ -141,7 +142,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       if (document.visibilityState === "hidden") return;
       if (randomize) randomSeed.current = createFeedSeed();
       nextPage.current = 0;
-      lastPageRequestScrollY.current = null;
+      canPrimeShortFeed.current = true;
       setHasMore(true);
       void requestPage(0, true, true, true);
     };
@@ -154,6 +155,23 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       window.removeEventListener("focus", refreshWhenVisible);
     };
   }, [randomize, requestPage]);
+  useEffect(() => {
+    // IntersectionObserver reacts to layout changes as well as actual
+    // scrolling. Arm pagination from physical input, so appending cards can
+    // never fetch every subsequent page by itself.
+    const arm = () => { visitorScrollArmed.current = true; };
+    const armFromKey = (event: KeyboardEvent) => {
+      if (["ArrowDown", "PageDown", "End", " "].includes(event.key)) arm();
+    };
+    window.addEventListener("wheel", arm, { passive: true });
+    window.addEventListener("touchmove", arm, { passive: true });
+    window.addEventListener("keydown", armFromKey);
+    return () => {
+      window.removeEventListener("wheel", arm);
+      window.removeEventListener("touchmove", arm);
+      window.removeEventListener("keydown", armFromKey);
+    };
+  }, []);
   useEffect(() => {
     const element = sentinel.current;
     if (!element) return;

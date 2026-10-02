@@ -1,13 +1,10 @@
 /**
  * A bottom-of-feed signal may be delivered more than once while the same
- * sentinel remains visible. Keep that from turning one scroll into a request
- * for the entire catalogue.
+ * sentinel remains visible. Only a new visitor gesture may request another
+ * page; one initial request is allowed for a feed shorter than the viewport.
  */
-function shouldRequestNextPage(lastRequestScrollY, currentScrollY) {
-  // A real user scroll is enough to permit another page. Layout changes after
-  // appending a page are not: those used to re-trigger IntersectionObserver
-  // and exhaust the whole feed at once.
-  return lastRequestScrollY === null || Math.abs(currentScrollY - lastRequestScrollY) >= 80;
+function shouldLoadFromFeedSignal({ armed, canPrime }) {
+  return armed || canPrime;
 }
 
-module.exports = { shouldRequestNextPage };
+module.exports = { shouldLoadFromFeedSignal };
