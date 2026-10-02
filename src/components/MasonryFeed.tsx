@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ArtCard from "./ArtCard";
+import { shouldRequestNextPage } from "@/lib/feed-pagination";
 
 function createFeedSeed() { return Math.floor(Math.random() * 2_147_483_646) + 1; }
 function shuffled(items: any[]) {
@@ -25,6 +26,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   const sentinel = useRef<HTMLDivElement>(null);
   const inFlight = useRef(false);
   const nextPage = useRef(initialItems.length ? 1 : 0);
+  const lastPageRequestScrollY = useRef<number | null>(null);
   const randomSeed = useRef(createFeedSeed());
   const mounted = useRef(true);
   const key = JSON.stringify(query);
@@ -98,7 +100,13 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     }
   }, [key, randomize]);
 
-  const loadNext = useCallback(() => { if (hasMore && !inFlight.current) void requestPage(nextPage.current); }, [hasMore, requestPage]);
+  const loadNext = useCallback((force = false) => {
+    if (!hasMore || inFlight.current) return;
+    const scrollY = window.scrollY;
+    if (!force && !shouldRequestNextPage(lastPageRequestScrollY.current, scrollY)) return;
+    lastPageRequestScrollY.current = scrollY;
+    void requestPage(nextPage.current);
+  }, [hasMore, requestPage]);
   useEffect(() => { if (!initialItems.length) void requestPage(0, true); }, [initialItems.length, requestPage]);
   useEffect(() => {
     if (!eagerLoad || !initialItems.length) return;
@@ -106,7 +114,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     return () => window.clearTimeout(timer);
   }, [eagerLoad, initialItems.length, requestPage]);
   useEffect(() => {
-    const refresh = () => { if (randomize) randomSeed.current = createFeedSeed(); nextPage.current = 0; setHasMore(true); void requestPage(0, true, true); };
+    const refresh = () => { if (randomize) randomSeed.current = createFeedSeed(); nextPage.current = 0; lastPageRequestScrollY.current = null; setHasMore(true); void requestPage(0, true, true); };
     window.addEventListener("anipins:refresh", refresh);
     return () => window.removeEventListener("anipins:refresh", refresh);
   }, [randomize, requestPage]);
@@ -117,6 +125,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     const refreshRecent = () => {
       if (document.visibilityState === "visible" && window.scrollY < 700) {
         nextPage.current = 0;
+        lastPageRequestScrollY.current = null;
         setHasMore(true);
         void requestPage(0, true, true, true);
       }
@@ -132,6 +141,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       if (document.visibilityState === "hidden") return;
       if (randomize) randomSeed.current = createFeedSeed();
       nextPage.current = 0;
+      lastPageRequestScrollY.current = null;
       setHasMore(true);
       void requestPage(0, true, true, true);
     };
@@ -182,6 +192,6 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       : <div className="masonry">{items.map((art, index) => <ArtCard key={art.id} art={art} index={index} />)}</div>}
     <div ref={sentinel} className="h-10" aria-hidden="true" />
     {loading && !initial && <div className="py-6 text-center text-sm text-fog">Loading more artwork…</div>}
-    {loadError && !loading && <div className="py-5 text-center"><p className="mb-3 text-sm text-fog">More artwork could not load.</p><button type="button" className="chip" onClick={loadNext}>Retry loading artwork</button></div>}
+    {loadError && !loading && <div className="py-5 text-center"><p className="mb-3 text-sm text-fog">More artwork could not load.</p><button type="button" className="chip" onClick={() => loadNext(true)}>Retry loading artwork</button></div>}
   </div>;
 }
