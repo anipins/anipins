@@ -4,6 +4,7 @@ import { getUser, isAdmin } from "@/lib/auth";
 import { fingerprintImage, hashDistance, processUploadedArtwork, readArtworkUpload, saveImage } from "@/lib/media";
 import { notifyFollowers } from "@/lib/activity";
 import { audit, requestInfo } from "@/lib/admin-security";
+import { ensurePremiumArtworkSchema } from "@/lib/premium-artwork";
 
 export const runtime = "nodejs";
 // High-resolution source images need server-side hashing plus a WebP thumbnail.
@@ -18,6 +19,7 @@ export async function POST(req: NextRequest) {
   const u = await getUser();
   if (!isAdmin(u)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   try {
+  await ensurePremiumArtworkSchema();
   const direct = req.headers.get("content-type")?.includes("application/json") === true;
   const body = direct ? await req.json() : null;
   const form = direct ? null : await req.formData();
@@ -49,6 +51,7 @@ export async function POST(req: NextRequest) {
   const gender = String(value("gender") || "").trim();
   const category = String(value("category") || "").trim();
   const featured = value("featured") === (direct ? true : "1") ? 1 : 0;
+  const premium = value("premium") === (direct ? true : "1") ? 1 : 0;
   const published = value("published") === (direct ? true : "1") ? 1 : 0;
   const allowDuplicate = value("allowDuplicate") === (direct ? true : "1");
 
@@ -77,9 +80,9 @@ export async function POST(req: NextRequest) {
   for (const item of uploaded) {
     const m = direct ? await processUploadedArtwork(item.buffer, storageKey) : await saveImage(item.buffer, item.name);
     await run(
-      `INSERT INTO artworks (title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, featured, published, orig, thumb, width, height, content_hash, perceptual_hash, creator_name, source_url)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      title || character, character, slugify(character), anime, slugify(anime), description, tags, gender, category, featured, published, m.orig, m.thumb, m.width, m.height, item.fingerprint.contentHash, item.fingerprint.perceptualHash, creator, sourceUrl);
+      `INSERT INTO artworks (title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, premium, featured, published, orig, thumb, width, height, content_hash, perceptual_hash, creator_name, source_url)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      title || character, character, slugify(character), anime, slugify(anime), description, tags, gender, category, premium, featured, published, m.orig, m.thumb, m.width, m.height, item.fingerprint.contentHash, item.fingerprint.perceptualHash, creator, sourceUrl);
     const r = await row("SELECT id FROM artworks WHERE orig=?", m.orig);
     ids.push(r.id);
     if (published) await notifyFollowers(r.id, slugify(character), character, slugify(anime), anime);

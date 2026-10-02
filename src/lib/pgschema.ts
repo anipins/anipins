@@ -38,11 +38,12 @@ export const PG_SCHEMA: string[] = [
   `CREATE TABLE IF NOT EXISTS artworks (
     id SERIAL PRIMARY KEY, title TEXT DEFAULT '', character_name TEXT NOT NULL, character_slug TEXT NOT NULL,
     anime_name TEXT NOT NULL, anime_slug TEXT NOT NULL, description TEXT DEFAULT '', tags TEXT DEFAULT '', gender TEXT DEFAULT '',
-    category TEXT DEFAULT '', featured INTEGER DEFAULT 0, published INTEGER DEFAULT 1,
+    category TEXT DEFAULT '', premium INTEGER DEFAULT 0, featured INTEGER DEFAULT 0, published INTEGER DEFAULT 1,
     orig TEXT NOT NULL, thumb TEXT NOT NULL, width INTEGER DEFAULT 0, height INTEGER DEFAULT 0,
     views INTEGER DEFAULT 0, downloads INTEGER DEFAULT 0, content_hash TEXT DEFAULT '', perceptual_hash TEXT DEFAULT '',
     creator_name TEXT DEFAULT '', source_url TEXT DEFAULT '', created_at TIMESTAMPTZ DEFAULT now())`,
   `ALTER TABLE artworks ADD COLUMN IF NOT EXISTS gender TEXT DEFAULT ''`,
+  `ALTER TABLE artworks ADD COLUMN IF NOT EXISTS premium INTEGER DEFAULT 0`,
   `ALTER TABLE artworks ADD COLUMN IF NOT EXISTS content_hash TEXT DEFAULT ''`,
   `ALTER TABLE artworks ADD COLUMN IF NOT EXISTS perceptual_hash TEXT DEFAULT ''`,
   `ALTER TABLE artworks ADD COLUMN IF NOT EXISTS creator_name TEXT DEFAULT ''`,

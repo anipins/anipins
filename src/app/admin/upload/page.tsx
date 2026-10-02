@@ -6,13 +6,13 @@ import { toast } from "@/components/Toaster";
 type UploadItem = {
   key: string; file: File; preview: string; title: string; character: string; anime: string;
   tags: string; description: string; creator: string; sourceUrl: string; category: string;
-  gender: string; featured: boolean; published: boolean;
+  gender: string; featured: boolean; premium: boolean; published: boolean;
 };
 
 const blank = (file: File, index: number): UploadItem => ({
   key: `${file.name}-${file.size}-${file.lastModified}-${index}`, file, preview: URL.createObjectURL(file),
   title: file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "), character: "", anime: "", tags: "",
-  description: "", creator: "", sourceUrl: "", category: "", gender: "", featured: false, published: true,
+  description: "", creator: "", sourceUrl: "", category: "", gender: "", featured: false, premium: false, published: true,
 });
 
 const retryableStatus = (status: number) => [408, 425, 429, 500, 502, 503, 504].includes(status);
@@ -38,13 +38,13 @@ export default function AdminUpload() {
   };
   const update = (key: string, values: Partial<UploadItem>) => setItems(previous => previous.map(item => item.key === key ? { ...item, ...values } : item));
   const remove = (key: string) => setItems(previous => { const item = previous.find(value => value.key === key); if (item) URL.revokeObjectURL(item.preview); return previous.filter(value => value.key !== key); });
-  const applyFirstToAll = () => setItems(previous => previous.length < 2 ? previous : previous.map((item, index) => index === 0 ? item : ({ ...item, character: previous[0].character, anime: previous[0].anime, tags: previous[0].tags, description: previous[0].description, creator: previous[0].creator, sourceUrl: previous[0].sourceUrl, category: previous[0].category, gender: previous[0].gender, featured: previous[0].featured, published: previous[0].published })));
+  const applyFirstToAll = () => setItems(previous => previous.length < 2 ? previous : previous.map((item, index) => index === 0 ? item : ({ ...item, character: previous[0].character, anime: previous[0].anime, tags: previous[0].tags, description: previous[0].description, creator: previous[0].creator, sourceUrl: previous[0].sourceUrl, category: previous[0].category, gender: previous[0].gender, featured: previous[0].featured, premium: previous[0].premium, published: previous[0].published })));
 
   const send = async (item: UploadItem, allowDuplicate = false) => {
     const data = new FormData(); data.append("files", item.file); data.append("title", item.title); data.append("character", item.character); data.append("anime", item.anime);
     data.append("tags", item.tags); data.append("description", item.description); data.append("creator", item.creator); data.append("sourceUrl", item.sourceUrl); data.append("category", item.category); data.append("gender", item.gender);
-    if (item.featured) data.append("featured", "1"); if (item.published) data.append("published", "1"); if (allowDuplicate) data.append("allowDuplicate", "1");
-    const payload = { title: item.title, character: item.character, anime: item.anime, tags: item.tags, description: item.description, creator: item.creator, sourceUrl: item.sourceUrl, category: item.category, gender: item.gender, featured: item.featured, published: item.published, allowDuplicate, fileName: item.file.name, fileType: item.file.type, fileSize: item.file.size };
+    if (item.featured) data.append("featured", "1"); if (item.premium) data.append("premium", "1"); if (item.published) data.append("published", "1"); if (allowDuplicate) data.append("allowDuplicate", "1");
+    const payload = { title: item.title, character: item.character, anime: item.anime, tags: item.tags, description: item.description, creator: item.creator, sourceUrl: item.sourceUrl, category: item.category, gender: item.gender, featured: item.featured, premium: item.premium, published: item.published, allowDuplicate, fileName: item.file.name, fileType: item.file.type, fileSize: item.file.size };
     let signed: { direct?: boolean; uploadUrl?: string; key?: string } | null = null;
     let stored = false;
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -136,7 +136,7 @@ export default function AdminUpload() {
           <Field label="Creator / artist" value={item.creator} onChange={creator => update(item.key, { creator })} />
           <Field label="Original source URL" value={item.sourceUrl} onChange={sourceUrl => update(item.key, { sourceUrl })} type="url" />
           <div className="sm:col-span-2"><label className="label">Description</label><textarea rows={2} className="input resize-none" value={item.description} onChange={event => update(item.key, { description: event.target.value })} /></div>
-          <div className="flex flex-wrap gap-5 text-sm sm:col-span-2"><label className="flex items-center gap-2"><input type="checkbox" checked={item.featured} onChange={event => update(item.key, { featured: event.target.checked })} className="accent-gold" /> Featured</label><label className="flex items-center gap-2"><input type="checkbox" checked={item.published} onChange={event => update(item.key, { published: event.target.checked })} className="accent-gold" /> Publish immediately</label></div>
+          <div className="flex flex-wrap gap-5 text-sm sm:col-span-2"><label className="flex items-center gap-2"><input type="checkbox" checked={item.featured} onChange={event => update(item.key, { featured: event.target.checked })} className="accent-gold" /> Featured</label><label className="flex items-center gap-2"><input type="checkbox" checked={item.premium} onChange={event => update(item.key, { premium: event.target.checked })} className="accent-gold" /> Premium exclusive <span className="text-xs text-fog">(hidden from public feeds)</span></label><label className="flex items-center gap-2"><input type="checkbox" checked={item.published} onChange={event => update(item.key, { published: event.target.checked })} className="accent-gold" /> Publish immediately</label></div>
         </div>
       </article>)}</div>
       {progress ? <div className="rounded-2xl bg-soft p-4 hairline" aria-live="polite"><div className="mb-2 flex items-center justify-between gap-3 text-sm"><span className="truncate text-gold">{progress}</span><span className="shrink-0 text-fog">Please keep this page open</span></div><div className="h-1.5 overflow-hidden rounded-full bg-ink"><div className="h-full animate-pulse rounded-full bg-gold" style={{ width: `${Math.max(8, ((Number(progress.match(/Uploading (\d+)/)?.[1]) || 1) / Math.max(items.length, 1)) * 100)}%` }} /></div></div> : null}{message ? <p className={`text-sm ${message.startsWith("✓") ? "text-green-400" : "text-red-300"}`}>{message}</p> : null}

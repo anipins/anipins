@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { rows } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { publicMediaUrl } from "@/lib/media";
+import { ensurePremiumArtworkSchema, premiumArtworkFilter } from "@/lib/premium-artwork";
+import { userHasPremium } from "@/lib/billing";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const clientItems = (items: any[]) => items.map(item => ({ ...item, thumb_url: publicMediaUrl(item.thumb) }));
 
 export async function GET(req: NextRequest) {
+  await ensurePremiumArtworkSchema();
   const sp = req.nextUrl.searchParams;
   const page = Math.max(0, parseInt(sp.get("page") || "0"));
   const limit = Math.min(40, parseInt(sp.get("limit") || "20"));
@@ -22,14 +25,16 @@ export async function GET(req: NextRequest) {
   const rawSeed = parseInt(sp.get("seed") || "1", 10);
   const seed = Number.isFinite(rawSeed) && rawSeed > 0 ? rawSeed % 2_147_483_647 : 1;
   const featured = sp.get("featured");
+  const premiumOnly = sp.get("premium") === "1";
   // Browse feeds must stay independent of an account session. Resolving a
   // session and hidden-items query for every scroll request made authenticated
   // browsing slower and could stall the complete feed. Account data is only
   // needed for Following and the optional For You route.
-  const needsUser = sort === "following" || sort === "for-you";
+  const needsUser = sort === "following" || sort === "for-you" || premiumOnly;
   const user = needsUser ? await getUser() : null;
+  if (premiumOnly && (!user || !(await userHasPremium(user.id)))) return NextResponse.json({ error: "AniPins Premium is required." }, { status: 403 });
 
-  let where = "published = 1";
+  let where = `published = 1 AND ${premiumArtworkFilter(premiumOnly)}`;
   const args: any[] = [];
   if (q) {
     where += " AND (lower(character_name) LIKE ? OR lower(anime_name) LIKE ? OR lower(tags) LIKE ? OR lower(title) LIKE ? OR lower(category) LIKE ?)";
@@ -61,7 +66,7 @@ export async function GET(req: NextRequest) {
     const followArgs: any[] = [];
     if (characterValues.length) { clauses.push(`character_slug IN (${characterValues.map(() => "?").join(",")})`); followArgs.push(...characterValues); }
     if (animeValues.length) { clauses.push(`anime_slug IN (${animeValues.map(() => "?").join(",")})`); followArgs.push(...animeValues); }
-    const items = await rows(`SELECT ${cols} FROM artworks WHERE published=1 AND id NOT IN (SELECT artwork_id FROM hidden_artworks WHERE user_id=?) AND (${clauses.join(" OR ")}) ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`, user.id, ...followArgs, limit + 1, page * limit);
+    const items = await rows(`SELECT ${cols} FROM artworks WHERE published=1 AND ${premiumArtworkFilter(false)} AND id NOT IN (SELECT artwork_id FROM hidden_artworks WHERE user_id=?) AND (${clauses.join(" OR ")}) ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`, user.id, ...followArgs, limit + 1, page * limit);
     return NextResponse.json({ items: clientItems(items.slice(0, limit)), hasMore: items.length > limit }, { headers: { "Cache-Control": "private, no-store" } });
   }
   // The home page already server-renders its first personal discovery set.

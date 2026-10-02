@@ -14,6 +14,7 @@ const APP_DOWNLOAD_KEY = "anipins-app-download-requested-v1";
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/explore", label: "Explore" },
+  { href: "/premium", label: "Premium" },
   { href: "/following", label: "Following" },
   { href: "/characters", label: "Characters" },
   { href: "/anime", label: "Anime" },

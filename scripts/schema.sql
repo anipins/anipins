@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS artworks (
   tags TEXT DEFAULT '',
   gender TEXT DEFAULT '',
   category TEXT DEFAULT '',
+  premium INTEGER DEFAULT 0,
   featured INTEGER DEFAULT 0,
   published INTEGER DEFAULT 1,
   orig TEXT NOT NULL,

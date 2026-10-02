@@ -2,7 +2,7 @@ import path from "path";
 import fs from "fs";
 
 export const UPLOADS_DIR = path.join(process.cwd(), "uploads");
-const USE_PG = !!process.env.DATABASE_URL;
+export const USE_PG = !!process.env.DATABASE_URL;
 
 declare global {
   // eslint-disable-next-line no-var
@@ -53,6 +53,7 @@ function sqlite() {
     if (!artworkColumns.includes("perceptual_hash")) d.exec("ALTER TABLE artworks ADD COLUMN perceptual_hash TEXT DEFAULT ''");
     if (!artworkColumns.includes("creator_name")) d.exec("ALTER TABLE artworks ADD COLUMN creator_name TEXT DEFAULT ''");
     if (!artworkColumns.includes("source_url")) d.exec("ALTER TABLE artworks ADD COLUMN source_url TEXT DEFAULT ''");
+    if (!artworkColumns.includes("premium")) d.exec("ALTER TABLE artworks ADD COLUMN premium INTEGER DEFAULT 0");
     const collectionColumns = d.pragma("table_info(collections)").map((c: any) => c.name);
     if (!collectionColumns.includes("is_private")) d.exec("ALTER TABLE collections ADD COLUMN is_private INTEGER DEFAULT 1");
     global.__anipins_sqlite = d;

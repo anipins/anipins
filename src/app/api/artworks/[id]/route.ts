@@ -4,11 +4,15 @@ import { row, rows, run } from "@/lib/db";
 import { COOKIE, getUser } from "@/lib/auth";
 import { recordActivity } from "@/lib/activity";
 import { publicMediaUrl } from "@/lib/media";
+import { ensurePremiumArtworkSchema } from "@/lib/premium-artwork";
+import { userHasPremium } from "@/lib/billing";
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  await ensurePremiumArtworkSchema();
   const params = await props.params;
   const id = parseInt(params.id);
+  const user = await getUser();
   const token = (await cookies()).get(COOKIE)?.value || "";
   const art = await row(
     `SELECT a.*,
@@ -21,6 +25,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     token, Date.now(), id,
   );
   if (!art) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (Number(art.premium || 0) && (!user || !(await userHasPremium(user.id)))) return NextResponse.json({ error: "AniPins Premium is required." }, { status: 403 });
 
   const discoveryMultiplier = ((id + 1) * 48_271) % 2_147_483_647 || 1;
   const related = await rows(
@@ -35,7 +40,6 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     );
 
   after(async () => {
-    const user = await getUser();
     await Promise.allSettled([
       run("UPDATE artworks SET views = views + 1 WHERE id=?", id),
       user ? recordActivity(user.id, id, "view") : Promise.resolve(),
