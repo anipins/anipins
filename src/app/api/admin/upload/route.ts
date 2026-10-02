@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       title || character, character, slugify(character), anime, slugify(anime), description, tags, gender, category, premium, featured, published, m.orig, m.thumb, m.width, m.height, item.fingerprint.contentHash, item.fingerprint.perceptualHash, creator, sourceUrl);
     const r = await row("SELECT id FROM artworks WHERE orig=?", m.orig);
     ids.push(r.id);
-    if (published) await notifyFollowers(r.id, slugify(character), character, slugify(anime), anime);
+    if (published && !premium) await notifyFollowers(r.id, slugify(character), character, slugify(anime), anime);
   }
   await audit(u!.id, "ARTWORK_UPLOAD", "artwork", ids.join(","), `${ids.length} artwork(s): ${character} · ${anime}`, requestInfo(req).ip);
   return NextResponse.json({ ok: true, ids });
