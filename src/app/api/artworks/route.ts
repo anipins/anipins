@@ -3,7 +3,7 @@ import { rows } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { publicMediaUrl } from "@/lib/media";
 import { ensurePremiumArtworkSchema, premiumArtworkFilter } from "@/lib/premium-artwork";
-import { userHasPremium } from "@/lib/billing";
+import { canAccessPremium } from "@/lib/billing";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   // needed for Following and the optional For You route.
   const needsUser = sort === "following" || sort === "for-you" || premiumOnly;
   const user = needsUser ? await getUser() : null;
-  if (premiumOnly && (!user || !(await userHasPremium(user.id)))) return NextResponse.json({ error: "AniPins Premium is required." }, { status: 403 });
+  if (premiumOnly && (!user || !(await canAccessPremium(user)))) return NextResponse.json({ error: "AniPins Premium is required." }, { status: 403 });
 
   let where = `published = 1 AND ${premiumArtworkFilter(premiumOnly)}`;
   const args: any[] = [];

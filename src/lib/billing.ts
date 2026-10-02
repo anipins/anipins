@@ -74,6 +74,10 @@ export async function userHasPremium(userId: number) {
   return !!subscription && isPremiumSubscriptionStatus(subscription.status) && (!subscription.current_end || subscription.current_end * 1000 > Date.now());
 }
 
+export async function canAccessPremium(user: { id: number; role?: string }) {
+  return user.role === "ADMIN" || userHasPremium(user.id);
+}
+
 async function getPlanId() {
   const configured = process.env.RAZORPAY_PLAN_ID?.trim();
   if (configured) return configured;

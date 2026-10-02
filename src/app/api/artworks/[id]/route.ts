@@ -5,7 +5,7 @@ import { COOKIE, getUser } from "@/lib/auth";
 import { recordActivity } from "@/lib/activity";
 import { publicMediaUrl } from "@/lib/media";
 import { ensurePremiumArtworkSchema } from "@/lib/premium-artwork";
-import { userHasPremium } from "@/lib/billing";
+import { canAccessPremium } from "@/lib/billing";
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -25,7 +25,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     token, Date.now(), id,
   );
   if (!art) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (Number(art.premium || 0) && (!user || !(await userHasPremium(user.id)))) return NextResponse.json({ error: "AniPins Premium is required." }, { status: 403 });
+  if (Number(art.premium || 0) && (!user || !(await canAccessPremium(user)))) return NextResponse.json({ error: "AniPins Premium is required." }, { status: 403 });
 
   const discoveryMultiplier = ((id + 1) * 48_271) % 2_147_483_647 || 1;
   const related = await rows(
