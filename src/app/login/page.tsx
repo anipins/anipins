@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
@@ -13,7 +13,12 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [challenge, setChallenge] = useState("");
   const [code, setCode] = useState("");
+  const [instagramBrowser, setInstagramBrowser] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setInstagramBrowser(/Instagram/i.test(navigator.userAgent));
+  }, []);
 
   const finishSignIn = useCallback(async (role: string) => {
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mobile") === "1") {
@@ -62,6 +67,12 @@ export default function Login() {
         className="min-w-0 overflow-hidden rounded-3xl bg-panel hairline p-6 sm:p-8">
         <h1 className="font-display text-2xl font-semibold">{challenge ? "Security verification" : mode === "login" ? "Welcome back" : "Join AniPins"}</h1>
         <p className="mt-1 text-sm text-fog">{challenge ? "Enter the code from your authenticator app or a recovery code." : new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").get("mobile") === "1" ? "Continue with Google to sign in to AniPins." : mode === "login" ? "Sign in to your account." : "Create an account to save artwork."}</p>
+        {instagramBrowser && !challenge && (
+          <aside className="mt-4 rounded-2xl border border-gold/25 bg-gold/10 p-3 text-sm text-paper/90">
+            <p className="font-medium text-gold">Open AniPins in Chrome for Google sign-in</p>
+            <p className="mt-1 text-xs leading-relaxed text-fog">Instagram&apos;s in-app browser does not share your phone or Chrome Google accounts. Tap Instagram&apos;s ⋮ menu, then choose <span className="text-paper">Open in browser</span> to see your normal account picker.</p>
+          </aside>
+        )}
         <form onSubmit={submit} className="mt-6 space-y-4">
           {challenge ? <div><label className="label">Authentication code</label><input className="input font-mono tracking-[.25em]" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={e=>setCode(e.target.value)} placeholder="000000" autoFocus /></div> : <>
           {mode === "register" && (
