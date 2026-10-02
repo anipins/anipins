@@ -24,7 +24,29 @@ export async function getArtworkCards(options: {
   if (sort === "popular") order = "downloads DESC, views DESC, id DESC";
   if (sort === "featured") order = "views DESC, id DESC";
   if (sort === "random") order = "RANDOM()";
-  const items = await rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ?`, ...args, limit);
+  // The home page renders page zero on the server, while MasonryFeed obtains
+  // later pages through /api/artworks. Use the same balanced latest ordering
+  // in both places so no card is repeated or skipped at that hand-off.
+  const balancedLatest = sort === "latest" && !character && !anime && !excludeId;
+  const items = balancedLatest
+    ? await rows(
+      `SELECT ${ARTWORK_CARD_COLUMNS} FROM (
+        SELECT ${ARTWORK_CARD_COLUMNS},
+          CASE WHEN lower(category) = 'wallpapers' OR lower(tags) LIKE '%wallpaper%' THEN 1 ELSE 0 END AS is_wallpaper,
+          ROW_NUMBER() OVER (
+            PARTITION BY CASE WHEN lower(category) = 'wallpapers' OR lower(tags) LIKE '%wallpaper%' THEN 1 ELSE 0 END
+            ORDER BY created_at DESC, id DESC
+          ) AS segment_rank
+        FROM artworks WHERE ${where}
+      ) balanced
+      ORDER BY CASE
+        WHEN is_wallpaper = 1 THEN ((segment_rank - 1) * 4) + 3
+        ELSE (((segment_rank - 1) / 3) * 4) + ((segment_rank - 1) % 3)
+      END, is_wallpaper ASC
+      LIMIT ?`,
+      ...args, limit,
+    )
+    : await rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ?`, ...args, limit);
   return items.map((item: any) => ({ ...item, thumb_url: publicMediaUrl(item.thumb) }));
 }
 
