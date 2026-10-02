@@ -167,6 +167,12 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at, id);
 CREATE INDEX IF NOT EXISTS idx_notifications_artwork ON notifications(artwork_id);
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS billing_subscriptions (
+  subscription_id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'created',
+  payment_id TEXT DEFAULT '', current_end BIGINT DEFAULT 0, cancel_at_cycle_end INTEGER DEFAULT 0,
+  created_at BIGINT NOT NULL, updated_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_billing_subscriptions_user ON billing_subscriptions(user_id, updated_at);
 INSERT OR IGNORE INTO settings (key, value) VALUES
  ('site_name','AniPins'),
  ('tagline','Anime artwork for inspiration.'),

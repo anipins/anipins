@@ -104,6 +104,13 @@ export const PG_SCHEMA: string[] = [
   `ALTER TABLE public.auth_identities ENABLE ROW LEVEL SECURITY`,
   `REVOKE ALL ON TABLE public.users, public.auth_identities, public.collections, public.saves, public.likes, public.interactions, public.hidden_artworks, public.follows, public.notifications, public.content_reports, public.push_devices, public.login_challenges, public.security_alerts, public.admin_audit_log FROM anon, authenticated`,
   `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`,
+  `CREATE TABLE IF NOT EXISTS billing_subscriptions (
+    subscription_id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'created',
+    payment_id TEXT DEFAULT '', current_end BIGINT DEFAULT 0, cancel_at_cycle_end INTEGER DEFAULT 0,
+    created_at BIGINT NOT NULL, updated_at BIGINT NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS idx_billing_subscriptions_user ON billing_subscriptions(user_id, updated_at)`,
+  `ALTER TABLE public.billing_subscriptions ENABLE ROW LEVEL SECURITY`,
+  `REVOKE ALL ON TABLE public.billing_subscriptions FROM anon, authenticated`,
   `INSERT INTO settings (key, value) VALUES
     ('site_name','AniPins'),
     ('tagline','Anime artwork for inspiration.'),

@@ -15,7 +15,7 @@ module.exports = {
       { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
       {
         key: "Content-Security-Policy",
-        value: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://accounts.google.com https://*.supabase.co; frame-src https://accounts.google.com; worker-src 'self' blob:; upgrade-insecure-requests",
+        value: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://accounts.google.com https://*.supabase.co https://api.razorpay.com https://checkout.razorpay.com; frame-src https://accounts.google.com https://api.razorpay.com https://checkout.razorpay.com; worker-src 'self' blob:; upgrade-insecure-requests",
       },
     ];
     return [

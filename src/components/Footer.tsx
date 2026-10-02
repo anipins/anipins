@@ -27,6 +27,7 @@ export default function Footer() {
               <InstagramLink className="text-fog hover:text-paper transition-colors">Instagram</InstagramLink>
               <Link href="/about" className="text-fog hover:text-paper transition-colors">About</Link>
               <Link href="/support" className="text-fog hover:text-paper transition-colors">Help & Support</Link>
+              <Link href="/premium" className="text-fog hover:text-paper transition-colors">AniPins Premium</Link>
             </div>
             <div className="flex flex-col gap-2.5">
               <span className="text-[11px] uppercase tracking-widest text-gold/70 mb-1">Legal</span>
