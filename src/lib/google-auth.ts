@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { OAuth2Client, type TokenPayload } from "google-auth-library";
 import { row, run } from "./db";
-import { hashPassword } from "./auth";
+import { ADMIN_EMAIL, hashPassword } from "./auth";
 
 export const GOOGLE_PROVIDER = "google";
 export const GOOGLE_NONCE_COOKIE = "anipins_google_nonce";
@@ -91,6 +91,13 @@ export async function findOrCreateGoogleUser(payload: TokenPayload): Promise<Goo
       GOOGLE_PROVIDER,
       subject,
     );
+    // The administrator may first have been created through a different
+    // sign-in path.  Promote only the configured, verified administrator
+    // email; Google has already verified this address above.
+    if (email === ADMIN_EMAIL && (linked as GoogleUser).role !== "ADMIN") {
+      await run("UPDATE users SET role='ADMIN' WHERE id=?", (linked as GoogleUser).id);
+      (linked as GoogleUser).role = "ADMIN";
+    }
     return { ...(linked as Omit<GoogleUser, "isNew">), isNew: false };
   }
 
@@ -108,12 +115,17 @@ export async function findOrCreateGoogleUser(payload: TokenPayload): Promise<Goo
       displayName,
       displayName,
       avatar,
-      "USER",
+      email === ADMIN_EMAIL ? "ADMIN" : "USER",
     );
     user = await row(
       "SELECT id,email,role,two_factor_enabled FROM users WHERE email=?",
       email,
     );
+  }
+
+  if (email === ADMIN_EMAIL && (user as GoogleUser).role !== "ADMIN") {
+    await run("UPDATE users SET role='ADMIN' WHERE id=?", (user as GoogleUser).id);
+    (user as GoogleUser).role = "ADMIN";
   }
 
   try {
