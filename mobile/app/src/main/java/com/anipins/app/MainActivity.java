@@ -49,6 +49,7 @@ import androidx.credentials.GetCredentialResponse;
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import org.json.JSONException;
 import org.json.JSONArray;
@@ -63,6 +64,7 @@ public class MainActivity extends Activity {
     private static final String USER_AGENT_SUFFIX = " AniPinsAndroid/" + BuildConfig.VERSION_NAME;
     private static final int FILE_PICKER_REQUEST = 4101;
     private static final int STORAGE_PERMISSION_REQUEST = 4102;
+    private static final int NOTIFICATION_PERMISSION_REQUEST = 4103;
     private static final String NOTIFICATION_CHANNEL = "anipins_updates";
 
     private WebView webView;
@@ -71,6 +73,7 @@ public class MainActivity extends Activity {
     private CredentialManager credentialManager;
     private ValueCallback<Uri[]> pendingFileCallback;
     private boolean nativeGoogleBusy;
+    private String registeredPushSession = "";
 
     @Override
     protected void onCreate(Bundle state) {
@@ -111,6 +114,8 @@ public class MainActivity extends Activity {
 
         checkForNotifications();
         checkForUpdate();
+        requestNotificationPermission();
+        registerPushToken();
     }
 
     private View buildShell() {
@@ -231,6 +236,7 @@ public class MainActivity extends Activity {
                 errorPanel.setVisibility(View.GONE);
                 webView.setVisibility(View.VISIBLE);
                 if (Build.VERSION.SDK_INT >= 21) CookieManager.getInstance().flush();
+                registerPushToken();
                 super.onPageFinished(view, url);
             }
 
@@ -347,6 +353,7 @@ public class MainActivity extends Activity {
                 String cookie = "anipins_session=" + sessionToken + "; Path=/; Secure; HttpOnly; SameSite=Lax";
                 CookieManager.getInstance().setCookie(HOME_URL, cookie, value -> {
                     CookieManager.getInstance().flush();
+                    registerPushToken();
                     loadUrl(HOME_URL);
                 });
             });
@@ -529,6 +536,28 @@ public class MainActivity extends Activity {
             try {
                 getSystemService(NotificationManager.class).notify(1001, notification.build());
             } catch (SecurityException ignored) {}
+        });
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+            && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_REQUEST);
+        }
+    }
+
+    private void registerPushToken() {
+        if (!api.session().hasSession()) return;
+        final String session = api.session().read();
+        if (session.equals(registeredPushSession)) return;
+        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+            if (!task.isSuccessful() || task.getResult() == null || task.getResult().trim().isEmpty()) return;
+            try {
+                JSONObject payload = new JSONObject().put("token", task.getResult()).put("platform", "android");
+                api.post("/api/push/register", payload, (status, data, error) -> {
+                    if (status == 200 && error == null) registeredPushSession = session;
+                });
+            } catch (JSONException ignored) {}
         });
     }
 

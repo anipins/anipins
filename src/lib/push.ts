@@ -50,7 +50,9 @@ export async function sendPush(tokens: string[], title: string, body: string, pa
     const response = await fetch(`https://fcm.googleapis.com/v1/projects/${account.project_id}/messages:send`, {
       method: "POST",
       headers: { Authorization: `Bearer ${bearer}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ message: { token, notification: { title, body }, data: { path }, android: { priority: "high", notification: { channel_id: "new_artwork" } } } }),
+      // Data-only messages are handled by AniPinsMessagingService in both the
+      // foreground and background, so tapping always opens the intended artwork.
+      body: JSON.stringify({ message: { token, data: { path, title, body }, android: { priority: "high" } } }),
     });
     if (response.ok) sent++;
   }

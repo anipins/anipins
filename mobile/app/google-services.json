@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "762463316964",
+    "project_id": "anipins-3d1af",
+    "storage_bucket": "anipins-3d1af.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:762463316964:android:6d3f7f7a8ba012a00bf5f1",
+        "android_client_info": {
+          "package_name": "com.anipins.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmvxUoP-O1cWgEwUwGZyG85wSHBc40zrY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:762463316964:android:798c5c7ff9b7c3790bf5f1",
+        "android_client_info": {
+          "package_name": "com.anipins.app.debug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmvxUoP-O1cWgEwUwGZyG85wSHBc40zrY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
