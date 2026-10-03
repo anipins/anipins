@@ -4,12 +4,10 @@ import { NextResponse } from "next/server";
 export function GET() {
   return NextResponse.json(
     {
-      versionCode: 39,
-      versionName: "2.5.18",
-      apk: "/downloads/AniPins-2.5.18.apk",
-      // This release starts a new signing lineage, so old sideloaded builds
-      // must be removed before Android can install it.
-      requiresReinstall: true,
+      versionCode: 40,
+      versionName: "2.5.19",
+      apk: "/downloads/AniPins-2.5.19.apk",
+      requiresReinstall: false,
     },
     { headers: { "Cache-Control": "no-store" } },
   );
