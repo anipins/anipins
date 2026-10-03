@@ -104,8 +104,12 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
   /* The Android app draws behind the system gesture area. Extend the dock to
      the physical bottom and keep its controls above that gesture area. */
   html[data-native-app="true"] .mobile-bottom-nav {
+    /* The app dock belongs to the device edge, unlike the floating web dock. */
+    inset-inline: 0;
     bottom: 0;
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem) !important;
+    border-top-left-radius: 1.25rem;
+    border-top-right-radius: 1.25rem;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
   }
