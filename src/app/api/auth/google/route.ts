@@ -7,6 +7,7 @@ import {
   requestInfo,
 } from "@/lib/admin-security";
 import { run } from "@/lib/db";
+import { sendWelcomeEmail } from "@/lib/email";
 import {
   ensureGoogleAuthSchema,
   findOrCreateGoogleUser,
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
 
     const token = await createSession(user.id, info);
     if (user.role === "ADMIN") await createLoginAlert(user.id, info.ip, info.ua);
+    if (user.isNew) void sendWelcomeEmail(user.email, String(payload.name || ""));
     const response = NextResponse.json({ ok: true, role: user.role });
     response.cookies.set(COOKIE, token, SESSION_COOKIE_OPTIONS);
     return clearNonce(response);

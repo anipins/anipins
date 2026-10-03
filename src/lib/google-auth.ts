@@ -68,6 +68,7 @@ type GoogleUser = {
   email: string;
   role: string;
   two_factor_enabled: number;
+  isNew: boolean;
 };
 
 export async function findOrCreateGoogleUser(payload: TokenPayload): Promise<GoogleUser> {
@@ -90,13 +91,14 @@ export async function findOrCreateGoogleUser(payload: TokenPayload): Promise<Goo
       GOOGLE_PROVIDER,
       subject,
     );
-    return linked as GoogleUser;
+    return { ...(linked as Omit<GoogleUser, "isNew">), isNew: false };
   }
 
   let user = await row(
     "SELECT id,email,role,two_factor_enabled FROM users WHERE LOWER(email)=LOWER(?)",
     email,
   );
+  const isNew = !user;
   if (!user) {
     const unusablePassword = hashPassword(crypto.randomBytes(48).toString("base64url"));
     await run(
@@ -131,8 +133,8 @@ export async function findOrCreateGoogleUser(payload: TokenPayload): Promise<Goo
       GOOGLE_PROVIDER,
       subject,
     );
-    if (raced) return raced as GoogleUser;
+    if (raced) return { ...(raced as Omit<GoogleUser, "isNew">), isNew: false };
     throw new Error("GOOGLE_ACCOUNT_ALREADY_LINKED");
   }
-  return user as GoogleUser;
+  return { ...(user as Omit<GoogleUser, "isNew">), isNew };
 }
