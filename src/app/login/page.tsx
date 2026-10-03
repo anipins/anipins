@@ -37,7 +37,9 @@ export default function Login() {
       setErr("Could not return to the AniPins app. Please reopen the app and try again.");
       return;
     }
-    router.push(role === "ADMIN" ? "/admin" : "/");
+    const next = new URLSearchParams(window.location.search).get("next");
+    const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "";
+    router.push(role === "ADMIN" ? "/admin" : safeNext || "/");
     router.refresh();
   }, [router]);
 

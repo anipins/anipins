@@ -9,6 +9,7 @@ import Tilt from "./Tilt";
 import { toast } from "./Toaster";
 import { artworkAlt } from "@/lib/site";
 import ReportArtwork from "./ReportArtwork";
+import DownloadButton from "./DownloadButton";
 
 export function openArtwork(id: number, art?: any) {
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("anipins:open-art", { detail: { id, art } }));
@@ -77,9 +78,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
               <button onClick={() => setSave(true)} title="Save" className="grid h-8 w-8 place-items-center rounded-full bg-white/15 backdrop-blur hover:bg-gold hover:text-ink transition-colors">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M6 4h12v17l-6-4.5L6 21z" strokeLinejoin="round"/></svg>
               </button>
-              <a href={`/api/artworks/${art.id}/download`} onClick={() => toast("Download started")} title="Download" className="grid h-8 w-8 place-items-center rounded-full bg-white/15 backdrop-blur hover:bg-gold hover:text-ink transition-colors">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14"/></svg>
-              </a>
+              <DownloadButton artworkId={art.id} className="grid h-8 w-8 place-items-center rounded-full bg-white/15 text-[0] backdrop-blur hover:bg-gold hover:text-ink transition-colors" />
               <button onClick={() => setShare(true)} title="Share" className="grid h-8 w-8 place-items-center rounded-full bg-white/15 backdrop-blur hover:bg-gold hover:text-ink transition-colors">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="m8.2 10.9 7.6-3.8m-7.6 6 7.6 3.8"/></svg>
               </button>

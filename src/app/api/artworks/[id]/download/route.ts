@@ -9,11 +9,12 @@ import { recordActivity } from "@/lib/activity";
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const id = parseInt(params.id);
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Sign in to download artwork." }, { status: 401 });
   const art = await row("SELECT * FROM artworks WHERE id=?", id);
   if (!art) return new NextResponse("Not found", { status: 404 });
   await run("UPDATE artworks SET downloads = downloads + 1 WHERE id=?", id);
-  const user = await getUser();
-  if (user) await recordActivity(user.id, id, "download", 2);
+  await recordActivity(user.id, id, "download", 1);
   const name = `anipins-${slugify(art.character_name)}-${id}${path.extname(art.orig) || ".jpg"}`;
   const extension = path.extname(art.orig).toLowerCase();
   const contentType = extension === ".png" ? "image/png" : extension === ".webp" ? "image/webp" : extension === ".gif" ? "image/gif" : "image/jpeg";

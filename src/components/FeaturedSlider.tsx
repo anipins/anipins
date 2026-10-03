@@ -4,8 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { openArtwork } from "./ArtCard";
-import { toast } from "./Toaster";
 import { artworkAlt } from "@/lib/site";
+import DownloadButton from "./DownloadButton";
 
 function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: boolean; sizes: string }) {
   const [ready, setReady] = useState(false);
@@ -98,7 +98,7 @@ export default function FeaturedSlider({ initialArts = [] }: { initialArts?: any
                 <p className="mt-1 text-sm text-white/60">{a.anime_name}</p>
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button onClick={() => openArtwork(a.id)} className="btn-primary !py-2.5">View Artwork</button>
-                  <a href={`/api/artworks/${a.id}/download`} onClick={() => toast("Download started")} className="btn-ghost !py-2.5 !bg-black/30 backdrop-blur">Download</a>
+                  <DownloadButton artworkId={a.id} className="btn-ghost !py-2.5 !bg-black/30 backdrop-blur" />
                 </div>
               </motion.div>
             </motion.div>
