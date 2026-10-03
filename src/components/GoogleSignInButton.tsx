@@ -124,7 +124,10 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
       googleInitialized.current = true;
       renderButton();
       const loginParams = new URLSearchParams(window.location.search);
-      const shouldPrompt = loginParams.get("google") === "1" || loginParams.get("mobile") === "1";
+      // Offer Chrome's secure Google account chooser on the normal web login
+      // page. `auto_select` stays disabled, so the visitor always chooses an
+      // account and the prompt is never shown inside the native app.
+      const shouldPrompt = loginParams.get("mobile") !== "1";
       if (shouldPrompt) {
         window.setTimeout(() => {
           try { window.google?.accounts.id.prompt(); } catch {}
