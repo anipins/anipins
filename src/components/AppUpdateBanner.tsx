@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-type AppVersion = { versionCode: number; versionName: string; apk: string };
+type AppVersion = {
+  versionCode: number;
+  versionName: string;
+  apk: string;
+  requiresReinstall?: boolean;
+};
 
 export default function AppUpdateBanner() {
   const [data, setData] = useState<AppVersion | null>(null);
@@ -29,8 +34,12 @@ export default function AppUpdateBanner() {
           <p className="text-sm font-semibold">AniPins {data.versionName} is ready</p>
           <p className="mt-1 text-xs text-fog">
             {downloadStarted
-              ? "Open Downloads, tap the AniPins APK, then choose Update."
-              : "Download the latest signed app update."}
+              ? data.requiresReinstall
+                ? "Open Downloads, uninstall the previous AniPins app, then install this new release."
+                : "Open Downloads, tap the AniPins APK, then choose Update."
+              : data.requiresReinstall
+                ? "This is a new AniPins release. You will need to uninstall the previous app once, then install it."
+                : "Download the latest signed app update."}
           </p>
         </div>
         <button onClick={() => setData(null)} aria-label="Dismiss" className="text-fog">×</button>
