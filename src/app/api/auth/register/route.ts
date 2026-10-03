@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { row, run } from "@/lib/db";
 import { hashPassword, createSession, COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
 import { ensureSecuritySchema, requestInfo } from "@/lib/admin-security";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   await ensureSecuritySchema();
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest) {
   await run("INSERT INTO users (email,password_hash,name,nickname,role) VALUES (?,?,?,?,?)", em, hashPassword(password), displayName, displayName, role);
   const u = await row("SELECT id FROM users WHERE email=?", em);
   const info = requestInfo(req); const token = await createSession(u.id, info);
+  void sendWelcomeEmail(em, displayName);
   const res = NextResponse.json({ ok: true, role });
   res.cookies.set(COOKIE, token, SESSION_COOKIE_OPTIONS);
   return res;

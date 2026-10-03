@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { row, rows, run } from "./db";
+import { sendTransactionalEmail } from "./email";
 
 let schemaReady: Promise<void> | null = null;
 export function ensureSecuritySchema() {
@@ -79,7 +80,6 @@ export async function audit(adminId: number, action: string, targetType = "", ta
 }
 export async function createLoginAlert(userId: number, ip: string, ua: string) {
   await run("INSERT INTO security_alerts (user_id,kind,message,ip_address,user_agent) VALUES (?,?,?,?,?)", userId, "NEW_LOGIN", "New administrator sign-in", ip, ua);
-  const key = process.env.RESEND_API_KEY; if (!key) return;
   const user = await row("SELECT email FROM users WHERE id=?", userId); if (!user?.email) return;
-  await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify({ from: process.env.SECURITY_EMAIL_FROM || "AniPins Security <security@anipins.com>", to: [user.email], subject: "New administrator login to AniPins", text: `A new administrator login was completed.\n\nIP: ${ip}\nDevice: ${ua}\n\nIf this was not you, open Admin Security and revoke the session immediately.` }) }).catch(() => {});
+  await sendTransactionalEmail({ to: user.email, subject: "New administrator login to AniPins", text: `A new administrator login was completed.\n\nIP: ${ip}\nDevice: ${ua}\n\nIf this was not you, open Admin Security and revoke the session immediately.` });
 }
