@@ -16,6 +16,9 @@ const blank = (file: File, index: number): UploadItem => ({
 });
 
 const retryableStatus = (status: number) => [408, 425, 429, 500, 502, 503, 504].includes(status);
+// Keep enough transfers in flight to use a normal broadband connection without
+// overwhelming image processing, storage, or the browser with a huge batch.
+const PARALLEL_UPLOADS = 3;
 
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number) {
   const controller = new AbortController();
@@ -101,8 +104,10 @@ export default function AdminUpload() {
     event.preventDefault(); if (!items.length) { setMessage("Add at least one image."); return; }
     if (items.some(item => !item.character.trim() || !item.anime.trim())) { setMessage("Every image needs its own character and anime name."); return; }
     setBusy(true); setMessage(""); const uploaded = new Set<string>(); const failures: string[] = [];
-    for (let index = 0; index < items.length; index++) {
-      const item = items[index]; setProgress(`Uploading ${index + 1} of ${items.length}: ${item.file.name}`);
+    let nextIndex = 0;
+    let completeCount = 0;
+    const processItem = async (item: UploadItem, index: number) => {
+      setProgress(`Uploading ${index + 1} of ${items.length}: ${item.file.name}`);
       try {
         let { response, result } = await send(item);
         if (response.status === 409 && result.canOverride) {
@@ -112,7 +117,19 @@ export default function AdminUpload() {
         if (!response.ok) throw new Error(result.error || "Upload failed");
         uploaded.add(item.key); URL.revokeObjectURL(item.preview);
       } catch (error) { failures.push(`${item.file.name}: ${error instanceof Error ? error.message : "Upload failed"}`); }
-    }
+      finally {
+        completeCount += 1;
+        setProgress(`Finished ${completeCount} of ${items.length} artwork${items.length === 1 ? "" : "s"}…`);
+      }
+    };
+    const worker = async () => {
+      while (true) {
+        const index = nextIndex++;
+        if (index >= items.length) return;
+        await processItem(items[index], index);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(PARALLEL_UPLOADS, items.length) }, worker));
     setItems(previous => previous.filter(item => !uploaded.has(item.key))); setBusy(false); setProgress("");
     if (uploaded.size) { toast(`${uploaded.size} artwork${uploaded.size === 1 ? "" : "s"} published`); router.refresh(); }
     const failureSummary = failures.length > 6 ? `${failures.slice(0, 6).join(" · ")} · ${failures.length - 6} more image${failures.length - 6 === 1 ? "" : "s"} can be retried.` : failures.join(" · ");
