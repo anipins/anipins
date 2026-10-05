@@ -66,10 +66,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <JsonLd data={{
           "@context": "https://schema.org",
-          "@type": "WebSite",
-          name: SITE_NAME,
-          url: getSiteUrl(),
-          potentialAction: { "@type": "SearchAction", target: `${absoluteUrl("/search")}?q={search_term_string}`, "query-input": "required name=search_term_string" },
+          "@graph": [
+            {
+              "@type": "WebSite",
+              "@id": `${getSiteUrl()}/#website`,
+              name: SITE_NAME,
+              alternateName: "Ani Pins",
+              url: getSiteUrl(),
+              potentialAction: { "@type": "SearchAction", target: `${absoluteUrl("/search")}?q={search_term_string}`, "query-input": "required name=search_term_string" },
+            },
+            {
+              "@type": "Organization",
+              "@id": `${getSiteUrl()}/#organization`,
+              name: SITE_NAME,
+              alternateName: "Ani Pins",
+              url: getSiteUrl(),
+              logo: absoluteUrl("/brand/ap-symbol-192.png"),
+            },
+          ],
         }} />
         <Intro />
         <Navbar />
