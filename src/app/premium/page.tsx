@@ -29,10 +29,10 @@ export default function PremiumPage() {
       <div className="relative grid gap-12 lg:grid-cols-[1.1fr_.9fr] lg:items-center">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-gold/35 bg-gold/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[.22em] text-gold"><Crown/> AniPins Members Club</div>
-          <p className="mt-8 text-xs font-semibold uppercase tracking-[.3em] text-gold/80">The members archive</p>
-          <h1 className="mt-4 max-w-xl font-display text-4xl font-semibold leading-[.98] tracking-tight text-paper sm:text-6xl">Your private shelf for <span className="text-gold">serious reference.</span></h1>
-          <p className="mt-6 max-w-lg text-base leading-7 text-fog sm:text-lg">A quieter, more focused AniPins space for artists who want exceptional character studies, full-quality downloads, and first access to every drop.</p>
-          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-paper"><span>✦ Monthly membership</span><span>✦ Cancel anytime</span><span>✦ Secure Razorpay billing</span></div>
+          <p className="mt-8 text-xs font-semibold uppercase tracking-[.3em] text-gold/80">Members-only anime reference</p>
+          <h1 className="mt-4 max-w-xl font-display text-4xl font-semibold leading-[.98] tracking-tight text-paper sm:text-6xl">More to save.<br/>More to study.<br/><span className="text-gold">More to create.</span></h1>
+          <p className="mt-6 max-w-lg text-base leading-7 text-fog sm:text-lg">Unlock exclusive character collections, full-resolution downloads, and first access to every new AniPins drop—built for your creative process.</p>
+          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-paper"><span>✦ Curated member drops</span><span>✦ Full-resolution downloads</span><span>✦ Mature shelf · 18+</span></div>
         </div>
         <aside className="relative mx-auto w-full max-w-md">
           <div className="absolute -inset-7 rounded-[2rem] bg-gold/10 blur-2xl"/>
