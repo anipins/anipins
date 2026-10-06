@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import PremiumCheckout from "@/components/PremiumCheckout";
 import PremiumLibrary from "@/components/PremiumLibrary";
 
@@ -39,12 +40,16 @@ export default function PremiumPage() {
         <aside className="relative mx-auto w-full max-w-lg py-4 sm:py-8">
           <div className="absolute inset-x-8 inset-y-0 rotate-[5deg] rounded-[2rem] border border-gold/20 bg-gold/5"/>
           <div className="absolute inset-x-6 inset-y-3 -rotate-[3deg] rounded-[2rem] border border-paper/10 bg-black/20"/>
-          <div className="relative min-h-[22rem] overflow-hidden rounded-[2rem] border border-gold/45 bg-[radial-gradient(circle_at_82%_18%,rgba(212,170,85,.24),transparent_25%),radial-gradient(circle_at_12%_82%,rgba(212,170,85,.12),transparent_32%),linear-gradient(145deg,#302516,#14110c_50%,#080808)] p-6 shadow-[0_32px_70px_rgba(0,0,0,.5)] sm:p-8">
+          <div className="relative min-h-[24rem] overflow-hidden rounded-[2rem] border border-gold/45 bg-[radial-gradient(circle_at_82%_18%,rgba(212,170,85,.24),transparent_25%),radial-gradient(circle_at_12%_82%,rgba(212,170,85,.12),transparent_32%),linear-gradient(145deg,#302516,#14110c_50%,#080808)] p-6 shadow-[0_32px_70px_rgba(0,0,0,.5)] sm:p-8">
             <div className="pointer-events-none absolute -right-20 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full border border-gold/25"/>
             <div className="pointer-events-none absolute -right-10 top-1/2 h-52 w-52 -translate-y-1/2 rounded-full border border-gold/20"/>
-            <div className="relative flex items-start justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[.3em] text-gold">AniPins</p><p className="mt-2 font-display text-2xl text-paper">Member access</p></div><div className="grid h-12 w-12 place-items-center rounded-2xl border border-gold/40 bg-gold/10 text-gold"><Crown/></div></div>
-            <div className="relative mt-12"><p className="font-display text-6xl leading-none tracking-[-.08em] text-gold/90 sm:text-7xl">AP</p><p className="mt-3 max-w-xs text-sm leading-6 text-fog">A private collection for artists who choose their references with intention.</p></div>
-            <div className="relative mt-9 grid grid-cols-3 border-t border-gold/20 pt-5 text-[10px] uppercase tracking-[.18em] text-fog"><div><p className="text-gold">Access</p><p className="mt-1 text-paper">Private</p></div><div><p className="text-gold">Edition</p><p className="mt-1 text-paper">01 / 01</p></div><div><p className="text-gold">Status</p><p className="mt-1 text-paper">Member</p></div></div>
+            <div className="pointer-events-none absolute right-[-2rem] top-10 opacity-[.13] mix-blend-screen">
+              <Image src="/brand/ap-symbol-transparent.svg" alt="" width={270} height={270} aria-hidden="true" priority />
+            </div>
+            <div className="pointer-events-none absolute bottom-7 right-7 grid h-14 w-14 grid-cols-5 gap-1 opacity-40">{Array.from({ length: 25 }, (_, index) => <span key={index} className={`rounded-[1px] ${[0, 2, 4, 6, 8, 11, 13, 15, 18, 20, 22, 24].includes(index) ? "bg-gold" : "bg-gold/20"}`}/>)}</div>
+            <div className="relative flex items-start justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[.3em] text-gold">AniPins / member pass</p><p className="mt-2 font-display text-2xl text-paper">Private access</p></div><div className="grid h-12 w-12 place-items-center rounded-2xl border border-gold/40 bg-gold/10 text-gold"><Crown/></div></div>
+            <div className="relative mt-11 max-w-[16rem]"><p className="font-display text-6xl leading-none tracking-[-.1em] text-gold/95 sm:text-7xl">AP</p><div className="mt-4 h-px w-20 bg-gradient-to-r from-gold to-transparent"/><p className="mt-4 text-sm leading-6 text-fog">A considered reference library for artists who choose their studies with intention.</p></div>
+            <div className="relative mt-9 grid grid-cols-3 border-t border-gold/20 pt-5 text-[10px] uppercase tracking-[.18em] text-fog"><div><p className="text-gold">Access</p><p className="mt-1 text-paper">Private</p></div><div><p className="text-gold">Edition</p><p className="mt-1 text-paper">01 / 01</p></div><div><p className="text-gold">Serial</p><p className="mt-1 text-paper">AP-199</p></div></div>
           </div>
         </aside>
       </div>
