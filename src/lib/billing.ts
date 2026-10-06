@@ -1,8 +1,11 @@
 import { row, run } from "@/lib/db";
 import { isPremiumSubscriptionStatus } from "@/lib/billing-utils";
 
-const PLAN_AMOUNT = 9900; // paise
-const PLAN_KEY_PREFIX = "razorpay_premium_plan:";
+const PLAN_AMOUNT = 19900; // paise
+// Razorpay plans are immutable. Including the amount in this key ensures a
+// price change creates a new plan for future members rather than reusing the
+// previous ₹99 plan. Existing subscriptions retain their agreed price.
+const PLAN_KEY_PREFIX = `razorpay_premium_plan:${PLAN_AMOUNT}:`;
 let schemaReady: Promise<void> | null = null;
 
 export type BillingSubscription = {
@@ -79,7 +82,9 @@ export async function canAccessPremium(user: { id: number; role?: string }) {
 }
 
 async function getPlanId() {
-  const configured = process.env.RAZORPAY_PLAN_ID?.trim();
+  // A legacy RAZORPAY_PLAN_ID may point to the old ₹99 plan, so only accept a
+  // price-specific override for the current offering.
+  const configured = process.env.RAZORPAY_PREMIUM_PLAN_ID_199?.trim();
   if (configured) return configured;
   const { keyId } = credentials();
   const settingKey = `${PLAN_KEY_PREFIX}${keyId}`;

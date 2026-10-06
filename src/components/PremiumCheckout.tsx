@@ -36,6 +36,6 @@ export default function PremiumCheckout() {
   }
   return <>
     <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" onLoad={() => setReady(true)} onError={() => toast("Secure checkout could not load.", "err")} />
-    <button type="button" disabled={!ready || busy} onClick={startCheckout} className="btn-primary w-full justify-center disabled:cursor-wait disabled:opacity-60">{busy ? "Opening secure checkout…" : ready ? "Start Premium — ₹99 / month" : "Loading secure checkout…"}</button>
+    <button type="button" disabled={!ready || busy} onClick={startCheckout} className="btn-primary w-full justify-center disabled:cursor-wait disabled:opacity-60">{busy ? "Opening secure checkout…" : ready ? "Start Premium — ₹199 / month" : "Loading secure checkout…"}</button>
   </>;
 }
