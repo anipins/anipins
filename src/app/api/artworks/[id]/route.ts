@@ -26,18 +26,24 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   );
   if (!art) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (Number(art.premium || 0) && (!user || !(await canAccessPremium(user)))) return NextResponse.json({ error: "AniPins Premium is required." }, { status: 403 });
+  const premiumOnly = Number(art.premium || 0) === 1;
 
   const discoveryMultiplier = ((id + 1) * 48_271) % 2_147_483_647 || 1;
   const related = await rows(
       `SELECT id, title, character_name, character_slug, anime_name, anime_slug, gender, category, thumb, width, height
        FROM artworks
-       WHERE published=1 AND COALESCE(premium, 0)=0 AND id != ?
+       WHERE published=1 AND COALESCE(premium, 0)=? AND id != ?
        ORDER BY
          CASE WHEN character_slug = ? THEN 0 WHEN anime_slug = ? THEN 1 ELSE 2 END,
          ((CAST(id AS BIGINT) * ?) % 2147483647), id
        LIMIT 36`,
-      id, art.character_slug || "", art.anime_slug || "", discoveryMultiplier,
+      premiumOnly ? 1 : 0, id, art.character_slug || "", art.anime_slug || "", discoveryMultiplier,
     );
+  const adjacent = await row(
+    `SELECT MAX(CASE WHEN id < ? THEN id END) AS prev_id, MIN(CASE WHEN id > ? THEN id END) AS next_id
+     FROM artworks WHERE published=1 AND COALESCE(premium, 0)=?`,
+    id, id, premiumOnly ? 1 : 0,
+  );
 
   after(async () => {
     await Promise.allSettled([
@@ -49,8 +55,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   return NextResponse.json({
     art: { ...art, thumb_url: publicMediaUrl(art.thumb), original_url: publicMediaUrl(art.orig) },
     related: related.map((item: any) => ({ ...item, thumb_url: publicMediaUrl(item.thumb) })),
-    prevId: art.prev_id ?? null,
-    nextId: art.next_id ?? null,
+    prevId: adjacent?.prev_id ?? null,
+    nextId: adjacent?.next_id ?? null,
     likeCount: art.like_count ?? 0,
     liked: Number(art.user_likes || 0) > 0,
   }, { headers: { "Cache-Control": "private, no-store" } });

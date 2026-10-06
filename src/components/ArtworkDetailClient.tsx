@@ -120,7 +120,7 @@ export default function ArtworkDetailClient({ params, initialData }: { params: {
         <div className="mt-20">
           <h2 className="font-display text-2xl font-semibold">More to explore</h2>
           <p className="mt-1 text-sm text-fog">Fresh discoveries from every series across AniPins.</p>
-          <div className="mt-6"><MasonryFeed query={{ sort: "random" }} randomize initialItems={data.related} initialHasMore /></div>
+          <div className="mt-6"><MasonryFeed key={art?.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize initialItems={data.related} initialHasMore /></div>
         </div>
       )}
 

@@ -42,9 +42,10 @@ export default async function ArtworkPage(props: { params: Promise<{ id: string 
     }
   }
   if (!art) notFound();
+  const premiumOnly = Number(art.premium || 0) === 1;
   const [related, adjacent] = await Promise.all([
-    getArtworkCards({ limit: 36, sort: "trending", excludeId: id }),
-    row(`SELECT MAX(CASE WHEN id < ? THEN id END) AS prev_id, MIN(CASE WHEN id > ? THEN id END) AS next_id FROM artworks WHERE published=1 AND COALESCE(premium, 0)=0`, id, id),
+    getArtworkCards({ limit: 36, sort: "trending", excludeId: id, premium: premiumOnly }),
+    row(`SELECT MAX(CASE WHEN id < ? THEN id END) AS prev_id, MIN(CASE WHEN id > ? THEN id END) AS next_id FROM artworks WHERE published=1 AND COALESCE(premium, 0)=?`, id, id, premiumOnly ? 1 : 0),
   ]);
   const initialData = { art, related, prevId: adjacent?.prev_id ?? null, nextId: adjacent?.next_id ?? null, likeCount: 0, liked: false };
   return (
