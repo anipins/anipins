@@ -77,6 +77,7 @@ export default function AdminOverview() {
         <p className="mt-2 text-sm text-fog">{now} — here's how AniPins is doing.</p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link href="/admin/upload" className="btn-primary !py-2.5">+ Upload artwork</Link>
+          <Link href="/admin/premium-upload" className="btn-ghost !border-gold/40 !text-gold !py-2.5">Premium upload</Link>
           <Link href="/admin/manage" className="btn-ghost !py-2.5">Manage artwork</Link>
         </div>
       </div>

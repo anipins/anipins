@@ -19,6 +19,8 @@ export async function GET(req: NextRequest) {
   if (filter === "published") where += " AND published=1";
   if (filter === "unpublished") where += " AND published=0";
   if (filter === "featured") where += " AND featured=1";
+  if (filter === "premium") where += " AND COALESCE(premium, 0)=1";
+  if (filter === "public") where += " AND COALESCE(premium, 0)=0";
   let order = "id DESC";
   if (sort === "views") order = "views DESC";
   if (sort === "downloads") order = "downloads DESC";

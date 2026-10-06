@@ -9,10 +9,10 @@ type UploadItem = {
   gender: string; featured: boolean; premium: boolean; published: boolean;
 };
 
-const blank = (file: File, index: number): UploadItem => ({
+const blank = (file: File, index: number, premiumOnly: boolean): UploadItem => ({
   key: `${file.name}-${file.size}-${file.lastModified}-${index}`, file, preview: URL.createObjectURL(file),
   title: file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "), character: "", anime: "", tags: "",
-  description: "", creator: "", sourceUrl: "", category: "", gender: "", featured: false, premium: false, published: true,
+  description: "", creator: "", sourceUrl: "", category: "", gender: "", featured: false, premium: premiumOnly, published: true,
 });
 
 const retryableStatus = (status: number) => [408, 425, 429, 500, 502, 503, 504].includes(status);
@@ -30,14 +30,14 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, tim
   }
 }
 
-export default function AdminUpload() {
+export default function AdminUpload({ premiumOnly = false }: { premiumOnly?: boolean }) {
   const [items, setItems] = useState<UploadItem[]>([]), [drag, setDrag] = useState(false), [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(""), [message, setMessage] = useState("");
   const inputRef = useRef<HTMLInputElement>(null); const router = useRouter();
 
   const addFiles = (list: FileList | File[]) => {
     const images = Array.from(list).filter(file => file.type.startsWith("image/"));
-    setItems(previous => [...previous, ...images.map((file, index) => blank(file, previous.length + index))]);
+    setItems(previous => [...previous, ...images.map((file, index) => blank(file, previous.length + index, premiumOnly))]);
   };
   const update = (key: string, values: Partial<UploadItem>) => setItems(previous => previous.map(item => item.key === key ? { ...item, ...values } : item));
   const remove = (key: string) => setItems(previous => { const item = previous.find(value => value.key === key); if (item) URL.revokeObjectURL(item.preview); return previous.filter(value => value.key !== key); });
@@ -102,7 +102,7 @@ export default function AdminUpload() {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault(); if (!items.length) { setMessage("Add at least one image."); return; }
-    if (items.some(item => !item.character.trim() || !item.anime.trim())) { setMessage("Every image needs its own character and anime name."); return; }
+    if (!premiumOnly && items.some(item => !item.character.trim() || !item.anime.trim())) { setMessage("Every public image needs its own character and anime name."); return; }
     setBusy(true); setMessage(""); const uploaded = new Set<string>(); const failures: string[] = [];
     let nextIndex = 0;
     let completeCount = 0;
@@ -138,22 +138,22 @@ export default function AdminUpload() {
 
   return (
     <form onSubmit={submit} className="space-y-7">
-      <div><label className="label">Artwork upload</label><div onDragOver={event => { event.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={event => { event.preventDefault(); setDrag(false); addFiles(event.dataTransfer.files); }} onClick={() => inputRef.current?.click()} className={`grid min-h-44 cursor-pointer place-items-center rounded-2xl border-2 border-dashed p-8 text-center transition-colors ${drag ? "border-gold bg-gold/5" : "border-paper/15 hover:border-paper/30"}`}><div><p className="text-sm">Drag and drop all images here, or click to browse</p><p className="mt-1 text-xs text-fog">JPG, PNG or WebP · up to 40 MB each · large batches of 1,000+ are queued safely · keep this page open until complete</p></div><input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={event => { if (event.target.files) addFiles(event.target.files); event.target.value = ""; }} /></div></div>
+      <div><label className="label">{premiumOnly ? "Premium library upload" : "Public artwork upload"}</label><div onDragOver={event => { event.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={event => { event.preventDefault(); setDrag(false); addFiles(event.dataTransfer.files); }} onClick={() => inputRef.current?.click()} className={`grid min-h-44 cursor-pointer place-items-center rounded-2xl border-2 border-dashed p-8 text-center transition-colors ${drag ? "border-gold bg-gold/5" : "border-paper/15 hover:border-paper/30"}`}><div><p className="text-sm">Drag and drop all images here, or click to browse</p><p className="mt-1 text-xs text-fog">JPG, PNG or WebP · up to 40 MB each · large batches of 1,000+ are queued safely · keep this page open until complete</p></div><input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={event => { if (event.target.files) addFiles(event.target.files); event.target.value = ""; }} /></div>{premiumOnly ? <p className="mt-3 rounded-xl border border-gold/25 bg-gold/5 px-4 py-3 text-sm text-gold">Premium-only destination: these uploads bypass every public feed and are available only to active Premium members and admins.</p> : <p className="mt-3 text-xs text-fog">Public uploads appear in the normal AniPins feeds. Use the separate Premium upload area for member-only artwork.</p>}</div>
       {items.length > 1 ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-soft p-4 hairline"><p className="text-sm text-fog">Uploading one character or series? Fill the first card, then copy its shared details.</p><button type="button" onClick={applyFirstToAll} className="btn-ghost !px-4 !py-2">Apply first card details to all</button></div> : null}
       <div className="space-y-5">{items.map((item, index) => <article key={item.key} style={{ contentVisibility: "auto", containIntrinsicSize: "280px" }} className="grid gap-5 rounded-3xl bg-panel p-5 hairline md:grid-cols-[180px,1fr]">
         <div><img src={item.preview} alt={`Preview ${index + 1}`} className="aspect-square w-full rounded-2xl object-cover" /><p className="mt-2 truncate text-xs text-fog">{item.file.name}</p><button type="button" onClick={() => remove(item.key)} className="mt-2 text-xs text-red-300 hover:underline">Remove</button></div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2"><p className="text-xs font-medium text-gold">Artwork {index + 1} of {items.length}</p></div>
           <Field label="Title" value={item.title} onChange={title => update(item.key, { title })} />
-          <Field label="Character name *" value={item.character} onChange={character => update(item.key, { character })} required />
-          <Field label="Anime / manhua series *" value={item.anime} onChange={anime => update(item.key, { anime })} required />
+           <Field label={premiumOnly ? "Character name (optional)" : "Character name *"} value={item.character} onChange={character => update(item.key, { character })} required={!premiumOnly} />
+           <Field label={premiumOnly ? "Anime / series (optional)" : "Anime / manhua series *"} value={item.anime} onChange={anime => update(item.key, { anime })} required={!premiumOnly} />
           <Field label="Tags" value={item.tags} onChange={tags => update(item.key, { tags })} placeholder="portrait, action, wallpaper" />
           <div><label className="label">Gender / sex</label><select className="input" value={item.gender} onChange={event => update(item.key, { gender: event.target.value })}><option value="">Not specified</option><option>Male</option><option>Female</option><option>Non-binary</option></select></div>
           <div><label className="label">Category</label><select className="input" value={item.category} onChange={event => update(item.key, { category: event.target.value })}><option value="">None</option><option>Male Characters</option><option>Female Characters</option><option>Wallpapers</option><option>Action</option><option>Aesthetic</option></select><p className="mt-1 text-xs text-fog">Choose Wallpapers to include this image in the dedicated wallpaper feed.</p></div>
           <Field label="Creator / artist" value={item.creator} onChange={creator => update(item.key, { creator })} />
           <Field label="Original source URL" value={item.sourceUrl} onChange={sourceUrl => update(item.key, { sourceUrl })} type="url" />
           <div className="sm:col-span-2"><label className="label">Description</label><textarea rows={2} className="input resize-none" value={item.description} onChange={event => update(item.key, { description: event.target.value })} /></div>
-          <div className="flex flex-wrap gap-5 text-sm sm:col-span-2"><label className="flex items-center gap-2"><input type="checkbox" checked={item.featured} onChange={event => update(item.key, { featured: event.target.checked })} className="accent-gold" /> Featured</label><label className="flex items-center gap-2"><input type="checkbox" checked={item.premium} onChange={event => update(item.key, { premium: event.target.checked })} className="accent-gold" /> Premium exclusive <span className="text-xs text-fog">(hidden from public feeds)</span></label><label className="flex items-center gap-2"><input type="checkbox" checked={item.published} onChange={event => update(item.key, { published: event.target.checked })} className="accent-gold" /> Publish immediately</label></div>
+           <div className="flex flex-wrap gap-5 text-sm sm:col-span-2">{premiumOnly ? <span className="inline-flex items-center gap-2 rounded-full border border-gold/35 bg-gold/10 px-3 py-1.5 text-gold">Premium exclusive <span className="text-xs text-fog">locked to member library</span></span> : <label className="flex items-center gap-2"><input type="checkbox" checked={item.featured} onChange={event => update(item.key, { featured: event.target.checked })} className="accent-gold" /> Featured</label>}<label className="flex items-center gap-2"><input type="checkbox" checked={item.published} onChange={event => update(item.key, { published: event.target.checked })} className="accent-gold" /> Publish immediately</label></div>
         </div>
       </article>)}</div>
       {progress ? <div className="rounded-2xl bg-soft p-4 hairline" aria-live="polite"><div className="mb-2 flex items-center justify-between gap-3 text-sm"><span className="truncate text-gold">{progress}</span><span className="shrink-0 text-fog">Please keep this page open</span></div><div className="h-1.5 overflow-hidden rounded-full bg-ink"><div className="h-full animate-pulse rounded-full bg-gold" style={{ width: `${Math.max(8, ((Number(progress.match(/Uploading (\d+)/)?.[1]) || 1) / Math.max(items.length, 1)) * 100)}%` }} /></div></div> : null}{message ? <p className={`text-sm ${message.startsWith("✓") ? "text-green-400" : "text-red-300"}`}>{message}</p> : null}

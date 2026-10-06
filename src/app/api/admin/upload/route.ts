@@ -41,7 +41,12 @@ export async function POST(req: NextRequest) {
 
   const character = String(value("character") || "").trim();
   const anime = String(value("anime") || "").trim();
-  if (!character || !anime) return NextResponse.json({ error: "Character and anime names are required." }, { status: 400 });
+  const premium = value("premium") === (direct ? true : "1") ? 1 : 0;
+  // Public artwork needs searchable metadata. Premium drops can be a private
+  // visual collection, so the creator may intentionally leave both fields blank.
+  if ((!character || !anime) && !premium) return NextResponse.json({ error: "Character and anime names are required for public artwork." }, { status: 400 });
+  const storedCharacter = character || "Premium reference";
+  const storedAnime = anime || "AniPins Premium";
 
   const title = String(value("title") || "").trim().slice(0, 160);
   const description = String(value("description") || "").trim().slice(0, 2000);
@@ -51,7 +56,6 @@ export async function POST(req: NextRequest) {
   const gender = String(value("gender") || "").trim();
   const category = String(value("category") || "").trim();
   const featured = value("featured") === (direct ? true : "1") ? 1 : 0;
-  const premium = value("premium") === (direct ? true : "1") ? 1 : 0;
   const published = value("published") === (direct ? true : "1") ? 1 : 0;
   const allowDuplicate = value("allowDuplicate") === (direct ? true : "1");
 
@@ -82,10 +86,10 @@ export async function POST(req: NextRequest) {
     await run(
       `INSERT INTO artworks (title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, premium, featured, published, orig, thumb, width, height, content_hash, perceptual_hash, creator_name, source_url)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      title || character, character, slugify(character), anime, slugify(anime), description, tags, gender, category, premium, featured, published, m.orig, m.thumb, m.width, m.height, item.fingerprint.contentHash, item.fingerprint.perceptualHash, creator, sourceUrl);
+      title || storedCharacter, storedCharacter, slugify(storedCharacter), storedAnime, slugify(storedAnime), description, tags, gender, category, premium, featured, published, m.orig, m.thumb, m.width, m.height, item.fingerprint.contentHash, item.fingerprint.perceptualHash, creator, sourceUrl);
     const r = await row("SELECT id FROM artworks WHERE orig=?", m.orig);
     ids.push(r.id);
-    if (published && !premium) await notifyFollowers(r.id, slugify(character), character, slugify(anime), anime);
+    if (published && !premium) await notifyFollowers(r.id, slugify(storedCharacter), storedCharacter, slugify(storedAnime), storedAnime);
   }
   await audit(u!.id, "ARTWORK_UPLOAD", "artwork", ids.join(","), `${ids.length} artwork(s): ${character} · ${anime}`, requestInfo(req).ip);
   return NextResponse.json({ ok: true, ids });

@@ -55,7 +55,7 @@ export default function AdminManage() {
         </select>
         <select value={filter} onChange={e => setFilter(e.target.value)} className="input !w-40 !py-2.5">
           <option value="all">All</option><option value="published">Published</option>
-          <option value="unpublished">Unpublished</option><option value="featured">Featured</option>
+          <option value="unpublished">Unpublished</option><option value="featured">Featured</option><option value="public">Public feed</option><option value="premium">Premium library</option>
         </select>
         <label className="ml-auto flex items-center gap-2 text-sm text-fog">
           <input type="checkbox" checked={allSelected} onChange={() => setSel(allSelected ? new Set() : new Set(items.map(i => i.id)))} className="h-4 w-4 accent-white" />
