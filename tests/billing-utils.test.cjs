@@ -3,10 +3,10 @@ const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const { isPremiumSubscriptionStatus, verifyWebhookSignature } = require("../src/lib/billing-utils");
 
-test("only active subscriptions unlock AniPins Premium", () => {
+test("active subscriptions and paid cancellation periods unlock AniPins Premium", () => {
   assert.equal(isPremiumSubscriptionStatus("active"), true);
+  assert.equal(isPremiumSubscriptionStatus("cancelled"), true);
   assert.equal(isPremiumSubscriptionStatus("authenticated"), false);
-  assert.equal(isPremiumSubscriptionStatus("cancelled"), false);
 });
 
 test("accepts a Razorpay webhook only when its HMAC is valid", () => {

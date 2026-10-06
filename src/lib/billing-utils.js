@@ -1,7 +1,10 @@
 const crypto = require("crypto");
 
 function isPremiumSubscriptionStatus(status) {
-  return status === "active";
+  // Razorpay keeps a subscription's paid access period after it is cancelled
+  // at cycle end. billing.ts separately checks current_end, so a cancelled
+  // row unlocks only while that already-paid period is still valid.
+  return status === "active" || status === "cancelled";
 }
 
 function verifyWebhookSignature(body, signature, secret) {
