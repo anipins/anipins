@@ -1,7 +1,6 @@
 import Link from "next/link";
 import PremiumCheckout from "@/components/PremiumCheckout";
 import PremiumLibrary from "@/components/PremiumLibrary";
-import { getArtworkCards } from "@/lib/content";
 
 export const metadata = {
   title: "AniPins Premium",
@@ -22,9 +21,7 @@ function Lock() {
   return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>;
 }
 
-export default async function PremiumPage() {
-  const previews = await getArtworkCards({ sort: "featured", limit: 3 }).catch(() => []);
-
+export default function PremiumPage() {
   return <main className="mx-auto max-w-6xl overflow-hidden px-5 pb-24 pt-28 md:px-8 md:pt-36">
     <section className="relative isolate overflow-hidden rounded-[2rem] border border-gold/30 bg-[#15130f] px-6 py-10 shadow-[0_35px_100px_rgba(0,0,0,.45)] sm:px-10 md:rounded-[2.5rem] md:px-14 md:py-16">
       <div className="pointer-events-none absolute -right-32 -top-36 h-[34rem] w-[34rem] rounded-full bg-gold/15 blur-[110px]"/>
@@ -54,10 +51,7 @@ export default async function PremiumPage() {
 
     <section className="mt-12 overflow-hidden rounded-[2rem] border border-paper/10 bg-panel p-5 sm:p-7">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold uppercase tracking-[.25em] text-gold">Preview the archive</p><h2 className="mt-2 font-display text-3xl font-semibold text-paper">More than a feed.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-fog">Premium drops are deliberately curated and kept outside the public browsing feed.</p></div><span className="inline-flex w-fit items-center gap-2 rounded-full border border-paper/10 px-3 py-1.5 text-xs text-fog"><Lock/> Member-only previews</span></div>
-      <div className="mt-7 grid gap-3 sm:grid-cols-3">{[0, 1, 2].map(index => {
-        const art = previews[index];
-        return <div key={art?.id || index} className="group relative min-h-52 overflow-hidden rounded-2xl border border-paper/10 bg-soft sm:min-h-64">{art?.thumb_url ? <img src={art.thumb_url} alt="Locked AniPins Premium artwork preview" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-60 blur-[9px] transition duration-700 group-hover:scale-105"/> : <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(212,170,85,.35),transparent_35%),linear-gradient(135deg,#302516,#111)]"/>}<div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent"/><div className="absolute inset-0 grid place-items-center"><span className="grid h-11 w-11 place-items-center rounded-full border border-gold/50 bg-black/50 text-gold backdrop-blur"><Lock/></span></div><div className="absolute inset-x-0 bottom-0 p-4"><p className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Private drop {String(index + 1).padStart(2, "0")}</p><p className="mt-1 text-sm font-medium text-paper">Available to Premium members</p></div></div>;
-      })}</div>
+      <div className="mt-7 grid gap-3 sm:grid-cols-3">{["bg-[radial-gradient(circle_at_25%_25%,rgba(212,170,85,.35),transparent_35%),linear-gradient(135deg,#302516,#111)]", "bg-[radial-gradient(circle_at_75%_20%,rgba(212,170,85,.32),transparent_28%),linear-gradient(145deg,#111,#302516)]", "bg-[radial-gradient(circle_at_28%_80%,rgba(212,170,85,.26),transparent_32%),linear-gradient(145deg,#221b12,#0c0c0c)]"].map((background, index) => <div key={index} className="group relative min-h-52 overflow-hidden rounded-2xl border border-paper/10 bg-soft sm:min-h-64"><div className={`absolute inset-0 ${background}`}/><div className="absolute inset-0 bg-[linear-gradient(115deg,transparent_35%,rgba(255,255,255,.05)_36%,transparent_42%)]"/><div className="absolute inset-0 grid place-items-center"><span className="grid h-11 w-11 place-items-center rounded-full border border-gold/50 bg-black/50 text-gold backdrop-blur"><Lock/></span></div><div className="absolute inset-x-0 bottom-0 p-4"><p className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Reserved drop {String(index + 1).padStart(2, "0")}</p><p className="mt-1 text-sm font-medium text-paper">Your exclusive artwork appears here</p></div></div>)}</div>
     </section>
 
     <section className="mt-5 overflow-hidden rounded-[2rem] border border-gold/25 bg-gradient-to-r from-[#20170c] via-[#15120e] to-[#20170c] p-6 sm:p-8">
