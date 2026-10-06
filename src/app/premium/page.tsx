@@ -23,25 +23,28 @@ function Lock() {
 
 export default function PremiumPage() {
   return <main className="mx-auto max-w-6xl overflow-hidden px-5 pb-24 pt-28 md:px-8 md:pt-36">
-    <section className="relative isolate overflow-hidden rounded-[2rem] border border-gold/30 bg-[#15130f] px-6 py-10 shadow-[0_35px_100px_rgba(0,0,0,.45)] sm:px-10 md:rounded-[2.5rem] md:px-14 md:py-16">
-      <div className="pointer-events-none absolute -right-32 -top-36 h-[34rem] w-[34rem] rounded-full bg-gold/15 blur-[110px]"/>
-      <div className="pointer-events-none absolute -bottom-48 left-[35%] h-[28rem] w-[28rem] rounded-full border border-gold/15"/>
-      <div className="relative grid gap-12 lg:grid-cols-[1.1fr_.9fr] lg:items-center">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-gold/35 bg-gold/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[.22em] text-gold"><Crown/> AniPins Members Club</div>
-          <p className="mt-8 text-xs font-semibold uppercase tracking-[.3em] text-gold/80">Members-only anime reference</p>
-          <h1 className="mt-4 max-w-xl font-display text-4xl font-semibold leading-[.98] tracking-tight text-paper sm:text-6xl">More to save.<br/>More to study.<br/><span className="text-gold">More to create.</span></h1>
-          <p className="mt-6 max-w-lg text-base leading-7 text-fog sm:text-lg">Unlock exclusive character collections, full-resolution downloads, and first access to every new AniPins drop—built for your creative process.</p>
-          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-paper"><span>✦ Curated member drops</span><span>✦ Full-resolution downloads</span><span>✦ Mature shelf · 18+</span></div>
+    <section className="relative isolate overflow-hidden rounded-[2rem] border border-gold/30 bg-[#12110e] px-6 py-10 shadow-[0_35px_100px_rgba(0,0,0,.45)] sm:px-10 md:rounded-[2.5rem] md:px-14 md:py-16">
+      <div className="pointer-events-none absolute -left-32 top-1/2 h-[30rem] w-[30rem] -translate-y-1/2 rounded-full bg-gold/10 blur-[120px]"/>
+      <div className="pointer-events-none absolute -right-40 -top-40 h-[35rem] w-[35rem] rounded-full border border-gold/15"/>
+      <div className="pointer-events-none absolute bottom-[-14rem] right-[20%] h-[30rem] w-[30rem] rounded-full border border-gold/10"/>
+      <div className="relative grid gap-12 lg:grid-cols-[.95fr_1.05fr] lg:items-center">
+        <div className="max-w-xl">
+          <div className="inline-flex items-center gap-2 rounded-full border border-gold/35 bg-gold/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[.22em] text-gold"><Crown/> AniPins Premium</div>
+          <p className="mt-9 text-xs font-semibold uppercase tracking-[.28em] text-gold/80">Member access / edition 01</p>
+          <h1 className="mt-4 font-display text-4xl font-semibold leading-[.94] tracking-tight text-paper sm:text-6xl">The archive behind<br/>your <span className="text-gold">best work.</span></h1>
+          <p className="mt-7 max-w-lg text-base leading-7 text-fog sm:text-lg">Member-only character collections, original-resolution downloads, and new drops before they reach the public feed.</p>
+          <div className="mt-8 max-w-sm"><PremiumCheckout/></div>
+          <p className="mt-4 text-sm text-fog"><span className="text-paper">₹199 / month</span> <span className="px-1.5 text-gold">•</span> Cancel before your next billing cycle</p>
         </div>
-        <aside className="relative mx-auto w-full max-w-md">
-          <div className="absolute -inset-7 rounded-[2rem] bg-gold/10 blur-2xl"/>
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-gold/45 bg-gradient-to-br from-[#292013] via-[#15130f] to-[#090909] p-6 shadow-2xl">
-            <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full border border-gold/30"/>
-            <div className="flex items-start justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[.28em] text-gold">Member pass</p><p className="mt-2 font-display text-2xl text-paper">AniPins Premium</p></div><div className="grid h-12 w-12 place-items-center rounded-2xl border border-gold/40 bg-gold/10 text-gold"><Crown/></div></div>
-            <div className="mt-11 border-y border-gold/20 py-5"><p className="text-xs uppercase tracking-[.17em] text-fog">Monthly membership</p><p className="mt-1 font-display text-5xl font-semibold tracking-tight text-paper">₹199<span className="ml-1 text-base font-normal text-fog">/ month</span></p></div>
-            <div className="mt-6"><PremiumCheckout/></div>
-            <p className="mt-4 text-center text-xs leading-5 text-fog">Starts after payment confirmation. Cancel before your next billing cycle.</p>
+        <aside className="relative mx-auto w-full max-w-lg py-4 sm:py-8">
+          <div className="absolute inset-x-8 inset-y-0 rotate-[5deg] rounded-[2rem] border border-gold/20 bg-gold/5"/>
+          <div className="absolute inset-x-6 inset-y-3 -rotate-[3deg] rounded-[2rem] border border-paper/10 bg-black/20"/>
+          <div className="relative min-h-[22rem] overflow-hidden rounded-[2rem] border border-gold/45 bg-[radial-gradient(circle_at_82%_18%,rgba(212,170,85,.24),transparent_25%),radial-gradient(circle_at_12%_82%,rgba(212,170,85,.12),transparent_32%),linear-gradient(145deg,#302516,#14110c_50%,#080808)] p-6 shadow-[0_32px_70px_rgba(0,0,0,.5)] sm:p-8">
+            <div className="pointer-events-none absolute -right-20 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full border border-gold/25"/>
+            <div className="pointer-events-none absolute -right-10 top-1/2 h-52 w-52 -translate-y-1/2 rounded-full border border-gold/20"/>
+            <div className="relative flex items-start justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[.3em] text-gold">AniPins</p><p className="mt-2 font-display text-2xl text-paper">Member access</p></div><div className="grid h-12 w-12 place-items-center rounded-2xl border border-gold/40 bg-gold/10 text-gold"><Crown/></div></div>
+            <div className="relative mt-12"><p className="font-display text-6xl leading-none tracking-[-.08em] text-gold/90 sm:text-7xl">AP</p><p className="mt-3 max-w-xs text-sm leading-6 text-fog">A private collection for artists who choose their references with intention.</p></div>
+            <div className="relative mt-9 grid grid-cols-3 border-t border-gold/20 pt-5 text-[10px] uppercase tracking-[.18em] text-fog"><div><p className="text-gold">Access</p><p className="mt-1 text-paper">Private</p></div><div><p className="text-gold">Edition</p><p className="mt-1 text-paper">01 / 01</p></div><div><p className="text-gold">Status</p><p className="mt-1 text-paper">Member</p></div></div>
           </div>
         </aside>
       </div>
