@@ -11,6 +11,9 @@ export const metadata = {
   title: "AniPins Premium",
   description: "Unlock exclusive anime reference collections, HD downloads and early access with AniPins Premium.",
 };
+// Membership and the protected preview list are request-specific. Do not try
+// to prerender this route during a build with no production database session.
+export const dynamic = "force-dynamic";
 
 const benefits = [
   ["01", "Private reference drops", "Subscriber-only character studies and curated sketch references."],
