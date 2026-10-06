@@ -127,14 +127,10 @@ export async function saveImage(buffer: Buffer, origName: string) {
   return { orig: origKey, thumb: thumbKey, width: meta.width || 0, height: meta.height || 0 };
 }
 
-/** A cacheable media URL for clients. Production uses the storage CDN directly,
- * while local installations keep using the authenticated application route. */
+/** A cacheable media URL for clients. Media always passes through the app so a
+ * Premium file can enforce the same membership rule as its feed and download. */
 export function publicMediaUrl(rel: string) {
   if (!isSafeMediaKey(rel)) return "";
-  // New thumbnails are compact immutable WebP files and can use the storage
-  // CDN directly. Older JPEG/PNG thumbnails were uploaded with no-cache, so
-  // send those through our permanently cached WebP compatibility endpoint.
-  if (USE_SUPABASE_STORAGE && (!rel.startsWith("t/") || rel.toLowerCase().endsWith(".webp"))) return sbPublicUrl(rel);
   return `/api/img/${rel}`;
 }
 
