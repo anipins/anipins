@@ -35,7 +35,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
   return (
     <>
       <motion.div
-        className="art-card"
+        className={`art-card ${premiumLandscape ? "art-card--premium-landscape" : ""}`}
         initial={reduceMotion ? false : { opacity: 0, y: 18 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.14 }}
@@ -60,7 +60,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
             onTouchCancel={() => { touchStart.current = null; suppressOpen.current = false; }}
             onClick={() => { if (!suppressOpen.current) openArtwork(art.id, art); }}
             className="block w-full touch-pan-y text-left cursor-zoom-in">
-            <div style={{ aspectRatio: `1 / ${ratio}`, minHeight: premiumLandscape ? "clamp(148px, 38vw, 210px)" : undefined }} className={`relative w-full overflow-hidden bg-soft ${imageReady ? "" : "skeleton"}`}>
+            <div style={{ aspectRatio: `1 / ${ratio}`, minHeight: premiumLandscape ? "clamp(180px, 44vw, 360px)" : undefined }} className={`relative w-full overflow-hidden bg-soft ${imageReady ? "" : "skeleton"}`}>
               <Image
                 src={art.thumb_url || `/api/img/${art.thumb}`}
                 alt={artworkAlt(art)}

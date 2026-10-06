@@ -3,9 +3,10 @@ import Image from "next/image";
 import PremiumCheckout from "@/components/PremiumCheckout";
 import PremiumLibrary from "@/components/PremiumLibrary";
 import PremiumMemberFeed from "@/components/PremiumMemberFeed";
+import PremiumActivationWatcher from "@/components/PremiumActivationWatcher";
 import { getArtworkCards, getPremiumPreviewCards } from "@/lib/content";
 import { getUser } from "@/lib/auth";
-import { canAccessPremium } from "@/lib/billing";
+import { canAccessPremium, getUserSubscription } from "@/lib/billing";
 
 export const metadata = {
   title: "AniPins Premium",
@@ -39,6 +40,11 @@ export default async function PremiumPage() {
     ]);
     return <PremiumMemberFeed featured={featured} latest={latest} />;
   }
+  const existingSubscription = user ? await getUserSubscription(user.id) : null;
+  // Do not replace checkout for an expired or cancelled past membership.
+  const pendingSubscription = existingSubscription && ["created", "authenticated", "pending"].includes(existingSubscription.status)
+    ? existingSubscription
+    : null;
   const previews = await getPremiumPreviewCards(3);
   return <main className="mx-auto max-w-6xl overflow-hidden px-5 pb-24 pt-28 md:px-8 md:pt-36">
     <section className="relative isolate overflow-hidden rounded-[2rem] border border-gold/30 bg-[#12110e] px-6 py-10 shadow-[0_35px_100px_rgba(0,0,0,.45)] sm:px-10 md:rounded-[2.5rem] md:px-14 md:py-16">
@@ -51,7 +57,7 @@ export default async function PremiumPage() {
           <p className="mt-9 text-xs font-semibold uppercase tracking-[.28em] text-gold/80">Member access / edition 01</p>
           <h1 className="mt-4 font-display text-4xl font-semibold leading-[.94] tracking-tight text-paper sm:text-6xl">The archive behind<br/>your <span className="text-gold">best work.</span></h1>
           <p className="mt-7 max-w-lg text-base leading-7 text-fog sm:text-lg">Member-only character collections, original-resolution downloads, and new drops before they reach the public feed.</p>
-          <div className="mt-8 max-w-sm"><PremiumCheckout/></div>
+          <div className="mt-8 max-w-sm">{pendingSubscription ? <PremiumActivationWatcher/> : <PremiumCheckout/>}</div>
           <p className="mt-4 text-sm text-fog"><span className="text-paper">₹199 / month</span> <span className="px-1.5 text-gold">•</span> Cancel before your next billing cycle</p>
         </div>
         <aside className="relative mx-auto w-full max-w-lg py-4 sm:py-8">

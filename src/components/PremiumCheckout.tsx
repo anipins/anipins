@@ -28,7 +28,17 @@ export default function PremiumCheckout() {
           const verified = await fetch("/api/billing/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payment) });
           const result = await verified.json();
           if (!verified.ok) { toast(result.error || "We could not verify your subscription yet.", "err"); return; }
-          toast(result.premium ? "AniPins Premium is active." : "Payment authorized. Access will start when Razorpay activates the subscription.");
+          if (result.premium) {
+            // A full navigation fetches the server-rendered member-only feed
+            // immediately. A toast alone left successful buyers on the sales
+            // page and made their subscription appear broken.
+            window.location.assign("/premium?welcome=1");
+            return;
+          }
+          toast("Payment is confirmed. We are unlocking your Premium feed now.");
+          // Razorpay can move from authenticated to active moments after its
+          // checkout closes. Let the lightweight watcher refresh in-place.
+          window.setTimeout(() => window.location.assign("/premium?activating=1"), 700);
         },
         modal: { ondismiss: () => setBusy(false) },
       });

@@ -123,8 +123,15 @@ export async function createPremiumSubscription(user: { id: number; email: strin
 }
 
 export async function refreshSubscriptionForUser(userId: number, subscriptionId: string) {
-  const current = await getUserSubscription(userId);
-  if (!current || current.subscription_id !== subscriptionId) throw new Error("SUBSCRIPTION_NOT_FOUND");
+  await ensureBillingSchema();
+  // A member can have an earlier cancelled subscription. Verify ownership of
+  // the exact Razorpay subscription instead of assuming the newest row is it.
+  const current = await row(
+    "SELECT subscription_id,user_id,status,payment_id,current_end,cancel_at_cycle_end FROM billing_subscriptions WHERE user_id=? AND subscription_id=?",
+    userId,
+    subscriptionId,
+  ) as BillingSubscription | null;
+  if (!current) throw new Error("SUBSCRIPTION_NOT_FOUND");
   const subscription = await razorpay(`subscriptions/${encodeURIComponent(subscriptionId)}`);
   await storeSubscription({ subscription_id: subscription.id, user_id: userId, status: subscription.status || "created", current_end: subscription.current_end || 0, cancel_at_cycle_end: Number(!!subscription.cancel_at_cycle_end) });
   return getUserSubscription(userId);

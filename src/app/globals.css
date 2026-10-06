@@ -59,6 +59,12 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
 @media (min-width: 2200px) { .masonry { column-count: 7; } }
 .masonry > * { break-inside: avoid; margin-bottom: 14px; }
 .art-card { break-inside: avoid; content-visibility: auto; contain-intrinsic-size: 280px 420px; }
+.masonry > .art-card--premium-landscape {
+  /* Premium landscape studies are intentional wide cards, not tiny strips in
+     one masonry column. column-span makes their entire card tappable. */
+  column-span: all;
+  contain-intrinsic-size: 100% 260px;
+}
 .masonry > * { content-visibility: auto; contain-intrinsic-size: 280px 420px; }
 
 .skeleton { position: relative; overflow: hidden; background: var(--skeleton); }

@@ -30,7 +30,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
   const discoveryMultiplier = ((id + 1) * 48_271) % 2_147_483_647 || 1;
   const related = await rows(
-      `SELECT id, title, character_name, character_slug, anime_name, anime_slug, gender, category, thumb, width, height
+      `SELECT id, title, character_name, character_slug, anime_name, anime_slug, gender, category, thumb, width, height, COALESCE(premium, 0) AS premium
        FROM artworks
        WHERE published=1 AND COALESCE(premium, 0)=? AND id != ?
        ORDER BY
