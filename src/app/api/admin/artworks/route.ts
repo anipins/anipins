@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   if (sort === "downloads") order = "downloads DESC";
   if (sort === "oldest") order = "id ASC";
   const items = await rows(
-    `SELECT id,title,character_name,anime_name,category,tags,featured,published,thumb,views,downloads,created_at FROM artworks WHERE ${where} ORDER BY ${order} LIMIT 200`,
+    `SELECT id,title,character_name,anime_name,category,tags,premium,featured,published,thumb,views,downloads,created_at FROM artworks WHERE ${where} ORDER BY ${order} LIMIT 200`,
     ...args);
   return NextResponse.json({ items });
 }

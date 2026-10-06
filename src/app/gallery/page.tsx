@@ -20,7 +20,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 export default async function Gallery({ searchParams }: Props) {
   const page = pageNumber((await searchParams).page);
-  const items = await rows("SELECT id, title, character_name, anime_name, thumb, width, height FROM artworks WHERE published=1 ORDER BY id ASC LIMIT ? OFFSET ?", SIZE + 1, (page - 1) * SIZE);
+  const items = await rows("SELECT id, title, character_name, anime_name, thumb, width, height FROM artworks WHERE published=1 AND COALESCE(premium, 0)=0 ORDER BY id ASC LIMIT ? OFFSET ?", SIZE + 1, (page - 1) * SIZE);
   if (page > 1 && !items.length) notFound();
   return <section className="w-full px-4 pt-28 md:px-8 md:pt-32">
     <h1 className="font-display text-3xl font-semibold">All anime artwork{page > 1 ? ` · Page ${page}` : ""}</h1>

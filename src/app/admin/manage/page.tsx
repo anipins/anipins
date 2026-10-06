@@ -89,6 +89,7 @@ export default function AdminManage() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{a.title || a.character_name}
                   {a.featured ? <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-fog">Featured</span> : null}
+                  {a.premium ? <span className="ml-2 rounded bg-gold/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-gold">Premium only</span> : null}
                   {!a.published ? <span className="ml-2 rounded bg-yellow-500/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-yellow-300">Draft</span> : null}
                 </p>
                 <p className="truncate text-xs text-fog">{a.character_name} · {a.anime_name} · {a.views} views · {a.downloads} downloads</p>
@@ -160,6 +161,9 @@ function EditModal({ art, onClose, onSaved }: { art: any; onClose: () => void; o
         </div>
         <label className="flex items-center gap-3 text-sm">
           <input type="checkbox" name="featured" value="1" defaultChecked={!!art.featured} className="h-4 w-4 accent-white" /> Featured
+        </label>
+        <label className="flex items-center gap-3 text-sm">
+          <input type="checkbox" name="premium" value="1" defaultChecked={!!art.premium} className="h-4 w-4 accent-gold" /> Premium exclusive <span className="text-xs text-fog">Hidden from every public feed</span>
         </label>
         {err && <p className="text-sm text-red-400">{err}</p>}
         <div className="flex gap-3">

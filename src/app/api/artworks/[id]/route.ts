@@ -19,8 +19,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       (SELECT COUNT(*) FROM likes l WHERE l.artwork_id=a.id) AS like_count,
       (SELECT COUNT(*) FROM likes l JOIN sessions s ON s.user_id=l.user_id
        WHERE l.artwork_id=a.id AND s.token=? AND s.expires_at>?) AS user_likes,
-      (SELECT MAX(p.id) FROM artworks p WHERE p.published=1 AND p.id<a.id) AS prev_id,
-      (SELECT MIN(n.id) FROM artworks n WHERE n.published=1 AND n.id>a.id) AS next_id
+      (SELECT MAX(p.id) FROM artworks p WHERE p.published=1 AND COALESCE(p.premium, 0)=0 AND p.id<a.id) AS prev_id,
+      (SELECT MIN(n.id) FROM artworks n WHERE n.published=1 AND COALESCE(n.premium, 0)=0 AND n.id>a.id) AS next_id
      FROM artworks a WHERE a.id=? AND a.published=1`,
     token, Date.now(), id,
   );
@@ -31,7 +31,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   const related = await rows(
       `SELECT id, title, character_name, character_slug, anime_name, anime_slug, gender, category, thumb, width, height
        FROM artworks
-       WHERE published=1 AND id != ?
+       WHERE published=1 AND COALESCE(premium, 0)=0 AND id != ?
        ORDER BY
          CASE WHEN character_slug = ? THEN 0 WHEN anime_slug = ? THEN 1 ELSE 2 END,
          ((CAST(id AS BIGINT) * ?) % 2147483647), id

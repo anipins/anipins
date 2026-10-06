@@ -1,5 +1,6 @@
 import { row, rows } from "@/lib/db";
 import { publicMediaUrl } from "@/lib/media";
+import { premiumArtworkFilter } from "@/lib/premium-artwork";
 
 export const ARTWORK_CARD_COLUMNS =
   "id, title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, featured, thumb, width, height, views, downloads, created_at";
@@ -12,7 +13,9 @@ export async function getArtworkCards(options: {
   excludeId?: number;
 } = {}) {
   const { limit = 20, sort = "latest", character, anime, excludeId } = options;
-  let where = "published=1";
+  // Server-rendered public pages must use the same separation as the feed API:
+  // premium-only artwork is visible only through the member library.
+  let where = `published=1 AND ${premiumArtworkFilter(false)}`;
   const args: any[] = [];
   if (character) { where += " AND character_slug=?"; args.push(character); }
   if (anime) { where += " AND anime_slug=?"; args.push(anime); }
@@ -54,9 +57,9 @@ export async function getCharacters() {
   return rows(
     `SELECT MIN(character_name) AS name, character_slug AS slug, MIN(anime_name) AS anime,
       MIN(anime_slug) AS anime_slug, COUNT(*) AS count,
-      (SELECT thumb FROM artworks a2 WHERE a2.character_slug=a.character_slug AND a2.published=1 ORDER BY views DESC, id DESC LIMIT 1) AS cover,
+       (SELECT thumb FROM artworks a2 WHERE a2.character_slug=a.character_slug AND a2.published=1 AND COALESCE(a2.premium, 0)=0 ORDER BY views DESC, id DESC LIMIT 1) AS cover,
       MAX(created_at) AS updated_at
-     FROM artworks a WHERE published=1
+     FROM artworks a WHERE published=1 AND COALESCE(a.premium, 0)=0
      GROUP BY character_slug ORDER BY count DESC, name ASC`,
   );
 }
@@ -65,9 +68,9 @@ export async function getAnime() {
   return rows(
     `SELECT MIN(anime_name) AS name, anime_slug AS slug, COUNT(*) AS count,
       COUNT(DISTINCT character_slug) AS characters,
-      (SELECT thumb FROM artworks a2 WHERE a2.anime_slug=a.anime_slug AND a2.published=1 ORDER BY views DESC, id DESC LIMIT 1) AS cover,
+       (SELECT thumb FROM artworks a2 WHERE a2.anime_slug=a.anime_slug AND a2.published=1 AND COALESCE(a2.premium, 0)=0 ORDER BY views DESC, id DESC LIMIT 1) AS cover,
       MAX(created_at) AS updated_at
-     FROM artworks a WHERE published=1
+     FROM artworks a WHERE published=1 AND COALESCE(a.premium, 0)=0
      GROUP BY anime_slug ORDER BY count DESC, name ASC`,
   );
 }
@@ -76,7 +79,7 @@ export async function getCharacter(slug: string) {
   return row(
     `SELECT MIN(character_name) AS name, character_slug AS slug, MIN(anime_name) AS anime,
       MIN(anime_slug) AS anime_slug, COUNT(*) AS count, MAX(created_at) AS updated_at
-     FROM artworks WHERE published=1 AND character_slug=? GROUP BY character_slug`,
+     FROM artworks WHERE published=1 AND COALESCE(premium, 0)=0 AND character_slug=? GROUP BY character_slug`,
     slug,
   );
 }
@@ -85,7 +88,7 @@ export async function getAnimeBySlug(slug: string) {
   return row(
     `SELECT MIN(anime_name) AS name, anime_slug AS slug, COUNT(*) AS count,
       COUNT(DISTINCT character_slug) AS characters, MAX(created_at) AS updated_at
-     FROM artworks WHERE published=1 AND anime_slug=? GROUP BY anime_slug`,
+     FROM artworks WHERE published=1 AND COALESCE(premium, 0)=0 AND anime_slug=? GROUP BY anime_slug`,
     slug,
   );
 }
@@ -93,16 +96,16 @@ export async function getAnimeBySlug(slug: string) {
 export async function getCharactersForAnime(animeSlug: string) {
   return rows(
     `SELECT MIN(character_name) AS name, character_slug AS slug, COUNT(*) AS count
-     FROM artworks WHERE published=1 AND anime_slug=?
+     FROM artworks WHERE published=1 AND COALESCE(premium, 0)=0 AND anime_slug=?
      GROUP BY character_slug ORDER BY count DESC, name ASC`,
     animeSlug,
   );
 }
 
 export async function getArtwork(id: number) {
-  return row("SELECT * FROM artworks WHERE id=? AND published=1", id);
+  return row("SELECT * FROM artworks WHERE id=? AND published=1 AND COALESCE(premium, 0)=0", id);
 }
 
 export async function getArtworkSitemapRows() {
-  return rows("SELECT id, created_at FROM artworks WHERE published=1 ORDER BY id DESC");
+  return rows("SELECT id, created_at FROM artworks WHERE published=1 AND COALESCE(premium, 0)=0 ORDER BY id DESC");
 }

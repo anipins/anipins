@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 async function matches(hash: string, excludeId = 0) {
-  const candidates = await rows("SELECT id, title, character_name, character_slug, anime_name, anime_slug, gender, category, thumb, width, height, perceptual_hash FROM artworks WHERE published=1 AND perceptual_hash != '' ORDER BY id DESC LIMIT 3000");
+  const candidates = await rows("SELECT id, title, character_name, character_slug, anime_name, anime_slug, gender, category, thumb, width, height, perceptual_hash FROM artworks WHERE published=1 AND COALESCE(premium, 0)=0 AND perceptual_hash != '' ORDER BY id DESC LIMIT 3000");
   return candidates
     .filter((item: any) => item.id !== excludeId)
     .map((item: any) => ({ ...item, similarity: Math.max(0, Math.round((1 - hashDistance(hash, item.perceptual_hash) / 64) * 100)), thumb_url: publicMediaUrl(item.thumb) }))

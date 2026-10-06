@@ -43,6 +43,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   if (body.character !== undefined) { fields.push("character_name=?", "character_slug=?"); args.push(String(body.character), slugify(String(body.character))); }
   if (body.anime !== undefined) { fields.push("anime_name=?", "anime_slug=?"); args.push(String(body.anime), slugify(String(body.anime))); }
   if (body.featured !== undefined) { fields.push("featured=?"); args.push(body.featured === "1" || body.featured === 1 || body.featured === true ? 1 : 0); }
+  if (body.premium !== undefined) { fields.push("premium=?"); args.push(body.premium === "1" || body.premium === 1 || body.premium === true ? 1 : 0); }
   if (body.published !== undefined) { fields.push("published=?"); args.push(body.published === "1" || body.published === 1 || body.published === true ? 1 : 0); }
 
   if (newImage) {
