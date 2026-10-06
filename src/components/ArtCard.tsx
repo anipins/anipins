@@ -23,6 +23,9 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const suppressOpen = useRef(false);
   const ratio = art.width && art.height ? art.height / art.width : 1.3;
+  // A landscape image in a two-column phone masonry grid can become a tiny
+  // strip. Premium cards must retain a comfortable tap target instead.
+  const premiumLandscape = Boolean(art.premium) && ratio < 0.9;
   const hideArtwork = async () => {
     window.dispatchEvent(new CustomEvent("anipins:hide-art", { detail: { id: art.id } }));
     try { await fetch("/api/hides", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artworkId: art.id }) }); } catch {}
@@ -57,7 +60,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
             onTouchCancel={() => { touchStart.current = null; suppressOpen.current = false; }}
             onClick={() => { if (!suppressOpen.current) openArtwork(art.id, art); }}
             className="block w-full touch-pan-y text-left cursor-zoom-in">
-            <div style={{ aspectRatio: `1 / ${ratio}` }} className={`relative w-full overflow-hidden bg-soft ${imageReady ? "" : "skeleton"}`}>
+            <div style={{ aspectRatio: `1 / ${ratio}`, minHeight: premiumLandscape ? "clamp(148px, 38vw, 210px)" : undefined }} className={`relative w-full overflow-hidden bg-soft ${imageReady ? "" : "skeleton"}`}>
               <Image
                 src={art.thumb_url || `/api/img/${art.thumb}`}
                 alt={artworkAlt(art)}

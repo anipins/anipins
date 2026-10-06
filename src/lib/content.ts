@@ -3,7 +3,7 @@ import { publicMediaUrl } from "@/lib/media";
 import { premiumArtworkFilter } from "@/lib/premium-artwork";
 
 export const ARTWORK_CARD_COLUMNS =
-  "id, title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, featured, thumb, width, height, views, downloads, created_at";
+  "id, title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, premium, featured, thumb, width, height, views, downloads, created_at";
 
 export async function getArtworkCards(options: {
   limit?: number;

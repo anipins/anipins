@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
   if (orientation === "desktop") where += " AND width >= height";
   if (featured === "1") { where += " AND featured = 1"; }
 
-  const cols = "id, title, character_name, character_slug, anime_name, anime_slug, tags, gender, category, featured, thumb, width, height, views, downloads";
+  const cols = "id, title, character_name, character_slug, anime_name, anime_slug, tags, gender, category, premium, featured, thumb, width, height, views, downloads";
   if (sort === "following") {
     if (!user) return NextResponse.json({ items: [], hasMore: false, guest: true }, { headers: { "Cache-Control": "private, no-store" } });
     const followed = await rows("SELECT kind, value FROM follows WHERE user_id=?", user.id);
