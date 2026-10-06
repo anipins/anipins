@@ -2,6 +2,10 @@ import Link from "next/link";
 import Image from "next/image";
 import PremiumCheckout from "@/components/PremiumCheckout";
 import PremiumLibrary from "@/components/PremiumLibrary";
+import PremiumMemberFeed from "@/components/PremiumMemberFeed";
+import { getArtworkCards } from "@/lib/content";
+import { getUser } from "@/lib/auth";
+import { canAccessPremium } from "@/lib/billing";
 
 export const metadata = {
   title: "AniPins Premium",
@@ -22,7 +26,16 @@ function Lock() {
   return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>;
 }
 
-export default function PremiumPage() {
+export default async function PremiumPage() {
+  const user = await getUser();
+  const hasPremium = !!user && await canAccessPremium(user);
+  if (hasPremium) {
+    const [featured, latest] = await Promise.all([
+      getArtworkCards({ sort: "featured", limit: 8, premium: true }),
+      getArtworkCards({ sort: "latest", limit: 36, premium: true }),
+    ]);
+    return <PremiumMemberFeed featured={featured} latest={latest} />;
+  }
   return <main className="mx-auto max-w-6xl overflow-hidden px-5 pb-24 pt-28 md:px-8 md:pt-36">
     <section className="relative isolate overflow-hidden rounded-[2rem] border border-gold/30 bg-[#12110e] px-6 py-10 shadow-[0_35px_100px_rgba(0,0,0,.45)] sm:px-10 md:rounded-[2.5rem] md:px-14 md:py-16">
       <div className="pointer-events-none absolute -left-32 top-1/2 h-[30rem] w-[30rem] -translate-y-1/2 rounded-full bg-gold/10 blur-[120px]"/>

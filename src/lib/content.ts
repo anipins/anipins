@@ -11,11 +11,13 @@ export async function getArtworkCards(options: {
   character?: string;
   anime?: string;
   excludeId?: number;
+  /** Use only in authenticated member-only server views. */
+  premium?: boolean;
 } = {}) {
-  const { limit = 20, sort = "latest", character, anime, excludeId } = options;
+  const { limit = 20, sort = "latest", character, anime, excludeId, premium = false } = options;
   // Server-rendered public pages must use the same separation as the feed API:
   // premium-only artwork is visible only through the member library.
-  let where = `published=1 AND ${premiumArtworkFilter(false)}`;
+  let where = `published=1 AND ${premiumArtworkFilter(premium)}`;
   const args: any[] = [];
   if (character) { where += " AND character_slug=?"; args.push(character); }
   if (anime) { where += " AND anime_slug=?"; args.push(anime); }

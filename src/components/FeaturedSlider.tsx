@@ -37,14 +37,18 @@ function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: 
   );
 }
 
-export default function FeaturedSlider({ initialArts = [] }: { initialArts?: any[] }) {
+export default function FeaturedSlider({ initialArts = [], premium = false }: { initialArts?: any[]; premium?: boolean }) {
   const [arts, setArts] = useState<any[]>(initialArts);
   const [idx, setIdx] = useState(0);
   const [dir, setDir] = useState(1);
 
   useEffect(() => {
-    if (initialArts.length === 0) fetch("/api/artworks?featured=1&limit=8", { cache: "force-cache" }).then(r => r.json()).then(d => setArts(d.items || []));
-  }, [initialArts.length]);
+    if (initialArts.length === 0) {
+      const params = new URLSearchParams({ featured: "1", limit: "8" });
+      if (premium) params.set("premium", "1");
+      fetch(`/api/artworks?${params}`, { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(d => setArts(d?.items || []));
+    }
+  }, [initialArts.length, premium]);
 
   useEffect(() => {
     if (arts.length < 2) return;
@@ -62,7 +66,10 @@ export default function FeaturedSlider({ initialArts = [] }: { initialArts?: any
     return () => window.removeEventListener("keydown", h);
   }, [arts.length]);
 
-  if (!arts.length) return <div className="skeleton mx-auto mt-8 h-[420px] max-w-[1300px] rounded-3xl" />;
+  if (!arts.length) {
+    if (premium) return <section className="mx-auto max-w-[1400px] px-4 md:px-8"><div className="rounded-3xl border border-gold/25 bg-panel px-6 py-16 text-center"><p className="font-display text-2xl text-paper">Your Premium featured carousel is ready.</p><p className="mt-2 text-sm text-fog">Featured Premium uploads will appear here—public artwork never will.</p></div></section>;
+    return <div className="skeleton mx-auto mt-8 h-[420px] max-w-[1300px] rounded-3xl" />;
+  }
   const a = arts[idx];
   const prevA = arts[(idx - 1 + arts.length) % arts.length];
   const nextA = arts[(idx + 1) % arts.length];
