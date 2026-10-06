@@ -55,6 +55,17 @@ export async function getArtworkCards(options: {
   return items.map((item: any) => ({ ...item, thumb_url: publicMediaUrl(item.thumb) }));
 }
 
+/** Low-detail cards for the public Premium sales page. The image route returns
+ * an intentionally blurred derivative, never the member original. */
+export async function getPremiumPreviewCards(limit = 3) {
+  return rows(
+    `SELECT id, title FROM artworks
+     WHERE published=1 AND COALESCE(premium, 0)=1
+     ORDER BY featured DESC, created_at DESC, id DESC LIMIT ?`,
+    limit,
+  );
+}
+
 export async function getCharacters() {
   return rows(
     `SELECT MIN(character_name) AS name, character_slug AS slug, MIN(anime_name) AS anime,

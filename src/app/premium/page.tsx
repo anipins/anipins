@@ -3,7 +3,7 @@ import Image from "next/image";
 import PremiumCheckout from "@/components/PremiumCheckout";
 import PremiumLibrary from "@/components/PremiumLibrary";
 import PremiumMemberFeed from "@/components/PremiumMemberFeed";
-import { getArtworkCards } from "@/lib/content";
+import { getArtworkCards, getPremiumPreviewCards } from "@/lib/content";
 import { getUser } from "@/lib/auth";
 import { canAccessPremium } from "@/lib/billing";
 
@@ -36,6 +36,7 @@ export default async function PremiumPage() {
     ]);
     return <PremiumMemberFeed featured={featured} latest={latest} />;
   }
+  const previews = await getPremiumPreviewCards(3);
   return <main className="mx-auto max-w-6xl overflow-hidden px-5 pb-24 pt-28 md:px-8 md:pt-36">
     <section className="relative isolate overflow-hidden rounded-[2rem] border border-gold/30 bg-[#12110e] px-6 py-10 shadow-[0_35px_100px_rgba(0,0,0,.45)] sm:px-10 md:rounded-[2.5rem] md:px-14 md:py-16">
       <div className="pointer-events-none absolute -left-32 top-1/2 h-[30rem] w-[30rem] -translate-y-1/2 rounded-full bg-gold/10 blur-[120px]"/>
@@ -70,9 +71,23 @@ export default async function PremiumPage() {
 
     <section className="mt-8 grid gap-4 md:grid-cols-3">{benefits.map(([number, title, copy]) => <article key={number} className="group rounded-3xl border border-paper/10 bg-panel p-6 transition-colors hover:border-gold/35"><p className="text-xs font-semibold tracking-[.22em] text-gold/80">{number}</p><h2 className="mt-9 font-display text-2xl font-semibold text-paper">{title}</h2><p className="mt-3 text-sm leading-6 text-fog">{copy}</p><div className="mt-6 h-px w-10 bg-gold/60 transition-all group-hover:w-full"/></article>)}</section>
 
-    <section className="mt-12 overflow-hidden rounded-[2rem] border border-paper/10 bg-panel p-5 sm:p-7">
+    <section className="hidden mt-12 overflow-hidden rounded-[2rem] border border-paper/10 bg-panel p-5 sm:p-7">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold uppercase tracking-[.25em] text-gold">Preview the archive</p><h2 className="mt-2 font-display text-3xl font-semibold text-paper">More than a feed.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-fog">Premium drops are deliberately curated and kept outside the public browsing feed.</p></div><span className="inline-flex w-fit items-center gap-2 rounded-full border border-paper/10 px-3 py-1.5 text-xs text-fog"><Lock/> Member-only previews</span></div>
       <div className="mt-7 grid gap-3 sm:grid-cols-3">{["bg-[radial-gradient(circle_at_25%_25%,rgba(212,170,85,.35),transparent_35%),linear-gradient(135deg,#302516,#111)]", "bg-[radial-gradient(circle_at_75%_20%,rgba(212,170,85,.32),transparent_28%),linear-gradient(145deg,#111,#302516)]", "bg-[radial-gradient(circle_at_28%_80%,rgba(212,170,85,.26),transparent_32%),linear-gradient(145deg,#221b12,#0c0c0c)]"].map((background, index) => <div key={index} className="group relative min-h-52 overflow-hidden rounded-2xl border border-paper/10 bg-soft sm:min-h-64"><div className={`absolute inset-0 ${background}`}/><div className="absolute inset-0 bg-[linear-gradient(115deg,transparent_35%,rgba(255,255,255,.05)_36%,transparent_42%)]"/><div className="absolute inset-0 grid place-items-center"><span className="grid h-11 w-11 place-items-center rounded-full border border-gold/50 bg-black/50 text-gold backdrop-blur"><Lock/></span></div><div className="absolute inset-x-0 bottom-0 p-4"><p className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Reserved drop {String(index + 1).padStart(2, "0")}</p><p className="mt-1 text-sm font-medium text-paper">Your exclusive artwork appears here</p></div></div>)}</div>
+    </section>
+
+    <section className="mt-12 overflow-hidden rounded-[2rem] border border-paper/10 bg-panel p-5 sm:p-7">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div><p className="text-xs font-semibold uppercase tracking-[.25em] text-gold">Inside the private archive</p><h2 className="mt-2 font-display text-3xl font-semibold text-paper">Real drops. Kept private.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-fog">A glimpse of the member library, deliberately obscured until you unlock it. Full-resolution artwork is never displayed on this public sales page.</p></div>
+        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-gold/30 bg-gold/5 px-3 py-1.5 text-xs text-gold"><Lock/> Blurred member previews</span>
+      </div>
+      <div className="mt-7 grid gap-3 sm:grid-cols-3">{Array.from({ length: 3 }, (_, index) => {
+        const preview = previews[index];
+        return <div key={preview?.id || index} className="group relative min-h-52 overflow-hidden rounded-2xl border border-paper/10 bg-soft sm:min-h-64">
+          {preview ? <img src={`/api/premium-preview/${preview.id}`} alt="Blurred Premium artwork preview" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-80" /> : <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(212,170,85,.35),transparent_35%),linear-gradient(135deg,#302516,#111)]" />}
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.82))]"/><div className="absolute inset-0 grid place-items-center"><span className="grid h-12 w-12 place-items-center rounded-full border border-gold/50 bg-black/60 text-gold backdrop-blur"><Lock/></span></div><div className="absolute inset-x-0 bottom-0 p-4"><p className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Private drop {String(index + 1).padStart(2, "0")}</p><p className="mt-1 text-sm font-medium text-paper">Unlock the full member collection</p></div>
+        </div>;
+      })}</div>
     </section>
 
     <section className="mt-5 overflow-hidden rounded-[2rem] border border-gold/25 bg-gradient-to-r from-[#20170c] via-[#15120e] to-[#20170c] p-6 sm:p-8">
