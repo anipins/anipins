@@ -44,7 +44,7 @@ export default function PremiumPage() {
             <div className="pointer-events-none absolute -right-20 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full border border-gold/25"/>
             <div className="pointer-events-none absolute -right-10 top-1/2 h-52 w-52 -translate-y-1/2 rounded-full border border-gold/20"/>
             <div className="pointer-events-none absolute right-[-2rem] top-10 opacity-[.13] mix-blend-screen">
-              <Image src="/brand/ap-symbol-transparent.svg" alt="" width={270} height={270} aria-hidden="true" priority />
+              <Image src="/brand/ap-mark-master-v2.png" alt="" width={270} height={270} aria-hidden="true" priority />
             </div>
             <div className="pointer-events-none absolute bottom-7 right-7 grid h-14 w-14 grid-cols-5 gap-1 opacity-40">{Array.from({ length: 25 }, (_, index) => <span key={index} className={`rounded-[1px] ${[0, 2, 4, 6, 8, 11, 13, 15, 18, 20, 22, 24].includes(index) ? "bg-gold" : "bg-gold/20"}`}/>)}</div>
             <div className="relative flex items-start justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[.3em] text-gold">AniPins / member pass</p><p className="mt-2 font-display text-2xl text-paper">Private access</p></div><div className="grid h-12 w-12 place-items-center rounded-2xl border border-gold/40 bg-gold/10 text-gold"><Crown/></div></div>
