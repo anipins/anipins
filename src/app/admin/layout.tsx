@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 
 const NAV = [
   { href: "/admin", label: "Overview", d: "M3.5 12.5 12 4l8.5 8.5M6 10.5V20h12v-9.5" },
-  { href: "/admin/manage", label: "Artwork Manager", d: "M4 5h16v14H4zM4 15l4-4 3 3 5-5 4 4" },
+  { href: "/admin/manage", label: "Public Manager", d: "M4 5h16v14H4zM4 15l4-4 3 3 5-5 4 4" },
   { href: "/admin/upload", label: "Upload", d: "M12 16V5m0 0 4 4m-4-4L8 9M5 19h14" },
   { href: "/admin/premium-upload", label: "Premium Upload", d: "M4 7.5 8 11l4-6 4 6 4-3.5-2 10H6l-2-10Z M8 21h8" },
+  { href: "/admin/premium-manage", label: "Premium Manager", d: "M4 7.5 8 11l4-6 4 6 4-3.5-2 10H6l-2-10Z M8 21h8" },
   { href: "/admin/users", label: "Users", d: "M9 11a3.2 3.2 0 1 0 0-6.4A3.2 3.2 0 0 0 9 11Zm-5.5 8c.7-3.2 2.8-5 5.5-5s4.8 1.8 5.5 5M17 10.5a2.4 2.4 0 1 0 0-4.8M15.5 14.4c2.3.2 4 1.7 4.6 4.6" },
   { href: "/admin/analytics", label: "Analytics", d: "M4 19V9m5.5 10V5M15 19v-7m5.5 7V11" },
   { href: "/admin/security", label: "Security", d: "M12 3 5 6v5c0 4.8 2.8 8.2 7 10 4.2-1.8 7-5.2 7-10V6l-7-3Zm-2 9 1.4 1.4L15 9.8" },

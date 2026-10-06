@@ -10,8 +10,13 @@ export async function GET(req: NextRequest) {
   const q = (sp.get("q") || "").trim().toLowerCase();
   const sort = sp.get("sort") || "latest";
   const filter = sp.get("filter") || "all";
+  const scope = sp.get("scope") || "all";
   let where = "1=1";
   const args: any[] = [];
+  // The two admin libraries are intentionally distinct. UI filtering is not
+  // enough—scope is applied in the database query itself.
+  if (scope === "premium") where += " AND COALESCE(premium, 0)=1";
+  if (scope === "public") where += " AND COALESCE(premium, 0)=0";
   if (q) {
     where += " AND (lower(character_name) LIKE ? OR lower(anime_name) LIKE ? OR lower(tags) LIKE ? OR lower(title) LIKE ?)";
     const like = `%${q}%`; args.push(like, like, like, like);

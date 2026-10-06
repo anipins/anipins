@@ -79,6 +79,7 @@ export default function AdminOverview() {
           <Link href="/admin/upload" className="btn-primary !py-2.5">+ Upload artwork</Link>
           <Link href="/admin/premium-upload" className="btn-ghost !border-gold/40 !text-gold !py-2.5">Premium upload</Link>
           <Link href="/admin/manage" className="btn-ghost !py-2.5">Manage artwork</Link>
+          <Link href="/admin/premium-manage" className="btn-ghost !border-gold/40 !text-gold !py-2.5">Manage Premium</Link>
         </div>
       </div>
 

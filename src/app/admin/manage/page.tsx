@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "@/components/Toaster";
 
-export default function AdminManage() {
+export default function AdminManage({ premiumOnly = false }: { premiumOnly?: boolean }) {
   const [items, setItems] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [sort, setSort] = useState("latest");
@@ -15,10 +15,11 @@ export default function AdminManage() {
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
-    const r = await fetch(`/api/admin/artworks?q=${encodeURIComponent(q)}&sort=${sort}&filter=${filter}`);
+    const scope = premiumOnly ? "premium" : "public";
+    const r = await fetch(`/api/admin/artworks?q=${encodeURIComponent(q)}&sort=${sort}&filter=${filter}&scope=${scope}`);
     const d = await r.json();
     setItems(d.items || []); setLoaded(true);
-  }, [q, sort, filter]);
+  }, [q, sort, filter, premiumOnly]);
 
   useEffect(() => { const t = setTimeout(load, 200); return () => clearTimeout(t); }, [load]);
 
@@ -54,8 +55,8 @@ export default function AdminManage() {
           <option value="views">Most viewed</option><option value="downloads">Most downloaded</option>
         </select>
         <select value={filter} onChange={e => setFilter(e.target.value)} className="input !w-40 !py-2.5">
-          <option value="all">All</option><option value="published">Published</option>
-          <option value="unpublished">Unpublished</option><option value="featured">Featured</option><option value="public">Public feed</option><option value="premium">Premium library</option>
+          <option value="all">All {premiumOnly ? "Premium uploads" : "public uploads"}</option><option value="published">Published</option>
+          <option value="unpublished">Unpublished</option><option value="featured">Featured</option>
         </select>
         <label className="ml-auto flex items-center gap-2 text-sm text-fog">
           <input type="checkbox" checked={allSelected} onChange={() => setSel(allSelected ? new Set() : new Set(items.map(i => i.id)))} className="h-4 w-4 accent-white" />
@@ -97,7 +98,7 @@ export default function AdminManage() {
               <div className="flex shrink-0 items-center gap-1.5">
                 <button onClick={() => setEdit(a)} className="chip !px-3">Edit</button>
                 <button onClick={() => one(a.id, { published: a.published ? 0 : 1 })} className="chip !px-3">{a.published ? "Unpublish" : "Publish"}</button>
-                <button onClick={() => one(a.id, { featured: a.featured ? 0 : 1 })} className="chip !px-3 hidden sm:inline-flex">{a.featured ? "Unfeature" : "Feature"}</button>
+                <button onClick={() => one(a.id, { featured: a.featured ? 0 : 1 })} className="chip !px-3 hidden sm:inline-flex">{a.featured ? "Unfeature" : premiumOnly ? "Feature Premium" : "Feature"}</button>
                 <a href={`/api/artworks/${a.id}/download`} className="chip !px-3 hidden sm:inline-flex">Download</a>
                 <button onClick={() => delOne(a.id)} className="chip !px-3 !border-red-500/40 !text-red-400 hover:!bg-red-500/10">Delete</button>
               </div>
@@ -105,12 +106,12 @@ export default function AdminManage() {
           ))}
       </div>
 
-      <AnimatePresence>{edit && <EditModal art={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); }} />}</AnimatePresence>
+      <AnimatePresence>{edit && <EditModal art={edit} premiumOnly={premiumOnly} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); }} />}</AnimatePresence>
     </div>
   );
 }
 
-function EditModal({ art, onClose, onSaved }: { art: any; onClose: () => void; onSaved: () => void }) {
+function EditModal({ art, premiumOnly, onClose, onSaved }: { art: any; premiumOnly: boolean; onClose: () => void; onSaved: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -160,11 +161,9 @@ function EditModal({ art, onClose, onSaved }: { art: any; onClose: () => void; o
           </select>
         </div>
         <label className="flex items-center gap-3 text-sm">
-          <input type="checkbox" name="featured" value="1" defaultChecked={!!art.featured} className="h-4 w-4 accent-white" /> Featured
+          <input type="checkbox" name="featured" value="1" defaultChecked={!!art.featured} className="h-4 w-4 accent-white" /> {premiumOnly ? "Feature in Premium carousel" : "Featured"}
         </label>
-        <label className="flex items-center gap-3 text-sm">
-          <input type="checkbox" name="premium" value="1" defaultChecked={!!art.premium} className="h-4 w-4 accent-gold" /> Premium exclusive <span className="text-xs text-fog">Hidden from every public feed</span>
-        </label>
+        <p className="rounded-xl border border-gold/20 bg-gold/5 px-3 py-2 text-xs text-fog">{premiumOnly ? "This artwork stays inside the Premium library and can never join the public feed." : "This artwork stays in the public library. Use Premium Upload for member-only artwork."}</p>
         {err && <p className="text-sm text-red-400">{err}</p>}
         <div className="flex gap-3">
           <button disabled={busy} className="btn-primary flex-1 disabled:opacity-50">{busy ? "Saving…" : "Save changes"}</button>
