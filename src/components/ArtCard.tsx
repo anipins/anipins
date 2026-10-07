@@ -12,7 +12,15 @@ import ReportArtwork from "./ReportArtwork";
 import DownloadButton from "./DownloadButton";
 
 export function openArtwork(id: number, art?: any) {
-  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("anipins:open-art", { detail: { id, art } }));
+  if (typeof window !== "undefined") {
+    // Start the original image immediately, alongside the detail request.
+    // This keeps feed thumbnails fast while avoiding a second wait after tap.
+    if (art?.orig) {
+      const original = new window.Image();
+      original.src = `/api/img/${art.orig}`;
+    }
+    window.dispatchEvent(new CustomEvent("anipins:open-art", { detail: { id, art } }));
+  }
 }
 
 export default function ArtCard({ art, index = 0, priority }: { art: any; index?: number; priority?: boolean }) {

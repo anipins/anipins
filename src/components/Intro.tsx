@@ -46,9 +46,9 @@ export default function Intro() {
     }
     sessionStorage.setItem("anipins_intro", "1");
     setShow(true);
-    // Keep the brand moment short: the first view should feel deliberate,
-    // never like an extra loading screen.
-    const t = setTimeout(() => setShow(false), 1050);
+    // Let the branded opening play at its intended pace. The initial cover is
+    // already rendered before the feed, so this is not a loading delay.
+    const t = setTimeout(() => setShow(false), 1750);
     return () => clearTimeout(t);
   }, []);
   return (

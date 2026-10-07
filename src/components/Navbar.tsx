@@ -28,6 +28,7 @@ function PremiumMark() {
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [navVisible, setNavVisible] = useState(true);
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [sugs, setSugs] = useState<any[]>([]);
@@ -44,12 +45,17 @@ export default function Navbar() {
   useEffect(() => {
     let frame = 0;
     let last = window.scrollY > 24;
+    let lastY = window.scrollY;
     const on = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
-        const next = window.scrollY > 24;
+        const y = window.scrollY;
+        const next = y > 24;
         if (next !== last) { last = next; setScrolled(next); }
+        if (y < 12) setNavVisible(true);
+        else if (Math.abs(y - lastY) > 8) setNavVisible(y < lastY);
+        lastY = y;
       });
     };
     setScrolled(last);
@@ -120,7 +126,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className={`site-navbar fixed top-0 z-50 w-full transition-all duration-500 ${scrolled ? "site-navbar--scrolled glass border-b border-paper/10 pb-2" : "pb-4"}`}>
+    <header className={`site-navbar fixed top-0 z-50 w-full transition-all duration-300 ${navVisible || open ? "translate-y-0" : "max-md:-translate-y-[calc(100%+1rem)] md:translate-y-0"} ${scrolled ? "site-navbar--scrolled glass border-b border-paper/10 pb-2" : "pb-4"}`}>
       <div className="mx-auto flex max-w-[1600px] items-center gap-2 px-3 sm:gap-4 sm:px-4 md:px-8">
         {path !== "/" && (
           <button
@@ -217,7 +223,7 @@ export default function Navbar() {
           )}
         </div>
 
-        <button onClick={() => setOpen(!open)} className="shrink-0 lg:hidden rounded-full p-2 text-paper" aria-label="Menu">
+        <button onClick={() => { setNavVisible(true); setOpen(!open); }} className="shrink-0 lg:hidden rounded-full p-2 text-paper" aria-label="Menu">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             {open ? <path d="M6 6l12 12M18 6L6 18"/> : <path d="M4 7h16M4 12h16M4 17h16"/>}
           </svg>
