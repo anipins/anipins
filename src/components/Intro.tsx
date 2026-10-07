@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const logoFragments = [
@@ -29,20 +29,26 @@ const logoFragments = [
 const brandLetters = ["A", "n", "i", "P", "i", "n", "s"];
 
 export default function Intro() {
-  const [show, setShow] = useState(false);
-  useEffect(() => {
+  // Render the cover immediately. Starting it as false caused the server
+  // feed to paint for one frame before the brand screen appeared in WebView.
+  const [show, setShow] = useState(true);
+  useLayoutEffect(() => {
     // A Google sign-in return reloads the Android WebView. The intro belongs
     // only to the first page of an app/browser session, never that auth return.
-    if (sessionStorage.getItem("anipins_intro")) return;
+    if (sessionStorage.getItem("anipins_intro")) {
+      setShow(false);
+      return;
+    }
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       sessionStorage.setItem("anipins_intro", "1");
+      setShow(false);
       return;
     }
     sessionStorage.setItem("anipins_intro", "1");
     setShow(true);
-    // Keep the brand moment, but never make a returning mobile visitor wait
-    // for the whole page behind a three-second overlay.
-    const t = setTimeout(() => setShow(false), 1750);
+    // Keep the brand moment short: the first view should feel deliberate,
+    // never like an extra loading screen.
+    const t = setTimeout(() => setShow(false), 1050);
     return () => clearTimeout(t);
   }, []);
   return (
