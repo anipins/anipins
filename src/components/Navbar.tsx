@@ -9,7 +9,7 @@ import NotificationBell from "./NotificationBell";
 import InstagramLink from "./InstagramLink";
 import { toast } from "./Toaster";
 
-const APP_URL = "/downloads/AniPins-2.5.19.apk";
+const APP_URL = "/downloads/AniPins-2.5.20.apk";
 const APP_DOWNLOAD_KEY = "anipins-app-download-requested-v1";
 const LINKS = [
   { href: "/", label: "Home" },
