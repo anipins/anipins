@@ -8,31 +8,35 @@ import { artworkAlt } from "@/lib/site";
 import DownloadButton from "./DownloadButton";
 
 function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: boolean; sizes: string }) {
-  const [ready, setReady] = useState(false);
-  const src = art.thumb_url || `/api/img/${art.thumb}`;
+  const [sharpReady, setSharpReady] = useState(false);
+  const previewSrc = art.thumb_url || `/api/img/${art.thumb}`;
+  // Paint the cacheable preview immediately, then fade in a sharp source for
+  // public featured artwork. This replaces the old duplicate blurred image,
+  // which was expensive to decode while scrolling on phones.
+  const sharpSrc = !art.premium && (art.orig_url || (art.orig ? `/api/img/${art.orig}` : ""));
 
   return (
-    <div className="absolute inset-0 overflow-hidden bg-black">
+    <div className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_50%_20%,rgba(198,161,91,0.18),transparent_48%),#080808]">
       <Image
-        src={src}
-        alt=""
-        fill
-        sizes={sizes}
-        priority={priority}
-        loading={priority ? "eager" : "lazy"}
-        aria-hidden="true"
-        className="scale-110 object-cover opacity-35 blur-2xl"
-      />
-      <Image
-        src={src}
+        src={previewSrc}
         alt={artworkAlt(art)}
         fill
         sizes={sizes}
         priority={priority}
         loading={priority ? "eager" : "lazy"}
-        onLoad={() => setReady(true)}
-        className={`object-contain transition-opacity duration-300 ${ready ? "opacity-100" : "opacity-0"}`}
+        className={`object-contain transition-opacity duration-300 ${sharpReady ? "opacity-0" : "opacity-100"}`}
       />
+      {sharpSrc && <Image
+        src={sharpSrc}
+        alt=""
+        aria-hidden="true"
+        fill
+        sizes={sizes}
+        quality={82}
+        loading={priority ? "eager" : "lazy"}
+        onLoad={() => setSharpReady(true)}
+        className={`object-contain transition-opacity duration-300 ${sharpReady ? "opacity-100" : "opacity-0"}`}
+      />}
     </div>
   );
 }
@@ -98,7 +102,7 @@ export default function FeaturedSlider({ initialArts = [], premium = false }: { 
               className="absolute inset-0">
               <FeaturedImage art={a} priority sizes="(max-width: 1023px) 100vw, 76vw" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-              <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }}
+              <motion.div initial={{ y: 14, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.12, duration: 0.32 }}
                 className="absolute inset-x-0 bottom-0 p-6 md:p-9">
                 <p className="text-[11px] uppercase tracking-[0.3em] text-gold">{a.category || a.anime_name}</p>
                 <h3 className="mt-1.5 font-display text-3xl md:text-5xl font-semibold">{a.character_name}</h3>

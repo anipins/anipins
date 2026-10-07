@@ -88,7 +88,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Intro />
         <Navbar />
         <PullToRefresh />
-        <main className="min-h-[70vh] pb-20 md:pb-0">{children}</main>
+        <main className="min-h-[70vh] pb-24 md:pb-0">{children}</main>
         <Footer />
         <MobileBottomNav />
         <Toaster />

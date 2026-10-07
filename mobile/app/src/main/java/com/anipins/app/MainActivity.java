@@ -176,9 +176,10 @@ public class MainActivity extends Activity {
         settings.setUseWideViewPort(false);
         settings.setTextZoom(100);
         settings.setMediaPlaybackRequiresUserGesture(true);
-        // The web app's artwork data changes whenever the owner publishes.
-        // Do not let a persisted WebView document hide a newly uploaded image.
-        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        // Honour cache-control headers: feed metadata is already no-store, but
+        // immutable thumbnails, JavaScript and fonts can now be reused. This
+        // avoids downloading the same gallery again every time the app opens.
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         if (Build.VERSION.SDK_INT >= 21) {
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         }

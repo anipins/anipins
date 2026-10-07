@@ -40,7 +40,9 @@ export default function Intro() {
     }
     sessionStorage.setItem("anipins_intro", "1");
     setShow(true);
-    const t = setTimeout(() => setShow(false), 3000);
+    // Keep the brand moment, but never make a returning mobile visitor wait
+    // for the whole page behind a three-second overlay.
+    const t = setTimeout(() => setShow(false), 1750);
     return () => clearTimeout(t);
   }, []);
   return (
@@ -54,12 +56,12 @@ export default function Intro() {
               style={{ background: "radial-gradient(circle, rgba(198,161,91,0.28) 0%, rgba(198,161,91,0.08) 45%, transparent 70%)" }}
               initial={{ opacity: 0, scale: 0.6 }}
               animate={{ opacity: 1, scale: 1.15 }}
-              transition={{ delay: 0.34, duration: 1.25, ease: "easeOut" }}
+              transition={{ delay: 0.12, duration: 0.82, ease: "easeOut" }}
             />
             <svg viewBox="0 0 160 160" className="absolute h-52 w-52 -rotate-90">
               <motion.circle cx="80" cy="80" r="76" fill="none" stroke="#C6A15B" strokeWidth="1"
                 opacity="0.55" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-                transition={{ delay: 0.74, duration: 0.9, ease: "easeInOut" }} />
+                transition={{ delay: 0.34, duration: 0.62, ease: "easeInOut" }} />
             </svg>
             <div className="relative h-32 w-32 sm:h-36 sm:w-36" aria-label="AniPins">
               {logoFragments.map((fragment) => (
@@ -72,7 +74,7 @@ export default function Intro() {
                   style={{ clipPath: fragment.clipPath }}
                   initial={{ opacity: 0, x: fragment.x, y: fragment.y, rotate: fragment.rotate, scale: 0.82, filter: "blur(6px)" }}
                   animate={{ opacity: [0, 1, 1, 0], x: 0, y: 0, rotate: 0, scale: 1, filter: "blur(0px)" }}
-                  transition={{ delay: fragment.delay, duration: 1.2, times: [0, 0.24, 0.7, 1], ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ delay: fragment.delay / 2, duration: 0.78, times: [0, 0.24, 0.7, 1], ease: [0.22, 1, 0.36, 1] }}
                   draggable={false}
                 />
               ))}
@@ -82,7 +84,7 @@ export default function Intro() {
                 className="absolute inset-0 h-32 w-32 select-none object-contain sm:h-36 sm:w-36"
                 initial={{ opacity: 0, scale: 0.94, filter: "blur(5px)" }}
                 animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                transition={{ delay: 1.18, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ delay: 0.66, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
                 draggable={false}
               />
             </div>
@@ -95,15 +97,15 @@ export default function Intro() {
                 className={index > 2 ? "text-gold" : undefined}
                 initial={{ opacity: 0, x: (index - 3) * 20, y: index % 2 ? -20 : 20, rotate: (index - 3) * 7 }}
                 animate={{ opacity: 1, x: 0, y: 0, rotate: 0 }}
-                transition={{ delay: 1.23 + index * 0.06, duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ delay: 0.72 + index * 0.045, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
               >
                 {letter}
               </motion.span>
             ))}
           </p>
-          <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 1.7, duration: 0.55, ease: "easeInOut" }}
+          <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 1.08, duration: 0.34, ease: "easeInOut" }}
             className="mt-4 h-px w-32 origin-center bg-gold/50" />
-          <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.9, duration: 0.4 }}
+          <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.22, duration: 0.3 }}
             className="mt-3 text-[10px] uppercase tracking-[0.42em] text-fog">Discover · Save · Create</motion.p>
         </motion.div>
       )}

@@ -34,8 +34,8 @@ export default function MobileBottomNav() {
 
   return (
     <nav aria-label="Primary mobile navigation"
-      className={`mobile-bottom-nav fixed inset-x-3 bottom-3 z-[60] grid ${isAdmin ? "grid-cols-5" : "grid-cols-4"} rounded-2xl glass hairline shadow-[0_12px_44px_rgba(0,0,0,0.35)] md:hidden`}
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      className={`mobile-bottom-nav fixed inset-x-0 bottom-0 z-[60] grid ${isAdmin ? "grid-cols-5" : "grid-cols-4"} rounded-t-2xl border-x border-t border-paper/10 glass shadow-[0_-8px_28px_rgba(0,0,0,0.28)] md:hidden`}
+      style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.4rem)" }}>
       {items.map(item => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         return (
@@ -49,7 +49,7 @@ export default function MobileBottomNav() {
               window.dispatchEvent(new Event("anipins:refresh"));
               router.refresh();
             }}
-            className={`group relative flex min-h-16 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl text-[11px] transition-all ${active ? "bg-gold/[0.08] text-gold" : "text-fog hover:bg-paper/[0.04] hover:text-paper"}`}>
+            className={`group relative flex min-h-16 flex-col items-center justify-center gap-1 overflow-hidden text-[11px] transition-all ${active ? "bg-gold/[0.08] text-gold" : "text-fog hover:bg-paper/[0.04] hover:text-paper"}`}>
             <span className={`absolute top-0 h-0.5 rounded-full bg-gold transition-all duration-300 ${active ? "w-8 opacity-100" : "w-0 opacity-0"}`} />
             <svg className="h-5 w-5" fill={active && item.href === "/" ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.9">
               {item.icon}

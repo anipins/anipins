@@ -8,19 +8,42 @@ import ScrollReveal from "@/components/ScrollReveal";
 import { getAnime, getArtworkCards, getCharacters } from "@/lib/content";
 import { getSiteUrl } from "@/lib/site";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 export const dynamic = "force-dynamic";
+
+async function BrowseLinks() {
+  const [anime, characters] = await Promise.all([getAnime(), getCharacters()]);
+  return (
+    <ScrollReveal className="w-full px-3 py-12 sm:px-4 md:px-6 xl:px-8">
+      <section aria-labelledby="browse-anipins">
+        <h2 id="browse-anipins" className="font-display text-2xl font-semibold md:text-3xl">Browse anime art by series and character</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-fog">Explore AniPins collections for anime sketch references, character study and creative inspiration, with direct links to artwork from popular series and characters. New uploads appear automatically in every collection.</p>
+        <div className="mt-6 grid gap-6 md:grid-cols-2">
+          <div className="rounded-2xl bg-soft p-5 hairline">
+            <h3 className="font-display text-lg font-semibold">Popular anime series</h3>
+            <div className="mt-4 flex flex-wrap gap-2">{anime.slice(0, 12).map((item: any) => <Link key={item.slug} href={`/anime/${item.slug}`} className="chip">{item.name} ({item.count})</Link>)}</div>
+            <Link href="/anime" className="mt-5 inline-block text-sm text-gold hover:underline">View every anime collection →</Link>
+          </div>
+          <div className="rounded-2xl bg-soft p-5 hairline">
+            <h3 className="font-display text-lg font-semibold">Popular characters</h3>
+            <div className="mt-4 flex flex-wrap gap-2">{characters.slice(0, 12).map((item: any) => <Link key={item.slug} href={`/c/${item.slug}`} className="chip">{item.name} ({item.count})</Link>)}</div>
+            <Link href="/characters" className="mt-5 inline-block text-sm text-gold hover:underline">View every character →</Link>
+          </div>
+        </div>
+      </section>
+    </ScrollReveal>
+  );
+}
 
 export default async function Home() {
   // New artwork must be visible as soon as the page is refreshed. Images still
   // use immutable CDN caching, but this small indexed data query is deliberately
   // live rather than serving a minute-old home feed.
-  const [featured, latest, anime, characters] = await Promise.all([
+  const [featured, latest] = await Promise.all([
     getArtworkCards({ sort: "featured", limit: 8 }),
     getArtworkCards({ sort: "latest", limit: 36 }),
-    getAnime(),
-    getCharacters(),
   ]);
   return (
     <div className="pt-28 md:pt-32">
@@ -36,6 +59,8 @@ export default async function Home() {
         </div>
         <MasonryFeed query={{ sort: "latest" }} initialItems={latest} initialHasMore={latest.length === 36} />
       </section>
+      {/* Legacy inline browse section retained here only as a reference while the
+          streamed component below keeps it off the first-screen critical path.
       <ScrollReveal className="w-full px-3 py-12 sm:px-4 md:px-6 xl:px-8">
       <section aria-labelledby="browse-anipins">
         <h2 id="browse-anipins" className="font-display text-2xl font-semibold md:text-3xl">Browse anime art by series and character</h2>
@@ -53,7 +78,8 @@ export default async function Home() {
           </div>
         </div>
       </section>
-      </ScrollReveal>
+      </ScrollReveal> */}
+      <Suspense fallback={<div className="h-28" aria-hidden="true" />}><BrowseLinks /></Suspense>
       <TrendingRow />
     </div>
   );

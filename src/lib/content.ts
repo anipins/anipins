@@ -3,7 +3,7 @@ import { publicMediaUrl } from "@/lib/media";
 import { premiumArtworkFilter } from "@/lib/premium-artwork";
 
 export const ARTWORK_CARD_COLUMNS =
-  "id, title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, premium, featured, thumb, width, height, views, downloads, created_at";
+  "id, title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, premium, featured, orig, thumb, width, height, views, downloads, created_at";
 
 export async function getArtworkCards(options: {
   limit?: number;
@@ -52,7 +52,7 @@ export async function getArtworkCards(options: {
       ...args, limit,
     )
     : await rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ?`, ...args, limit);
-  return items.map((item: any) => ({ ...item, thumb_url: publicMediaUrl(item.thumb) }));
+  return items.map((item: any) => ({ ...item, thumb_url: publicMediaUrl(item.thumb), orig_url: publicMediaUrl(item.orig) }));
 }
 
 /** Low-detail cards for the public Premium sales page. The image route returns

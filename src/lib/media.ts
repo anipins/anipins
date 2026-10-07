@@ -98,7 +98,7 @@ export async function processUploadedArtwork(buffer: Buffer, origKey: string) {
   const thumbKey = `t/${id}.webp`;
   const img = sharp(buffer);
   const meta = await img.metadata();
-  const thumbBuf = await img.rotate().resize({ width: 480, withoutEnlargement: true, fastShrinkOnLoad: true }).webp({ quality: 68, effort: 4 }).toBuffer();
+  const thumbBuf = await img.rotate().resize({ width: 640, withoutEnlargement: true, fastShrinkOnLoad: true }).webp({ quality: 72, effort: 4 }).toBuffer();
   await sbUpload(thumbKey, thumbBuf, "image/webp");
   return { orig: origKey, thumb: thumbKey, width: meta.width || 0, height: meta.height || 0 };
 }
@@ -111,7 +111,7 @@ export async function saveImage(buffer: Buffer, origName: string) {
 
   const img = sharp(buffer);
   const meta = await img.metadata();
-  const thumbBuf = await img.rotate().resize({ width: 480, withoutEnlargement: true, fastShrinkOnLoad: true }).webp({ quality: 68, effort: 4 }).toBuffer();
+  const thumbBuf = await img.rotate().resize({ width: 640, withoutEnlargement: true, fastShrinkOnLoad: true }).webp({ quality: 72, effort: 4 }).toBuffer();
 
   if (USE_SUPABASE_STORAGE) {
     await Promise.all([

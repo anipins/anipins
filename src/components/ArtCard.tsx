@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { useRef, useState } from "react";
 import SaveMenu from "./SaveMenu";
 import ShareMenu from "./ShareMenu";
@@ -19,7 +19,6 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
   const [save, setSave] = useState(false);
   const [share, setShare] = useState(false);
   const [imageReady, setImageReady] = useState(false);
-  const reduceMotion = useReducedMotion();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const suppressOpen = useRef(false);
   const ratio = art.width && art.height ? art.height / art.width : 1.3;
@@ -34,12 +33,8 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
 
   return (
     <>
-      <motion.div
+      <div
         className={`art-card ${premiumLandscape ? "art-card--premium-landscape" : ""}`}
-        initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.14 }}
-        transition={{ duration: 0.38, delay: reduceMotion ? 0 : (index % 8) * 0.025, ease: [0.22, 1, 0.36, 1] }}
       >
         <Tilt max={3.5} className="group relative overflow-hidden rounded-2xl bg-soft hairline hover:border-gold-dim transition-colors duration-200">
           <button
@@ -98,7 +93,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
           </div>
           <div className="absolute right-3 top-3 hidden rounded-full bg-black/65 px-2.5 py-1.5 backdrop-blur group-hover:block pointer-events-auto"><ReportArtwork artworkId={art.id} compact /></div>
         </Tilt>
-      </motion.div>
+      </div>
       <AnimatePresence>
         {save && <SaveMenu artworkId={art.id} onClose={() => setSave(false)} />}
         {share && <ShareMenu url={typeof location !== "undefined" ? `${location.origin}/a/${art.id}` : `/a/${art.id}`} title={art.character_name} onClose={() => setShare(false)} />}

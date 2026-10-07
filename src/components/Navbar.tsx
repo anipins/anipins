@@ -42,9 +42,19 @@ export default function Navbar() {
   const [visualLoading, setVisualLoading] = useState(false);
 
   useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 24);
-    on(); window.addEventListener("scroll", on, { passive: true });
-    return () => window.removeEventListener("scroll", on);
+    let frame = 0;
+    let last = window.scrollY > 24;
+    const on = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const next = window.scrollY > 24;
+        if (next !== last) { last = next; setScrolled(next); }
+      });
+    };
+    setScrolled(last);
+    window.addEventListener("scroll", on, { passive: true });
+    return () => { window.removeEventListener("scroll", on); if (frame) cancelAnimationFrame(frame); };
   }, []);
 
   useEffect(() => {
@@ -62,8 +72,13 @@ export default function Navbar() {
   useEffect(() => { setOpen(false); setFocus(false); }, [path]);
 
   useEffect(() => {
+    const term = q.trim();
+    // Opening every page used to make an empty suggestion request. Apart from
+    // needless work, that request could compete with the first feed request
+    // on weaker phones.
+    if (!term) { setSugs([]); return; }
     const t = setTimeout(() => {
-      fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`).then(r => r.json()).then(d => setSugs((d.suggestions || []).slice(0, 8)));
+      fetch(`/api/search/suggest?q=${encodeURIComponent(term)}`).then(r => r.json()).then(d => setSugs((d.suggestions || []).slice(0, 8)));
     }, 180);
     return () => clearTimeout(t);
   }, [q]);
