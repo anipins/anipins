@@ -1,8 +1,9 @@
 "use client";
 
 import Script from "next/script";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "@/components/Toaster";
+import { isInstagramInAppBrowser } from "@/lib/in-app-browser";
 
 declare global {
   interface Window { Razorpay?: new (options: Record<string, unknown>) => { open: () => void }; }
@@ -12,6 +13,11 @@ export default function PremiumCheckout() {
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [adultConfirmed, setAdultConfirmed] = useState(false);
+  const [instagramBrowser, setInstagramBrowser] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setInstagramBrowser(isInstagramInAppBrowser(navigator.userAgent));
+  }, []);
   async function startCheckout() {
     if (!adultConfirmed) { toast("Please confirm that you are 18 or older before subscribing.", "err"); return; }
     if (!ready || !window.Razorpay) { toast("Secure checkout is still loading. Please try again in a moment.", "err"); return; }
@@ -46,9 +52,18 @@ export default function PremiumCheckout() {
     } catch (error: any) { toast(error?.message || "Could not open secure checkout.", "err"); }
     finally { setBusy(false); }
   }
+  const openInChrome = typeof window === "undefined" ? "https://anipins.com/premium" : `intent://${window.location.host}${window.location.pathname}${window.location.search}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(window.location.href)};end`;
+
   return <>
-    <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" onLoad={() => setReady(true)} onError={() => toast("Secure checkout could not load.", "err")} />
+    {instagramBrowser === false && <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" onLoad={() => setReady(true)} onError={() => toast("Secure checkout could not load.", "err")} />}
     <label className="mb-3 flex cursor-pointer items-start gap-2.5 text-left text-xs leading-5 text-fog"><input type="checkbox" checked={adultConfirmed} onChange={event => setAdultConfirmed(event.target.checked)} className="mt-1 h-3.5 w-3.5 accent-gold" />I confirm that I am 18+ and may legally access mature illustrated reference material in my location.</label>
+    {instagramBrowser ? <div className="rounded-2xl border border-gold/35 bg-gold/10 p-4 text-left">
+      <p className="font-medium text-gold">Open Chrome to subscribe securely</p>
+      <p className="mt-1 text-xs leading-relaxed text-fog">Instagram&apos;s browser blocks the secure Razorpay checkout. Open AniPins in Chrome, then continue with the same account.</p>
+      <a href={openInChrome} className="btn-primary mt-3 w-full justify-center">Open AniPins in Chrome</a>
+      <p className="mt-3 text-center text-xs text-fog">If Chrome does not open, tap Instagram&apos;s ⋮ menu and choose <span className="text-paper">Open in browser</span>.</p>
+    </div> : <>
     <button type="button" disabled={!ready || busy} onClick={startCheckout} className="btn-primary w-full justify-center disabled:cursor-wait disabled:opacity-60">{busy ? "Opening secure checkout…" : ready ? "Start Premium — ₹199 / month" : "Loading secure checkout…"}</button>
+    </>}
   </>;
 }
