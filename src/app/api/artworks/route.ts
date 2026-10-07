@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const clientItems = (items: any[]) => items.map(item => ({ ...item, thumb_url: publicMediaUrl(item.thumb), orig_url: publicMediaUrl(item.orig) }));
+const publicBrowseHeaders = { "Cache-Control": "public, max-age=5, s-maxage=10, stale-while-revalidate=45" };
 
 export async function GET(req: NextRequest) {
   await ensurePremiumArtworkSchema();
@@ -149,10 +150,13 @@ export async function GET(req: NextRequest) {
       ...args, limit + 1, page * limit,
     );
   const hasMore = items.length > limit;
+  const responseHeaders = !premiumOnly && sort !== "following" && sort !== "for-you"
+    ? publicBrowseHeaders
+    : { "Cache-Control": "private, no-store" };
   return NextResponse.json(
     { items: clientItems(items.slice(0, limit)), hasMore },
-    // Feed metadata is intentionally fresh so publishing is visible immediately
-    // on the site and Android WebView. Artwork image files remain CDN cached.
-    { headers: { "Cache-Control": "no-store" } },
+    // Anonymous browsing is shared for just ten seconds. Images remain
+    // immutable, while a new upload becomes visible on every feed quickly.
+    { headers: responseHeaders },
   );
 }

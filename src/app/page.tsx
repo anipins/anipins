@@ -8,10 +8,23 @@ import ScrollReveal from "@/components/ScrollReveal";
 import { getAnime, getArtworkCards, getCharacters } from "@/lib/content";
 import { getSiteUrl } from "@/lib/site";
 import type { Metadata } from "next";
+import { unstable_cache } from "next/cache";
 import { Suspense } from "react";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 export const dynamic = "force-dynamic";
+
+// Keep the public first screen shared for a few seconds. This removes the
+// database wake-up that made a first mobile visit feel slow without making a
+// newly published image wait for a long revalidation window.
+const getHomeContent = unstable_cache(
+  () => Promise.all([
+    getArtworkCards({ sort: "featured", limit: 8 }),
+    getArtworkCards({ sort: "latest", limit: 36 }),
+  ]),
+  ["public-home-content-v2"],
+  { revalidate: 10 },
+);
 
 async function BrowseLinks() {
   const [anime, characters] = await Promise.all([getAnime(), getCharacters()]);
@@ -38,13 +51,7 @@ async function BrowseLinks() {
 }
 
 export default async function Home() {
-  // New artwork must be visible as soon as the page is refreshed. Images still
-  // use immutable CDN caching, but this small indexed data query is deliberately
-  // live rather than serving a minute-old home feed.
-  const [featured, latest] = await Promise.all([
-    getArtworkCards({ sort: "featured", limit: 8 }),
-    getArtworkCards({ sort: "latest", limit: 36 }),
-  ]);
+  const [featured, latest] = await getHomeContent();
   return (
     <div className="pt-28 md:pt-32">
       <JsonLd data={{ "@context": "https://schema.org", "@type": "CollectionPage", name: "AniPins anime artwork references", url: getSiteUrl(), description: "Discover, save and download curated anime character artwork references for drawing inspiration.", numberOfItems: latest.length }} />
