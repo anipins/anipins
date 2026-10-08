@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { mobileNavItems } from "@/lib/mobile-nav-utils";
 
 const ICONS: Record<string, ReactNode> = {
@@ -10,16 +11,25 @@ const ICONS: Record<string, ReactNode> = {
   "/search": <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" strokeLinecap="round" /></>,
   "/saves": <path d="M6 3h12v18l-6-4.5L6 21z" strokeLinejoin="round" />,
   "/profile": <><circle cx="12" cy="8" r="4" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0" strokeLinecap="round" /></>,
+  "/admin": <><path d="M4 20h16M6.5 20v-8h11v8M4 12h16L12 4 4 12Z" strokeLinejoin="round" /><path d="M12 15v2" strokeLinecap="round" /></>,
 };
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const items = mobileNavItems();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const items = mobileNavItems(isAdmin);
+
+  useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store", credentials: "include" })
+      .then(response => response.ok ? response.json() : null)
+      .then(data => setIsAdmin(data?.user?.role === "ADMIN"))
+      .catch(() => setIsAdmin(false));
+  }, [pathname]);
 
   return (
     <nav aria-label="Primary mobile navigation"
-      className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-[60] grid grid-cols-4 border-t border-paper/10 glass shadow-[0_-8px_28px_rgba(0,0,0,0.28)] md:hidden"
+      className={`mobile-bottom-nav fixed inset-x-0 bottom-0 z-[60] grid ${isAdmin ? "grid-cols-5" : "grid-cols-4"} border-t border-paper/10 glass shadow-[0_-8px_28px_rgba(0,0,0,0.28)] md:hidden`}
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       {items.map(item => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
