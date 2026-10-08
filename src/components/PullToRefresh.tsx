@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { nativeRefreshUrl, shouldReloadDocumentForRefresh } from "@/lib/native-refresh";
 
 const THRESHOLD = 62;
 
@@ -37,6 +38,13 @@ export default function PullToRefresh() {
         setRefreshing(true);
         setDistance(52);
         window.dispatchEvent(new CustomEvent("anipins:refresh"));
+        // An already-open Android WebView can retain an older client bundle
+        // after a site deployment. Its pull gesture must refresh the document,
+        // not merely the current React route, so gallery pagination updates.
+        if (shouldReloadDocumentForRefresh(Boolean(window.AniPinsAndroid))) {
+          window.location.replace(nativeRefreshUrl(window.location.href, Date.now()));
+          return;
+        }
         router.refresh();
         await new Promise(resolve => setTimeout(resolve, 850));
         setRefreshing(false);

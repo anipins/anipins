@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { mobileNavItems } from "@/lib/mobile-nav-utils";
+import { nativeRefreshUrl, shouldReloadDocumentForRefresh } from "@/lib/native-refresh";
 
 const ICONS: Record<string, ReactNode> = {
   "/": <path d="M3 10.8 12 3l9 7.8V21h-6v-6H9v6H3z" strokeLinejoin="round" />,
@@ -42,6 +43,10 @@ export default function MobileBottomNav() {
               event.preventDefault();
               window.scrollTo({ top: 0, behavior: "smooth" });
               window.dispatchEvent(new Event("anipins:refresh"));
+              if (shouldReloadDocumentForRefresh(Boolean(window.AniPinsAndroid))) {
+                window.location.replace(nativeRefreshUrl(window.location.href, Date.now()));
+                return;
+              }
               router.refresh();
             }}
             aria-label={item.label} title={item.label}
