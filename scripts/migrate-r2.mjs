@@ -94,10 +94,21 @@ for (const prefix of ["o", "t", "avatars", "covers"]) {
 
 console.log(`${copy ? "Copying" : "Dry run:"} ${keys.length} Supabase objects. No source files will be deleted.`);
 await fs.mkdir(path.dirname(manifestPath), { recursive: true });
+const priorManifest = await fs.readFile(manifestPath, "utf8").catch(error => error.code === "ENOENT" ? "" : Promise.reject(error));
+const verifiedBefore = new Set(
+  priorManifest.split("\n").filter(Boolean).map(line => JSON.parse(line)).filter(entry =>
+    entry.status === "copied-and-verified" || entry.status === "verified-existing"
+  ).map(entry => entry.key)
+);
 const manifest = await fs.open(manifestPath, "a");
 let copied = 0;
 try {
   for (const key of keys) {
+    if (copy && verifiedBefore.has(key)) {
+      copied++;
+      if (copied % 25 === 0 || copied === keys.length) console.log(`Progress: ${copied}/${keys.length} objects verified.`);
+      continue;
+    }
     const premium = premiumKeys.has(key);
     const Bucket = premium ? process.env.R2_PREMIUM_BUCKET : process.env.R2_PUBLIC_BUCKET;
     if (!copy) {
