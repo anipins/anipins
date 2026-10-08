@@ -54,11 +54,10 @@ export default function FeaturedSlider({ initialArts = [], premium = false }: { 
     }
   }, [initialArts.length, premium]);
 
-  useEffect(() => {
-    if (arts.length < 2) return;
-    const t = setInterval(() => { setDir(1); setIdx(i => (i + 1) % arts.length); }, 5200);
-    return () => clearInterval(t);
-  }, [arts.length]);
+  // A refresh must settle on one featured artwork. Auto-advancing here made
+  // the first few seconds of an Android WebView refresh look like repeated
+  // page reloads, particularly while images were still decoding. Visitors can
+  // still use the arrows, side previews, dots, and keyboard to browse.
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
