@@ -100,6 +100,11 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
 @media (max-width: 767px) {
   /* Fixed background repainting and heavy motion are common WebView scroll-jank sources. */
   body { background-attachment: scroll; }
+  /* Phone feeds should give the artwork nearly all available width. The small
+     equal gutters keep the rhythm of a native inspiration board instead of
+     the oversized card spacing used on wider screens. */
+  .masonry { width: calc(100% + 8px); margin-inline: -4px !important; column-gap: 8px; }
+  .masonry > * { margin-bottom: 8px; }
   .art-card { contain-intrinsic-size: 180px 270px; }
   .masonry > .art-card--landscape {
     /* A landscape card is a full-width, complete, easy-to-tap row in the
@@ -110,9 +115,8 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
   /* The compact phone artwork panel must end after its visible controls.
      Desktop retains the taller editorial layout through its md: utilities. */
   .artwork-detail-panel { min-height: 0 !important; height: auto !important; flex: 0 0 auto !important; }
-  /* Keep the dock clear of Android's gesture area without making it a heavy
-     full-width slab. Its compact floating silhouette mirrors the app chrome. */
-  .mobile-bottom-nav { bottom: max(0.6rem, env(safe-area-inset-bottom, 0px)) !important; }
+  /* The navigation belongs to the app frame, not on top of the artwork grid. */
+  .mobile-bottom-nav { bottom: 0 !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
