@@ -4,7 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { nativeRefreshUrl, shouldReloadDocumentForRefresh } from "@/lib/native-refresh";
 
-const THRESHOLD = 62;
+// Refreshing an entire Android WebView is intentionally a deliberate gesture.
+// Limiting activation to the top edge prevents ordinary card browsing from
+// turning a small downward correction into a document reload.
+const START_ZONE = 64;
+const THRESHOLD = 80;
 
 export default function PullToRefresh() {
   const [distance, setDistance] = useState(0);
@@ -16,7 +20,7 @@ export default function PullToRefresh() {
 
   useEffect(() => {
     const onStart = (event: TouchEvent) => {
-      if (window.scrollY <= 0 && !refreshing) {
+      if (window.scrollY <= 0 && event.touches[0].clientY <= START_ZONE && !refreshing) {
         startY.current = event.touches[0].clientY;
         active.current = true;
       }
@@ -27,7 +31,7 @@ export default function PullToRefresh() {
       if (delta <= 0) { distanceRef.current = 0; setDistance(0); return; }
       if (window.scrollY > 0) { active.current = false; return; }
       event.preventDefault();
-      const next = Math.min(92, delta * 0.45);
+      const next = Math.min(110, delta * 0.45);
       distanceRef.current = next;
       setDistance(next);
     };

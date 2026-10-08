@@ -131,44 +131,6 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     return () => window.removeEventListener("anipins:refresh", refresh);
   }, [randomize, requestPage]);
   useEffect(() => {
-    // Publishing can happen in another browser tab or in the Android app.
-    // Refresh the first page while the visitor is near the top, without
-    // interrupting someone reading further down the infinite feed.
-    const refreshRecent = () => {
-      if (document.visibilityState === "visible" && window.scrollY < 700) {
-        nextPage.current = 0;
-        nextCursor.current = null;
-        canPrimeShortFeed.current = true;
-        setHasMore(true);
-        void requestPage(0, true, true, true);
-      }
-    };
-    const timer = window.setInterval(refreshRecent, 45_000);
-    return () => window.clearInterval(timer);
-  }, [requestPage]);
-  useEffect(() => {
-    // A mobile WebView can keep a page alive while the user switches to the
-    // admin browser to publish artwork. Fetch current cards as soon as that
-    // view becomes active again instead of requiring a second manual reload.
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === "hidden") return;
-      if (randomize) randomSeed.current = createFeedSeed();
-      nextPage.current = 0;
-      nextCursor.current = null;
-      canPrimeShortFeed.current = true;
-      setHasMore(true);
-      void requestPage(0, true, true, true);
-    };
-    document.addEventListener("visibilitychange", refreshWhenVisible);
-    window.addEventListener("pageshow", refreshWhenVisible);
-    window.addEventListener("focus", refreshWhenVisible);
-    return () => {
-      document.removeEventListener("visibilitychange", refreshWhenVisible);
-      window.removeEventListener("pageshow", refreshWhenVisible);
-      window.removeEventListener("focus", refreshWhenVisible);
-    };
-  }, [randomize, requestPage]);
-  useEffect(() => {
     // IntersectionObserver reacts to layout changes as well as actual
     // scrolling. Arm pagination from physical input, so appending cards can
     // never fetch every subsequent page by itself.

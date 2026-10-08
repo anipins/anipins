@@ -57,13 +57,13 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
             onTouchMove={event => {
               const start = touchStart.current;
               const touch = event.touches[0];
-              if (start && Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 12) suppressOpen.current = true;
+              if (start && Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 20) suppressOpen.current = true;
             }}
             onTouchEnd={() => {
               touchStart.current = null;
-              if (suppressOpen.current) window.setTimeout(() => { suppressOpen.current = false; }, 250);
+              if (suppressOpen.current) window.setTimeout(() => { suppressOpen.current = false; }, 400);
             }}
-            onTouchCancel={() => { touchStart.current = null; suppressOpen.current = false; }}
+            onTouchCancel={() => { touchStart.current = null; suppressOpen.current = true; window.setTimeout(() => { suppressOpen.current = false; }, 400); }}
             onClick={() => { if (!suppressOpen.current) openArtwork(art.id, art); }}
             className="block w-full touch-pan-y text-left cursor-zoom-in">
             <div style={{ aspectRatio: `1 / ${ratio}`, minHeight: landscape ? "clamp(180px, 44vw, 360px)" : undefined }} className={`relative w-full overflow-hidden bg-ink ${imageReady ? "" : "skeleton"}`}>
