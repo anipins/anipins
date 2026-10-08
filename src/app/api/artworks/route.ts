@@ -12,6 +12,16 @@ export const runtime = "nodejs";
 const clientItems = (items: any[]) => items.map(({ _cursor_created_at, ...item }) => ({ ...item, thumb_url: publicMediaUrl(item.thumb), orig_url: publicMediaUrl(item.orig) }));
 const publicBrowseHeaders = { "Cache-Control": "public, max-age=5, s-maxage=10, stale-while-revalidate=45" };
 
+// A refresh should feel like discovery, while every later page still needs a
+// stable order. Postgres's seeded hash distributes the IDs much more evenly
+// than multiplying sequential IDs, which could leave the same card first for
+// several different seeds. Keep a deterministic SQLite fallback for local use.
+function seededArtworkOrder(seed: number) {
+  if (USE_PG) return { sql: "hashtextextended(CAST(id AS text), ?), id", args: [seed] };
+  const multiplier = (seed * 48_271) % 2_147_483_647 || 1;
+  return { sql: "((CAST(id AS BIGINT) * ?) % 2147483647), id", args: [multiplier] };
+}
+
 export async function GET(req: NextRequest) {
   await ensurePremiumArtworkSchema();
   const sp = req.nextUrl.searchParams;
@@ -115,8 +125,8 @@ export async function GET(req: NextRequest) {
       }
     }
     // New and signed-out visitors still receive a varied discovery feed.
-    const multiplier = (seed * 48_271) % 2_147_483_647 || 1;
-    const fallback = await rows(`SELECT ${cols} FROM artworks WHERE ${where} ORDER BY ((CAST(id AS BIGINT) * ?) % 2147483647), id LIMIT ? OFFSET ?`, ...args, multiplier, limit + 1, page * limit);
+    const randomOrder = seededArtworkOrder(seed);
+    const fallback = await rows(`SELECT ${cols} FROM artworks WHERE ${where} ORDER BY ${randomOrder.sql} LIMIT ? OFFSET ?`, ...args, ...randomOrder.args, limit + 1, page * limit);
     return NextResponse.json({ items: clientItems(fallback.slice(0, limit)), hasMore: fallback.length > limit, personalized: false }, { headers: { "Cache-Control": "private, no-store" } });
   }
 
@@ -124,9 +134,9 @@ export async function GET(req: NextRequest) {
   if (sort === "popular") order = "downloads DESC, views DESC";
   if (sort === "trending") order = "views DESC, downloads DESC";
   if (sort === "random") {
-    const multiplier = (seed * 48_271) % 2_147_483_647 || 1;
-    order = "((CAST(id AS BIGINT) * ?) % 2147483647), id";
-    args.push(multiplier);
+    const randomOrder = seededArtworkOrder(seed);
+    order = randomOrder.sql;
+    args.push(...randomOrder.args);
   }
 
   // Offset pages shift whenever a new upload lands above an already-open
