@@ -8,17 +8,16 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { Client } from "pg";
 import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const copy = process.argv.includes("--copy");
-const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "DATABASE_URL", "R2_ENDPOINT", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_PUBLIC_BUCKET", "R2_PREMIUM_BUCKET"];
+const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "R2_ENDPOINT", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_PUBLIC_BUCKET", "R2_PREMIUM_BUCKET"];
 const missing = required.filter(name => !process.env[name]);
 if (missing.length) throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
 
 const sourceUrl = process.env.SUPABASE_URL.replace(/\/$/, "");
 const sourceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const manifestPath = path.resolve("migration-r2-manifest.jsonl");
+const manifestPath = path.resolve("artifacts", "migration-r2-manifest.jsonl");
 const r2 = new S3Client({
   region: "auto",
   endpoint: process.env.R2_ENDPOINT,
@@ -27,37 +26,74 @@ const r2 = new S3Client({
 
 const sha256 = data => crypto.createHash("sha256").update(data).digest("hex");
 const bodyToBuffer = async body => Buffer.from(await new Response(body).arrayBuffer());
-const contentType = key => key.endsWith(".png") ? "image/png" : key.endsWith(".webp") ? "image/webp" : key.endsWith(".gif") ? "image/gif" : "image/jpeg";
+const contentType = key => key.endsWith(".png") ? "image/png" : key.endsWith(".webp") ? "image/webp" : key.endsWith(".gif") ? "image/gif" : key.endsWith(".avif") ? "image/avif" : "image/jpeg";
+
+async function withRetries(action, label, attempts = 4) {
+  let failure;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await action();
+    } catch (error) {
+      if (error?.name === "NoSuchKey" || error?.$metadata?.httpStatusCode === 404) throw error;
+      failure = error;
+      if (attempt < attempts) await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+    }
+  }
+  throw new Error(`${label} failed after ${attempts} attempts: ${failure?.message || failure}`);
+}
 
 async function list(prefix = "") {
-  const response = await fetch(`${sourceUrl}/storage/v1/object/list/artworks`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${sourceKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ prefix, limit: 1000, offset: 0, sortBy: { column: "name", order: "asc" } }),
-  });
-  if (!response.ok) throw new Error(`Could not list ${prefix || "root"}: ${response.status}`);
-  return response.json();
+  const items = [];
+  for (let offset = 0; ; offset += 1000) {
+    const page = await withRetries(async () => {
+      const response = await fetch(`${sourceUrl}/storage/v1/object/list/artworks`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${sourceKey}`, apikey: sourceKey, "Content-Type": "application/json" },
+        body: JSON.stringify({ prefix, limit: 1000, offset, sortBy: { column: "name", order: "asc" } }),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    }, `List ${prefix || "root"}`);
+    items.push(...page);
+    if (page.length < 1000) return items;
+  }
 }
 
 async function sourceObject(key) {
-  const response = await fetch(`${sourceUrl}/storage/v1/object/artworks/${key}`, { headers: { Authorization: `Bearer ${sourceKey}` } });
-  if (!response.ok) throw new Error(`Could not read ${key}: ${response.status}`);
-  return Buffer.from(await response.arrayBuffer());
+  return withRetries(async () => {
+    const response = await fetch(`${sourceUrl}/storage/v1/object/artworks/${key}`, { headers: { Authorization: `Bearer ${sourceKey}`, apikey: sourceKey } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return Buffer.from(await response.arrayBuffer());
+  }, `Read ${key}`);
 }
 
-const db = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
-await db.connect();
-const { rows } = await db.query("SELECT orig, thumb, premium FROM artworks");
-const premiumKeys = new Set(rows.filter(row => Number(row.premium) === 1).flatMap(row => [row.orig, row.thumb]));
+async function artworks() {
+  const rows = [];
+  for (let offset = 0; ; offset += 1000) {
+    const page = await withRetries(async () => {
+      const response = await fetch(`${sourceUrl}/rest/v1/artworks?select=orig,thumb,premium&order=id.asc&offset=${offset}&limit=1000`, {
+        headers: { Authorization: `Bearer ${sourceKey}`, apikey: sourceKey },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    }, "Read artwork records");
+    rows.push(...page);
+    if (page.length < 1000) return rows;
+  }
+}
+
+const rows = await artworks();
+const premiumKeys = new Set(rows.filter(row => Boolean(row.premium)).flatMap(row => [row.orig, row.thumb]).filter(Boolean));
 
 const keys = [];
 for (const prefix of ["o", "t", "avatars", "covers"]) {
-  for (const item of await list(prefix)) {
+  for (const item of await list(`${prefix}/`)) {
     if (item.name && item.id) keys.push(`${prefix}/${item.name}`);
   }
 }
 
 console.log(`${copy ? "Copying" : "Dry run:"} ${keys.length} Supabase objects. No source files will be deleted.`);
+await fs.mkdir(path.dirname(manifestPath), { recursive: true });
 const manifest = await fs.open(manifestPath, "a");
 let copied = 0;
 try {
@@ -72,22 +108,22 @@ try {
     const sourceHash = sha256(bytes);
     let unchanged = false;
     try {
-      const existing = await r2.send(new GetObjectCommand({ Bucket, Key: key }));
+      const existing = await withRetries(() => r2.send(new GetObjectCommand({ Bucket, Key: key })), `Read R2 ${key}`);
       const existingBytes = await bodyToBuffer(existing.Body);
       unchanged = existingBytes.length === bytes.length && sha256(existingBytes) === sourceHash;
     } catch (error) {
       if (error?.name !== "NoSuchKey" && error?.$metadata?.httpStatusCode !== 404) throw error;
     }
     if (!unchanged) {
-      await r2.send(new PutObjectCommand({ Bucket, Key: key, Body: bytes, ContentType: contentType(key), CacheControl: premium ? "private, no-store" : "public, max-age=31536000, immutable" }));
+      await withRetries(() => r2.send(new PutObjectCommand({ Bucket, Key: key, Body: bytes, ContentType: contentType(key), CacheControl: premium ? "private, no-store" : "public, max-age=31536000, immutable" })), `Upload ${key}`);
     }
-    const head = await r2.send(new HeadObjectCommand({ Bucket, Key: key }));
+    const head = await withRetries(() => r2.send(new HeadObjectCommand({ Bucket, Key: key })), `Verify R2 ${key}`);
     if (Number(head.ContentLength) !== bytes.length) throw new Error(`Size mismatch for ${key}`);
     await manifest.appendFile(JSON.stringify({ key, bucket: Bucket, premium, bytes: bytes.length, sha256: sourceHash, status: unchanged ? "verified-existing" : "copied-and-verified" }) + "\n");
     copied++;
+    if (copied % 25 === 0 || copied === keys.length) console.log(`Progress: ${copied}/${keys.length} objects verified.`);
   }
 } finally {
   await manifest.close();
-  await db.end();
 }
 console.log(`${copy ? "Verified" : "Planned"} ${copied || keys.length} objects. Manifest: ${manifestPath}`);

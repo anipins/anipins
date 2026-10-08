@@ -4,5 +4,7 @@ data/
 uploads/
 .env
 .env.local
+.env.r2-migration
 *.log
 .vercel/
+artifacts/
