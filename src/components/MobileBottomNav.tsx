@@ -30,8 +30,8 @@ export default function MobileBottomNav() {
 
   return (
     <nav aria-label="Primary mobile navigation"
-      className={`mobile-bottom-nav fixed inset-x-0 bottom-0 z-[60] grid ${isAdmin ? "grid-cols-5" : "grid-cols-4"} border-t border-paper/10 glass shadow-[0_-8px_28px_rgba(0,0,0,0.28)] md:hidden`}
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      className={`mobile-bottom-nav fixed inset-x-3 bottom-3 z-[60] grid ${isAdmin ? "grid-cols-5" : "grid-cols-4"} rounded-[22px] border border-paper/[0.12] bg-[rgba(12,12,13,0.88)] p-1 shadow-[0_14px_36px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl md:hidden`}
+      style={{ paddingBottom: "max(0.25rem, env(safe-area-inset-bottom, 0px))" }}>
       {items.map(item => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         return (
@@ -50,11 +50,11 @@ export default function MobileBottomNav() {
               router.refresh();
             }}
             aria-label={item.label} title={item.label}
-            className={`group relative flex min-h-14 items-center justify-center overflow-hidden transition-all ${active ? "bg-gold/[0.08] text-gold" : "text-fog hover:bg-paper/[0.04] hover:text-paper"}`}>
-            <span className={`absolute top-0 h-0.5 rounded-full bg-gold transition-all duration-300 ${active ? "w-8 opacity-100" : "w-0 opacity-0"}`} />
-            <svg className="h-[22px] w-[22px]" fill={active && item.href === "/" ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+            className={`group relative m-0.5 flex min-h-[52px] items-center justify-center rounded-[16px] transition-all duration-200 active:scale-95 ${active ? "bg-gold/[0.12] text-gold shadow-[inset_0_0_0_1px_rgba(198,161,91,0.22),0_6px_16px_rgba(0,0,0,0.2)]" : "text-fog hover:bg-paper/[0.05] hover:text-paper"}`}>
+            <svg className="h-[23px] w-[23px] transition-transform duration-200 group-active:scale-90" fill={active && item.href === "/" ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.85" aria-hidden="true">
               {ICONS[item.href]}
             </svg>
+            <span aria-hidden="true" className={`absolute bottom-1.5 h-1 w-1 rounded-full bg-gold transition-all duration-200 ${active ? "scale-100 opacity-100" : "scale-0 opacity-0"}`} />
           </Link>
         );
       })}

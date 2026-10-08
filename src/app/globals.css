@@ -107,9 +107,9 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
     column-span: all;
     contain-intrinsic-size: 100% 220px;
   }
-  /* Both the browser and Android app use a device-edge dock. It prevents the
-     wasted strip below Home/Following/Saves/Profile seen with a floating bar. */
-  .mobile-bottom-nav { padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.4rem) !important; }
+  /* Keep the dock clear of Android's gesture area without making it a heavy
+     full-width slab. Its compact floating silhouette mirrors the app chrome. */
+  .mobile-bottom-nav { bottom: max(0.6rem, env(safe-area-inset-bottom, 0px)) !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
