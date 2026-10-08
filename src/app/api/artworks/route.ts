@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { rows } from "@/lib/db";
+import { rows, USE_PG } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { publicMediaUrl } from "@/lib/media";
 import { ensurePremiumArtworkSchema, premiumArtworkFilter } from "@/lib/premium-artwork";
 import { canAccessPremium } from "@/lib/billing";
 import { nonWallpaperFilter, wallpaperFilter } from "@/lib/wallpaper-feed-utils";
+import { decodeArtworkCursor, encodeArtworkCursor } from "@/lib/artwork-cursor";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const clientItems = (items: any[]) => items.map(item => ({ ...item, thumb_url: publicMediaUrl(item.thumb), orig_url: publicMediaUrl(item.orig) }));
+const clientItems = (items: any[]) => items.map(({ _cursor_created_at, ...item }) => ({ ...item, thumb_url: publicMediaUrl(item.thumb), orig_url: publicMediaUrl(item.orig) }));
 const publicBrowseHeaders = { "Cache-Control": "public, max-age=5, s-maxage=10, stale-while-revalidate=45" };
 
 export async function GET(req: NextRequest) {
@@ -27,6 +28,9 @@ export async function GET(req: NextRequest) {
   const rawSeed = parseInt(sp.get("seed") || "1", 10);
   const seed = Number.isFinite(rawSeed) && rawSeed > 0 ? rawSeed % 2_147_483_647 : 1;
   const featured = sp.get("featured");
+  const rawCursor = sp.get("cursor");
+  const cursor = rawCursor ? decodeArtworkCursor(rawCursor) : null;
+  if (rawCursor && !cursor) return NextResponse.json({ error: "Invalid artwork cursor." }, { status: 400, headers: { "Cache-Control": "no-store" } });
   const premiumOnly = sp.get("premium") === "1";
   // Browse feeds must stay independent of an account session. Resolving a
   // session and hidden-items query for every scroll request made authenticated
@@ -58,7 +62,11 @@ export async function GET(req: NextRequest) {
   if (orientation === "desktop") where += " AND width >= height";
   if (featured === "1") { where += " AND featured = 1"; }
 
-  const cols = "id, title, character_name, character_slug, anime_name, anime_slug, tags, gender, category, premium, featured, orig, thumb, width, height, views, downloads";
+  // Keep the database's timestamp text private to the cursor. Postgres Date
+  // JSON serialization can lose microseconds, which would make a cursor skip
+  // records that share the same visible timestamp.
+  const cursorCreatedAt = USE_PG ? "created_at::text AS _cursor_created_at" : "created_at AS _cursor_created_at";
+  const cols = `id, title, character_name, character_slug, anime_name, anime_slug, tags, gender, category, premium, featured, orig, thumb, width, height, views, downloads, created_at, ${cursorCreatedAt}`;
   if (sort === "following") {
     if (!user) return NextResponse.json({ items: [], hasMore: false, guest: true }, { headers: { "Cache-Control": "private, no-store" } });
     const followed = await rows("SELECT kind, value FROM follows WHERE user_id=?", user.id);
@@ -121,6 +129,15 @@ export async function GET(req: NextRequest) {
     args.push(multiplier);
   }
 
+  // Offset pages shift whenever a new upload lands above an already-open
+  // feed. A keyset cursor pins each later request below the final card from
+  // the preceding page, so refreshes cannot create gaps in older artwork.
+  const useLatestCursor = !!cursor && sort === "latest";
+  if (useLatestCursor) {
+    where += " AND (created_at < ? OR (created_at = ? AND id < ?))";
+    args.push(cursor.createdAt, cursor.createdAt, cursor.id);
+  }
+
   // Listing surfaces use the optimized thumbnail. Full originals are reserved
   // for the artwork detail and download routes so the homepage stays fast.
   // A direct indexed query is also substantially faster than the former
@@ -130,12 +147,17 @@ export async function GET(req: NextRequest) {
      FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ? OFFSET ?`,
     ...args, limit + 1, page * limit,
   );
+  const pageItems = items.slice(0, limit);
   const hasMore = items.length > limit;
+  const lastItem = pageItems.at(-1);
+  const nextCursor = hasMore && sort === "latest" && lastItem
+    ? encodeArtworkCursor({ createdAt: String(lastItem._cursor_created_at), id: lastItem.id })
+    : null;
   const responseHeaders = !premiumOnly && sort !== "following" && sort !== "for-you"
     ? publicBrowseHeaders
     : { "Cache-Control": "private, no-store" };
   return NextResponse.json(
-    { items: clientItems(items.slice(0, limit)), hasMore },
+    { items: clientItems(pageItems), hasMore, nextCursor },
     // Anonymous browsing is shared for just ten seconds. Images remain
     // immutable, while a new upload becomes visible on every feed quickly.
     { headers: responseHeaders },

@@ -26,6 +26,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   const sentinel = useRef<HTMLDivElement>(null);
   const inFlight = useRef(false);
   const nextPage = useRef(initialItems.length ? 1 : 0);
+  const nextCursor = useRef<string | null>(null);
   const visitorScrollArmed = useRef(false);
   const canPrimeShortFeed = useRef(initialItems.length === 0);
   const randomSeed = useRef(createFeedSeed());
@@ -48,22 +49,25 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     setItems(randomize ? shuffled(initialItems) : initialItems);
     setHasMore(initialHasMore);
     nextPage.current = 1;
+    // The initial server render does not expose a database-precision cursor.
+    // A silent page-zero refresh below obtains one before later pages load.
+    nextCursor.current = null;
     setInitial(false);
     setLoadError(false);
   }, [randomize, initialHasMore, initialItems]);
 
-  const requestPage = useCallback(async (page: number, reset = false, forceFresh = false, silent = false) => {
+  const requestPage = useCallback(async (page: number, reset = false, forceFresh = false, silent = false, cursor: string | null = null) => {
     if (inFlight.current) return false;
-    const requestKey = `${key}:${randomize ? randomSeed.current : "fixed"}:${page}`;
+    const requestKey = `${key}:${randomize ? randomSeed.current : "fixed"}:${cursor || `page-${page}`}`;
     const cached = forceFresh ? undefined : memoryCache.get(requestKey);
-    const apply = (data: { items: any[]; hasMore: boolean }) => {
+    const apply = (data: { items: any[]; hasMore: boolean; nextCursor?: string | null }) => {
       if (!mounted.current) return;
       setItems(previous => {
         if (reset) return data.items;
         const existing = new Set(previous.map(item => item.id));
         return [...previous, ...data.items.filter(item => !existing.has(item.id))];
       });
-      setHasMore(data.hasMore); nextPage.current = page + 1; setInitial(false); setLoadError(false);
+      setHasMore(data.hasMore); nextPage.current = page + 1; nextCursor.current = data.nextCursor || null; setInitial(false); setLoadError(false);
     };
     if (cached && Date.now() - cached.savedAt < CACHE_TTL) { apply(cached); return true; }
     inFlight.current = true;
@@ -72,6 +76,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     // 36 is the payload size for one request, not a feed limit. Pages keep
     // loading until the API explicitly reports that there is no more artwork.
     const params = new URLSearchParams({ ...queryRef.current, page: String(page), limit: "36" });
+    if (cursor) { params.delete("page"); params.set("cursor", cursor); }
     if (randomize) { if (!params.has("sort")) params.set("sort", "random"); params.set("seed", String(randomSeed.current)); }
     try {
       let data: any;
@@ -106,16 +111,22 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     if (!force && !shouldLoadFromFeedSignal({ armed: visitorScrollArmed.current, canPrime: canPrimeShortFeed.current })) return;
     visitorScrollArmed.current = false;
     canPrimeShortFeed.current = false;
-    void requestPage(nextPage.current);
+    void requestPage(nextPage.current, false, false, false, nextCursor.current);
   }, [hasMore, requestPage]);
   useEffect(() => { if (!initialItems.length) void requestPage(0, true); }, [initialItems.length, requestPage]);
   useEffect(() => {
+    // Hydrate an exact server-issued cursor for the SSR cards. This avoids
+    // offset drift if artwork is published between the server render and the
+    // visitor's first infinite-scroll request.
+    if (initialItems.length) void requestPage(0, true, false, true);
+  }, [initialItems.length, requestPage]);
+  useEffect(() => {
     if (!eagerLoad || !initialItems.length) return;
-    const timer = window.setTimeout(() => { void requestPage(0, false, false, true); }, 150);
+    const timer = window.setTimeout(() => { void requestPage(nextPage.current, false, false, true, nextCursor.current); }, 150);
     return () => window.clearTimeout(timer);
   }, [eagerLoad, initialItems.length, requestPage]);
   useEffect(() => {
-    const refresh = () => { if (randomize) randomSeed.current = createFeedSeed(); nextPage.current = 0; canPrimeShortFeed.current = true; setHasMore(true); void requestPage(0, true, true); };
+    const refresh = () => { if (randomize) randomSeed.current = createFeedSeed(); nextPage.current = 0; nextCursor.current = null; canPrimeShortFeed.current = true; setHasMore(true); void requestPage(0, true, true); };
     window.addEventListener("anipins:refresh", refresh);
     return () => window.removeEventListener("anipins:refresh", refresh);
   }, [randomize, requestPage]);
@@ -126,6 +137,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     const refreshRecent = () => {
       if (document.visibilityState === "visible" && window.scrollY < 700) {
         nextPage.current = 0;
+        nextCursor.current = null;
         canPrimeShortFeed.current = true;
         setHasMore(true);
         void requestPage(0, true, true, true);
@@ -142,6 +154,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       if (document.visibilityState === "hidden") return;
       if (randomize) randomSeed.current = createFeedSeed();
       nextPage.current = 0;
+      nextCursor.current = null;
       canPrimeShortFeed.current = true;
       setHasMore(true);
       void requestPage(0, true, true, true);
