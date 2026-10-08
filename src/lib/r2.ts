@@ -1,4 +1,5 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const accountId = process.env.R2_ACCOUNT_ID;
 const endpoint = process.env.R2_ENDPOINT || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : undefined);
@@ -38,6 +39,12 @@ export async function r2Put(key: string, body: Uint8Array, contentType: string, 
     ContentType: contentType,
     CacheControl: premium ? "private, no-store" : "public, max-age=31536000, immutable",
   }));
+}
+
+/** A short-lived, single-object upload URL. The browser never receives R2 credentials. */
+export async function r2SignedPutUrl(key: string, contentType: string, premium: boolean) {
+  const Bucket = premium ? R2_PREMIUM_BUCKET! : R2_PUBLIC_BUCKET!;
+  return getSignedUrl(r2Client(), new PutObjectCommand({ Bucket, Key: key, ContentType: contentType }), { expiresIn: 300 });
 }
 
 export async function r2Delete(key: string, premium: boolean) {

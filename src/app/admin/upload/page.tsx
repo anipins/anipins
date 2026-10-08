@@ -56,7 +56,7 @@ export default function AdminUpload({ premiumOnly = false }: { premiumOnly?: boo
         // That avoids Vercel's request body ceiling which returned HTTP 413 for
         // high-resolution PNGs. The final app request is only small JSON.
         if (!signed) {
-          const signedResponse = await fetchWithTimeout("/api/admin/upload/sign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: item.file.name, type: item.file.type, size: item.file.size }) }, 30_000);
+          const signedResponse = await fetchWithTimeout("/api/admin/upload/sign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: item.file.name, type: item.file.type, size: item.file.size, premium: item.premium }) }, 30_000);
           const prepared = await signedResponse.json().catch(() => ({ error: `Upload preparation failed (${signedResponse.status})` }));
           if (!signedResponse.ok) {
             if (!retryableStatus(signedResponse.status)) return { response: signedResponse, result: prepared };

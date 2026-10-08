@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   const allowDuplicate = value("allowDuplicate") === (direct ? true : "1");
 
   const prepared = direct
-    ? (() => Promise.resolve(readArtworkUpload(storageKey)).then(async buffer => [{ name: fileName, buffer, fingerprint: await fingerprintImage(buffer) }]))()
+    ? (() => Promise.resolve(readArtworkUpload(storageKey, Boolean(premium))).then(async buffer => [{ name: fileName, buffer, fingerprint: await fingerprintImage(buffer) }]))()
     : Promise.all(files.map(async file => {
         const buffer = Buffer.from(await file.arrayBuffer());
         return { name: file.name, buffer, fingerprint: await fingerprintImage(buffer) };
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 
   const ids: number[] = [];
   for (const item of uploaded) {
-    const m = direct ? await processUploadedArtwork(item.buffer, storageKey) : await saveImage(item.buffer, item.name);
+    const m = direct ? await processUploadedArtwork(item.buffer, storageKey, Boolean(premium)) : await saveImage(item.buffer, item.name, Boolean(premium));
     await run(
       `INSERT INTO artworks (title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, premium, featured, published, orig, thumb, width, height, content_hash, perceptual_hash, creator_name, source_url)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,

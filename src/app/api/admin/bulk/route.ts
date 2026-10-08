@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const list = ids.map(() => "?").join(",");
   if (action === "delete") {
     const arts = await rows(`SELECT * FROM artworks WHERE id IN (${list})`, ...ids);
-    for (const a of arts) await deleteFiles(a.orig, a.thumb);
+    for (const a of arts) await deleteFiles(a.orig, a.thumb, Number(a.premium || 0) === 1);
     await run(`DELETE FROM saves WHERE artwork_id IN (${list})`, ...ids);
     await run(`DELETE FROM likes WHERE artwork_id IN (${list})`, ...ids);
     await run(`DELETE FROM artworks WHERE id IN (${list})`, ...ids);

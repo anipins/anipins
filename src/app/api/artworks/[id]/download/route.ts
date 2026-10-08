@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
 import { row, run, UPLOADS_DIR, slugify } from "@/lib/db";
-import { USE_SUPABASE_STORAGE, sbPublicUrl } from "@/lib/media";
+import { USE_R2_MEDIA, USE_SUPABASE_STORAGE, sbPublicUrl } from "@/lib/media";
+import { r2Get } from "@/lib/r2";
 import { getUser } from "@/lib/auth";
 import { recordActivity } from "@/lib/activity";
 import { canAccessPremium } from "@/lib/billing";
@@ -22,6 +23,17 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   const extension = path.extname(art.orig).toLowerCase();
   const contentType = extension === ".png" ? "image/png" : extension === ".webp" ? "image/webp" : extension === ".gif" ? "image/gif" : "image/jpeg";
 
+  if (USE_R2_MEDIA) {
+    try {
+      const source = await r2Get(art.orig, Number(art.premium || 0) === 1);
+      if (!source.Body) return new NextResponse("File missing", { status: 404 });
+      return new NextResponse(source.Body.transformToWebStream(), {
+        headers: { "Content-Type": source.ContentType || contentType, "Content-Disposition": `attachment; filename="${name}"`, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" },
+      });
+    } catch (error: any) {
+      return new NextResponse("File missing", { status: error?.$metadata?.httpStatusCode === 404 ? 404 : 502 });
+    }
+  }
   if (USE_SUPABASE_STORAGE) {
     const r = await fetch(sbPublicUrl(art.orig));
     if (!r.ok) return new NextResponse("File missing", { status: 404 });

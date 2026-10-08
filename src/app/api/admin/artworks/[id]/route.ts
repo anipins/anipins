@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { row, run, slugify } from "@/lib/db";
 import { getUser, isAdmin } from "@/lib/auth";
-import { deleteFiles, saveImage } from "@/lib/media";
+import { deleteFiles, moveArtworkVisibility, saveImage } from "@/lib/media";
 import { audit, requestInfo } from "@/lib/admin-security";
 
 async function guard() {
@@ -52,10 +52,16 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       return NextResponse.json({ error: "Replacement must be a JPG, PNG or WebP image no larger than 15 MB." }, { status: 400 });
     }
     const buf = Buffer.from(await newImage.arrayBuffer());
-    const m = await saveImage(buf, newImage.name);
-    await deleteFiles(art.orig, art.thumb);
+    const targetPremium = body.premium === undefined ? Number(art.premium || 0) === 1 : (body.premium === "1" || body.premium === 1 || body.premium === true);
+    const m = await saveImage(buf, newImage.name, targetPremium);
+    await deleteFiles(art.orig, art.thumb, Number(art.premium || 0) === 1);
     fields.push("orig=?", "thumb=?", "width=?", "height=?");
     args.push(m.orig, m.thumb, m.width, m.height);
+  }
+  if (!newImage && body.premium !== undefined) {
+    const fromPremium = Number(art.premium || 0) === 1;
+    const toPremium = body.premium === "1" || body.premium === 1 || body.premium === true;
+    await moveArtworkVisibility(art.orig, art.thumb, fromPremium, toPremium);
   }
 
   if (fields.length) await run(`UPDATE artworks SET ${fields.join(",")} WHERE id=?`, ...args, id);
@@ -69,7 +75,7 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: s
   const id = parseInt(params.id);
   const art = await row("SELECT * FROM artworks WHERE id=?", id);
   if (!art) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  await deleteFiles(art.orig, art.thumb);
+  await deleteFiles(art.orig, art.thumb, Number(art.premium || 0) === 1);
   await run("DELETE FROM saves WHERE artwork_id=?", id);
   await run("DELETE FROM likes WHERE artwork_id=?", id);
   await run("DELETE FROM artworks WHERE id=?", id);

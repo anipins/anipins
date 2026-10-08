@@ -3,10 +3,13 @@ import fs from "fs";
 import sharp from "sharp";
 import crypto from "crypto";
 import { UPLOADS_DIR } from "./db";
+import { r2Delete, r2Get, r2Put, r2SignedPutUrl, USE_R2_STORAGE } from "./r2";
 
 const SB_URL = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const USE_SUPABASE_STORAGE = !!(SB_URL && SB_KEY);
+/** R2 becomes active only when explicitly selected after a verified migration. */
+export const USE_R2_MEDIA = USE_R2_STORAGE && process.env.MEDIA_PROVIDER === "r2";
 export const BUCKET = "artworks";
 
 export function isSafeMediaKey(rel: string) {
@@ -66,8 +69,30 @@ export function newArtworkUploadKey(origName: string) {
   return `o/${crypto.randomBytes(16).toString("hex")}${ext}`;
 }
 
-export async function createSignedArtworkUpload(key: string) {
-  if (!USE_SUPABASE_STORAGE || !isSafeMediaKey(key) || !key.startsWith("o/")) return null;
+async function putMedia(key: string, buf: Buffer, contentType: string, premium = false) {
+  if (USE_R2_MEDIA) return r2Put(key, buf, contentType, premium);
+  if (USE_SUPABASE_STORAGE) return sbUpload(key, buf, contentType);
+  throw new Error("Object storage is not configured");
+}
+
+async function getMedia(key: string, premium = false) {
+  if (USE_R2_MEDIA) {
+    const object = await r2Get(key, premium);
+    if (!object.Body) throw new Error("Storage object has no body");
+    return Buffer.from(await object.Body.transformToByteArray());
+  }
+  if (USE_SUPABASE_STORAGE) {
+    const response = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${key}`, { headers: { Authorization: `Bearer ${SB_KEY}` } });
+    if (!response.ok) throw new Error(`Storage read failed (${response.status})`);
+    return Buffer.from(await response.arrayBuffer());
+  }
+  throw new Error("Object storage is not configured");
+}
+
+export async function createSignedArtworkUpload(key: string, premium = false) {
+  if (!isSafeMediaKey(key) || !key.startsWith("o/")) return null;
+  if (USE_R2_MEDIA) return { key, uploadUrl: await r2SignedPutUrl(key, MIME[path.extname(key).toLowerCase()] || "application/octet-stream", premium), token: "" };
+  if (!USE_SUPABASE_STORAGE) return null;
   const response = await fetch(`${SB_URL}/storage/v1/object/upload/sign/${BUCKET}/${key}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
@@ -81,29 +106,25 @@ export async function createSignedArtworkUpload(key: string) {
 
 /** Read a direct-to-storage original back on the server for validation,
  * duplicate detection and thumbnail generation. */
-export async function readArtworkUpload(key: string) {
-  if (!USE_SUPABASE_STORAGE || !isSafeMediaKey(key) || !key.startsWith("o/")) throw new Error("Invalid staged artwork");
-  const response = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${key}`, {
-    headers: { Authorization: `Bearer ${SB_KEY}` },
-  });
-  if (!response.ok) throw new Error(`Uploaded artwork could not be read (${response.status})`);
-  return Buffer.from(await response.arrayBuffer());
+export async function readArtworkUpload(key: string, premium = false) {
+  if (!isSafeMediaKey(key) || !key.startsWith("o/")) throw new Error("Invalid staged artwork");
+  return getMedia(key, premium);
 }
 
 /** Finish an original which has already been uploaded directly to storage.
  * This deliberately does not upload the original again. */
-export async function processUploadedArtwork(buffer: Buffer, origKey: string) {
-  if (!USE_SUPABASE_STORAGE || !isSafeMediaKey(origKey) || !origKey.startsWith("o/")) throw new Error("Invalid staged artwork");
+export async function processUploadedArtwork(buffer: Buffer, origKey: string, premium = false) {
+  if (!isSafeMediaKey(origKey) || !origKey.startsWith("o/")) throw new Error("Invalid staged artwork");
   const id = path.basename(origKey, path.extname(origKey));
   const thumbKey = `t/${id}.webp`;
   const img = sharp(buffer);
   const meta = await img.metadata();
   const thumbBuf = await img.rotate().resize({ width: 640, withoutEnlargement: true, fastShrinkOnLoad: true }).webp({ quality: 72, effort: 4 }).toBuffer();
-  await sbUpload(thumbKey, thumbBuf, "image/webp");
+  await putMedia(thumbKey, thumbBuf, "image/webp", premium);
   return { orig: origKey, thumb: thumbKey, width: meta.width || 0, height: meta.height || 0 };
 }
 
-export async function saveImage(buffer: Buffer, origName: string) {
+export async function saveImage(buffer: Buffer, origName: string, premium = false) {
   const id = crypto.randomBytes(8).toString("hex");
   const ext = (path.extname(origName) || ".jpg").toLowerCase().replace(/[^a-z0-9.]/g, "") || ".jpg";
   const origKey = `o/${id}${ext}`;
@@ -113,10 +134,10 @@ export async function saveImage(buffer: Buffer, origName: string) {
   const meta = await img.metadata();
   const thumbBuf = await img.rotate().resize({ width: 640, withoutEnlargement: true, fastShrinkOnLoad: true }).webp({ quality: 72, effort: 4 }).toBuffer();
 
-  if (USE_SUPABASE_STORAGE) {
+  if (USE_R2_MEDIA || USE_SUPABASE_STORAGE) {
     await Promise.all([
-      sbUpload(origKey, buffer, MIME[ext] || "application/octet-stream"),
-      sbUpload(thumbKey, thumbBuf, "image/webp"),
+      putMedia(origKey, buffer, MIME[ext] || "application/octet-stream", premium),
+      putMedia(thumbKey, thumbBuf, "image/webp", premium),
     ]);
   } else {
     fs.mkdirSync(path.join(UPLOADS_DIR, "o"), { recursive: true });
@@ -142,8 +163,8 @@ export async function saveAvatar(buffer: Buffer, userId: number) {
     .webp({ quality: 84 })
     .toBuffer();
 
-  if (USE_SUPABASE_STORAGE) {
-    await sbUpload(key, avatar, "image/webp");
+  if (USE_R2_MEDIA || USE_SUPABASE_STORAGE) {
+    await putMedia(key, avatar, "image/webp");
   } else {
     fs.mkdirSync(path.join(UPLOADS_DIR, "avatars"), { recursive: true });
     fs.writeFileSync(path.join(UPLOADS_DIR, key), avatar);
@@ -154,7 +175,7 @@ export async function saveAvatar(buffer: Buffer, userId: number) {
 export async function saveCover(buffer: Buffer, userId: number) {
   const key = `covers/${userId}-${crypto.randomBytes(8).toString("hex")}.webp`;
   const cover = await sharp(buffer).rotate().resize(1600, 600, { fit: "cover", position: "attention" }).webp({ quality: 82 }).toBuffer();
-  if (USE_SUPABASE_STORAGE) await sbUpload(key, cover, "image/webp");
+  if (USE_R2_MEDIA || USE_SUPABASE_STORAGE) await putMedia(key, cover, "image/webp");
   else {
     fs.mkdirSync(path.join(UPLOADS_DIR, "covers"), { recursive: true });
     fs.writeFileSync(path.join(UPLOADS_DIR, key), cover);
@@ -184,8 +205,9 @@ export function hashDistance(a: string, b: string) {
   return distance;
 }
 
-export async function deleteFile(rel: string) {
+export async function deleteFile(rel: string, premium = false) {
   if (!rel || !isSafeMediaKey(rel)) return;
+  if (USE_R2_MEDIA) { await r2Delete(rel, premium).catch(() => {}); return; }
   if (USE_SUPABASE_STORAGE) { await sbDelete([rel]); return; }
   try {
     const p = path.normalize(path.join(UPLOADS_DIR, rel));
@@ -193,13 +215,24 @@ export async function deleteFile(rel: string) {
   } catch {}
 }
 
-export async function deleteFiles(orig: string, thumb: string) {
+export async function deleteFiles(orig: string, thumb: string, premium = false) {
   if (!isSafeMediaKey(orig) || !isSafeMediaKey(thumb)) return;
+  if (USE_R2_MEDIA) { await Promise.all([r2Delete(orig, premium), r2Delete(thumb, premium)].map(task => task.catch(() => {}))); return; }
   if (USE_SUPABASE_STORAGE) { await sbDelete([orig, thumb]); return; }
   for (const rel of [orig, thumb]) {
     try {
       const p = path.join(UPLOADS_DIR, rel);
       if (p.startsWith(UPLOADS_DIR) && fs.existsSync(p)) fs.unlinkSync(p);
     } catch {}
+  }
+}
+
+/** Keep public and Premium R2 buckets separate when an admin changes visibility. */
+export async function moveArtworkVisibility(orig: string, thumb: string, fromPremium: boolean, toPremium: boolean) {
+  if (!USE_R2_MEDIA || fromPremium === toPremium) return;
+  for (const key of [orig, thumb]) {
+    const bytes = await getMedia(key, fromPremium);
+    await putMedia(key, bytes, MIME[path.extname(key).toLowerCase()] || "application/octet-stream", toPremium);
+    await r2Delete(key, fromPremium);
   }
 }
