@@ -107,6 +107,9 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
     column-span: all;
     contain-intrinsic-size: 100% 220px;
   }
+  /* The compact phone artwork panel must end after its visible controls.
+     Desktop retains the taller editorial layout through its md: utilities. */
+  .artwork-detail-panel { min-height: 0 !important; height: auto !important; flex: 0 0 auto !important; }
   /* Keep the dock clear of Android's gesture area without making it a heavy
      full-width slab. Its compact floating silhouette mirrors the app chrome. */
   .mobile-bottom-nav { bottom: max(0.6rem, env(safe-area-inset-bottom, 0px)) !important; }

@@ -9,4 +9,5 @@ test("mobile artwork details keep only primary actions visible", () => {
   assert.match(source, /Follow details, sharing and reporting stay behind More/);
   assert.match(source, /md:min-h-80/);
   assert.doesNotMatch(source, /className="flex min-h-80 flex-col/);
+  assert.match(source, /artwork-detail-panel/);
 });
