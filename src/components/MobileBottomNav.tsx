@@ -8,11 +8,11 @@ import { mobileNavItems } from "@/lib/mobile-nav-utils";
 import { nativeRefreshUrl, shouldReloadDocumentForRefresh } from "@/lib/native-refresh";
 
 const ICONS: Record<string, ReactNode> = {
-  "/": <path d="M3 10.8 12 3l9 7.8V21h-6v-6H9v6H3z" strokeLinejoin="round" />,
-  "/search": <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" strokeLinecap="round" /></>,
-  "/saves": <path d="M6 3h12v18l-6-4.5L6 21z" strokeLinejoin="round" />,
-  "/profile": <><circle cx="12" cy="8" r="4" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0" strokeLinecap="round" /></>,
-  "/admin": <><path d="M4 20h16M6.5 20v-8h11v8M4 12h16L12 4 4 12Z" strokeLinejoin="round" /><path d="M12 15v2" strokeLinecap="round" /></>,
+  "/": <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" strokeLinejoin="round" />,
+  "/search": <><circle cx="10.8" cy="10.8" r="6.3" /><path d="m16 16 4.2 4.2" strokeLinecap="round" /></>,
+  "/saves": <path d="M6 3.5h12v17l-6-4.2-6 4.2z" strokeLinejoin="round" />,
+  "/profile": <><circle cx="12" cy="8" r="3.7" /><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" strokeLinecap="round" /></>,
+  "/admin": <><rect x="3.5" y="3.5" width="7" height="7" rx="1.3" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.3" /><rect x="3.5" y="13.5" width="7" height="7" rx="1.3" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.3" /></>,
 };
 
 export default function MobileBottomNav() {
@@ -30,8 +30,8 @@ export default function MobileBottomNav() {
 
   return (
     <nav aria-label="Primary mobile navigation"
-      className={`mobile-bottom-nav fixed inset-x-3 bottom-3 z-[60] grid ${isAdmin ? "grid-cols-5" : "grid-cols-4"} rounded-[22px] border border-paper/[0.12] bg-[rgba(12,12,13,0.88)] p-1 shadow-[0_14px_36px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl md:hidden`}
-      style={{ paddingBottom: "max(0.25rem, env(safe-area-inset-bottom, 0px))" }}>
+      className={`mobile-bottom-nav fixed inset-x-5 bottom-3 z-[60] grid ${isAdmin ? "grid-cols-5" : "grid-cols-4"} rounded-[20px] border border-paper/[0.12] bg-[rgba(12,12,13,0.88)] p-1 shadow-[0_12px_30px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl md:hidden`}
+      style={{ paddingBottom: "max(0.2rem, env(safe-area-inset-bottom, 0px))" }}>
       {items.map(item => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         return (
@@ -50,8 +50,8 @@ export default function MobileBottomNav() {
               router.refresh();
             }}
             aria-label={item.label} title={item.label}
-            className={`group relative m-0.5 flex min-h-[52px] items-center justify-center rounded-[16px] transition-all duration-200 active:scale-95 ${active ? "bg-gold/[0.12] text-gold shadow-[inset_0_0_0_1px_rgba(198,161,91,0.22),0_6px_16px_rgba(0,0,0,0.2)]" : "text-fog hover:bg-paper/[0.05] hover:text-paper"}`}>
-            <svg className="h-[23px] w-[23px] transition-transform duration-200 group-active:scale-90" fill={active && item.href === "/" ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.85" aria-hidden="true">
+            className={`group relative m-0.5 flex min-h-12 items-center justify-center rounded-[14px] transition-all duration-200 active:scale-95 ${active ? "bg-gold/[0.12] text-gold shadow-[inset_0_0_0_1px_rgba(198,161,91,0.22),0_5px_14px_rgba(0,0,0,0.18)]" : "text-fog hover:bg-paper/[0.05] hover:text-paper"}`}>
+            <svg className="h-[21px] w-[21px] transition-transform duration-200 group-active:scale-90" fill={active && item.href === "/" ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
               {ICONS[item.href]}
             </svg>
             <span aria-hidden="true" className={`absolute bottom-1.5 h-1 w-1 rounded-full bg-gold transition-all duration-200 ${active ? "scale-100 opacity-100" : "scale-0 opacity-0"}`} />
