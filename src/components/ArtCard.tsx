@@ -10,6 +10,7 @@ import { toast } from "./Toaster";
 import { artworkAlt } from "@/lib/site";
 import ReportArtwork from "./ReportArtwork";
 import DownloadButton from "./DownloadButton";
+import { getArtworkImageFit } from "@/lib/artwork-layout";
 
 export function openArtwork(id: number, art?: any) {
   if (typeof window !== "undefined") {
@@ -30,9 +31,11 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const suppressOpen = useRef(false);
   const ratio = art.width && art.height ? art.height / art.width : 1.3;
-  // A landscape image in a two-column phone masonry grid can become a tiny
-  // strip. Premium cards must retain a comfortable tap target instead.
-  const premiumLandscape = Boolean(art.premium) && ratio < 0.9;
+  // Wide artwork must remain complete in the gallery. Portrait cards keep
+  // their edge-to-edge presentation, while landscape cards become easy-to-tap
+  // full-width rows on phone screens.
+  const landscape = ratio < 0.9;
+  const imageFit = getArtworkImageFit(art);
   const hideArtwork = async () => {
     window.dispatchEvent(new CustomEvent("anipins:hide-art", { detail: { id: art.id } }));
     try { await fetch("/api/hides", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artworkId: art.id }) }); } catch {}
@@ -42,7 +45,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
   return (
     <>
       <div
-        className={`art-card ${premiumLandscape ? "art-card--premium-landscape" : ""}`}
+        className={`art-card ${landscape ? "art-card--landscape" : ""}`}
       >
         <Tilt max={3.5} className="group relative overflow-hidden rounded-2xl bg-soft hairline hover:border-gold-dim transition-colors duration-200">
           <button
@@ -63,7 +66,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
             onTouchCancel={() => { touchStart.current = null; suppressOpen.current = false; }}
             onClick={() => { if (!suppressOpen.current) openArtwork(art.id, art); }}
             className="block w-full touch-pan-y text-left cursor-zoom-in">
-            <div style={{ aspectRatio: `1 / ${ratio}`, minHeight: premiumLandscape ? "clamp(180px, 44vw, 360px)" : undefined }} className={`relative w-full overflow-hidden bg-soft ${imageReady ? "" : "skeleton"}`}>
+            <div style={{ aspectRatio: `1 / ${ratio}`, minHeight: landscape ? "clamp(180px, 44vw, 360px)" : undefined }} className={`relative w-full overflow-hidden bg-ink ${imageReady ? "" : "skeleton"}`}>
               <Image
                 src={art.thumb_url || `/api/img/${art.thumb}`}
                 alt={artworkAlt(art)}
@@ -72,7 +75,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
                 priority={priority ?? index < 2}
                 loading={priority ?? index < 2 ? "eager" : "lazy"}
                 onLoad={() => setImageReady(true)}
-                className={`object-cover transition-opacity duration-200 group-hover:scale-[1.025] ${imageReady ? "opacity-100" : "opacity-0"}`}
+                className={`object-${imageFit} transition-opacity duration-200 ${imageFit === "cover" ? "group-hover:scale-[1.025]" : ""} ${imageReady ? "opacity-100" : "opacity-0"}`}
               />
             </div>
           </button>

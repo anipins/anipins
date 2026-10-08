@@ -48,7 +48,7 @@ export default function Intro() {
     setShow(true);
     // Let the branded opening play at its intended pace. The initial cover is
     // already rendered before the feed, so this is not a loading delay.
-    const t = setTimeout(() => setShow(false), 1750);
+    const t = setTimeout(() => setShow(false), 2600);
     return () => clearTimeout(t);
   }, []);
   return (

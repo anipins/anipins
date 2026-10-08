@@ -101,10 +101,9 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
   /* Fixed background repainting and heavy motion are common WebView scroll-jank sources. */
   body { background-attachment: scroll; }
   .art-card { contain-intrinsic-size: 180px 270px; }
-  .masonry > .art-card--premium-landscape {
-    /* A landscape card is a full-width, easy-to-tap row in the Android app
-       and phone browser. On desktop it stays inside the masonry grid rather
-       than turning into the oversized banner shown in the report. */
+  .masonry > .art-card--landscape {
+    /* A landscape card is a full-width, complete, easy-to-tap row in the
+       Android app and phone browser. Desktop keeps it inside masonry. */
     column-span: all;
     contain-intrinsic-size: 100% 220px;
   }
