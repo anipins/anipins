@@ -59,12 +59,6 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
 @media (min-width: 2200px) { .masonry { column-count: 7; } }
 .masonry > * { break-inside: avoid; margin-bottom: 14px; }
 .art-card { break-inside: avoid; content-visibility: auto; contain-intrinsic-size: 280px 420px; }
-.masonry > .art-card--premium-landscape {
-  /* Premium landscape studies are intentional wide cards, not tiny strips in
-     one masonry column. column-span makes their entire card tappable. */
-  column-span: all;
-  contain-intrinsic-size: 100% 260px;
-}
 .masonry > * { content-visibility: auto; contain-intrinsic-size: 280px 420px; }
 
 .skeleton { position: relative; overflow: hidden; background: var(--skeleton); }
@@ -107,6 +101,13 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
   /* Fixed background repainting and heavy motion are common WebView scroll-jank sources. */
   body { background-attachment: scroll; }
   .art-card { contain-intrinsic-size: 180px 270px; }
+  .masonry > .art-card--premium-landscape {
+    /* A landscape card is a full-width, easy-to-tap row in the Android app
+       and phone browser. On desktop it stays inside the masonry grid rather
+       than turning into the oversized banner shown in the report. */
+    column-span: all;
+    contain-intrinsic-size: 100% 220px;
+  }
   /* Both the browser and Android app use a device-edge dock. It prevents the
      wasted strip below Home/Following/Saves/Profile seen with a floating bar. */
   .mobile-bottom-nav { padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.4rem) !important; }
