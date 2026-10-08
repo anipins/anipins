@@ -103,8 +103,8 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
   /* Phone feeds should give the artwork nearly all available width. The small
      equal gutters keep the rhythm of a native inspiration board instead of
      the oversized card spacing used on wider screens. */
-  .masonry { width: calc(100% + 8px); margin-inline: -4px !important; column-gap: 8px; }
-  .masonry > * { margin-bottom: 8px; }
+  .masonry { width: calc(100% + 16px); margin-inline: -8px !important; column-gap: 4px; }
+  .masonry > * { margin-bottom: 4px; }
   .art-card { contain-intrinsic-size: 180px 270px; }
   .masonry > .art-card--landscape {
     /* A landscape card is a full-width, complete, easy-to-tap row in the
