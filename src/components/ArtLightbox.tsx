@@ -17,6 +17,7 @@ export default function ArtLightbox() {
   const [preview, setPreview] = useState<any>(null);
   const [save, setSave] = useState(false);
   const [share, setShare] = useState(false);
+  const [more, setMore] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [detailError, setDetailError] = useState(false);
@@ -43,6 +44,7 @@ export default function ArtLightbox() {
     setDetailError(false);
     setSave(false);
     setShare(false);
+    setMore(false);
     panel.current?.scrollTo({ top: 0 });
     fetch(`/api/artworks/${id}`, { signal: controller.signal }).then(r => r.ok ? r.json() : Promise.reject()).then(d => {
       setData(d); setLiked(d.liked); setLikeCount(d.likeCount);
@@ -124,15 +126,17 @@ export default function ArtLightbox() {
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Link href={`/c/${art.character_slug}`} onClick={() => setId(null)} className="chip chip-on">{art.character_name}</Link>
                       <Link href={`/anime/${art.anime_slug}`} onClick={() => setId(null)} className="chip">{art.anime_name}</Link>
-                      {art.gender && <span className="chip">{art.gender}</span>}
+                      {art.gender && <span className="chip hidden md:inline-flex">{art.gender}</span>}
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div className="mt-3 hidden flex-wrap gap-2 md:flex">
                       <FollowButton kind="character" value={art.character_slug} label={art.character_name} />
                       <FollowButton kind="anime" value={art.anime_slug} label={art.anime_name} />
                     </div>
                     {art.description && <p className="mt-4 text-sm leading-relaxed text-fog">{art.description}</p>}
+                    <div className="hidden md:block">
                     {(art.creator_name || art.source_url) && <p className="mt-4 text-xs text-fog">By {art.creator_name || "the original creator"}{art.source_url && <> · <a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold hover:underline">Source ↗</a></>}</p>}
-                    <div className="mt-5 flex flex-wrap gap-2">
+                    </div>
+                    <div className="mt-5 hidden flex-wrap gap-2 md:flex">
                       <button onClick={like} className={`btn !px-5 !py-2.5 hairline ${liked ? "border-gold/60 text-gold" : "text-paper/85 hover:border-gold-dim"}`}>
                         <motion.span animate={liked ? { scale: [1, 1.35, 1] } : {}} transition={{ duration: 0.35 }}>{liked ? "♥" : "♡"}</motion.span>
                         {likeCount > 0 ? likeCount : "Like"}
@@ -141,13 +145,36 @@ export default function ArtLightbox() {
                       <DownloadButton artworkId={art.id} className="btn-ghost !px-5 !py-2.5" />
                       <button onClick={() => setShare(true)} className="btn-ghost !px-5 !py-2.5">Share</button>
                     </div>
-                    <div className="mt-4 flex gap-4 text-xs text-fog">
+                    {/* Mobile actions: Save and Download stay visible; Follow details, sharing and reporting stay behind More. */}
+                    <div className="mt-5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-2 md:hidden">
+                      <button onClick={() => setSave(true)} className="btn-primary !min-w-0 !px-3 !py-2.5">Save</button>
+                      <DownloadButton artworkId={art.id} className="btn-ghost !min-w-0 !px-3 !py-2.5" />
+                      <button type="button" onClick={like} aria-label={liked ? "Unlike artwork" : "Like artwork"} className={`grid h-11 w-11 place-items-center rounded-full border transition-colors ${liked ? "border-gold/60 bg-gold/10 text-gold" : "border-paper/15 text-paper hover:border-gold/50"}`}>
+                        <motion.span animate={liked ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.35 }} className="text-lg">{liked ? "♥" : "♡"}</motion.span>
+                      </button>
+                      <button type="button" onClick={() => setMore(value => !value)} aria-expanded={more} aria-label="More artwork actions" className={`grid h-11 w-11 place-items-center rounded-full border text-lg tracking-[0.12em] transition-colors ${more ? "border-gold/60 bg-gold/10 text-gold" : "border-paper/15 text-paper hover:border-gold/50"}`}>•••</button>
+                    </div>
+                    {more && <div className="mt-3 rounded-2xl border border-paper/10 bg-soft/70 p-3 md:hidden">
+                      <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-fog">More options</p>
+                      <div className="mt-2 grid gap-2">
+                        <FollowButton kind="character" value={art.character_slug} label={art.character_name} />
+                        <FollowButton kind="anime" value={art.anime_slug} label={art.anime_name} />
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-3 border-t border-paper/10 pt-3 text-sm">
+                        <button type="button" onClick={() => { setShare(true); setMore(false); }} className="text-fog transition-colors hover:text-paper">Share</button>
+                        <Link href={`/a/${art.id}`} onClick={() => setId(null)} className="text-gold hover:text-gold-bright">Open page →</Link>
+                        <ReportArtwork artworkId={art.id} />
+                      </div>
+                    </div>}
+                    <div className="mt-4 hidden gap-4 text-xs text-fog md:flex">
                       <span>{art.views} views</span><span>{art.downloads} downloads</span>
                     </div>
-                    {(art.creator_name || art.source_url) && <div className="mt-4 rounded-xl bg-soft p-3 text-xs text-fog"><span>Artwork credit: </span>{art.source_url?<a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold underline underline-offset-4">{art.creator_name||"Original source"}</a>:art.creator_name}</div>}
+                    {(art.creator_name || art.source_url) && <div className="mt-4 hidden rounded-xl bg-soft p-3 text-xs text-fog md:block"><span>Artwork credit: </span>{art.source_url?<a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold underline underline-offset-4">{art.creator_name||"Original source"}</a>:art.creator_name}</div>}
+                    <div className="hidden md:block">
                     <Link href={`/a/${art.id}`} onClick={() => setId(null)}
                       className="mt-auto pt-6 text-sm text-gold hover:text-gold-bright transition-colors">Open full page →</Link>
                     <div className="mt-3"><ReportArtwork artworkId={art.id} /></div>
+                    </div>
                   </>
                 )}
               </div>
