@@ -82,8 +82,13 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
 .intro-logo-depth { filter: drop-shadow(0 24px 22px rgba(0,0,0,.55)) drop-shadow(0 0 28px rgba(198,161,91,.32)); will-change: transform, opacity; }
 .intro-light-sweep { pointer-events: none; mix-blend-mode: screen; }
 @keyframes intro-star-drift { from { opacity: 0; transform: scale(.75) rotate(-10deg); } to { opacity: .55; transform: scale(1) rotate(8deg); } }
-.intro-cinematic-vignette { pointer-events: none; background: radial-gradient(ellipse at 50% 43%, transparent 0 28%, rgba(3,4,5,.1) 48%, rgba(3,4,5,.94) 100%), linear-gradient(120deg, rgba(35,22,5,.3), transparent 34%, rgba(20,35,74,.18) 67%, rgba(0,0,0,.6)); }
-.intro-scene-fallback { position: absolute; width: 7.5rem; height: 7.5rem; object-fit: contain; filter: drop-shadow(0 0 28px rgba(198,161,91,.32)); transition: opacity .15s linear; }
+.intro-reference-stage { perspective: 1600px; background: #030405; }
+.intro-cinematic-vignette { pointer-events: none; z-index: 2; background: radial-gradient(ellipse at 50% 45%, transparent 0 30%, rgba(3,4,5,.14) 53%, rgba(3,4,5,.96) 100%), linear-gradient(120deg, rgba(35,22,5,.34), transparent 34%, rgba(20,35,74,.22) 67%, rgba(0,0,0,.7)); }
+.intro-reference-blueprint { position: absolute; z-index: 1; inset: -9%; width: 118%; height: 118%; fill: none; stroke: rgba(223,194,125,.72); stroke-width: 1.8; filter: drop-shadow(0 0 9px rgba(198,161,91,.18)); transform: perspective(1200px) rotateX(9deg) scale(1.08); }
+.intro-reference-flash { position: absolute; z-index: 4; inset: 0; pointer-events: none; transform-origin: 50% 50%; background: radial-gradient(ellipse at center, rgba(255,249,232,.94) 0 1%, rgba(235,211,151,.44) 9%, rgba(130,108,71,.12) 26%, transparent 56%); mix-blend-mode: screen; }
+.intro-scene-fallback-wrap { position: absolute; z-index: 3; left: 50%; top: 48%; width: min(72vw, 48rem); height: min(72vw, 48rem); transform: translate(-50%, -50%); transition: opacity .22s linear; }
+.intro-scene-fallback { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 42px rgba(198,161,91,.48)); }
+@media (max-width: 640px) { .intro-reference-blueprint { inset: -24% -46%; width: 192%; height: 148%; } .intro-scene-fallback-wrap { width: min(88vw, 31rem); height: min(88vw, 31rem); top: 46%; } }
 
 .cinematic-home { position: relative; isolation: isolate; }
 .cinematic-feature-stage { position: relative; isolation: isolate; }
