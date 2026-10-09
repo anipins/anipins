@@ -29,7 +29,7 @@ function ConstructionLines() {
     ref.current.rotation.z = Math.sin(clock.getElapsedTime() * .45) * .055;
     ref.current.position.y = Math.sin(clock.getElapsedTime() * .32) * .035;
   });
-  return <lineSegments ref={ref} geometry={geometry}><lineBasicMaterial color={GOLD} transparent opacity={.46} blending={THREE.AdditiveBlending} /></lineSegments>;
+  return <lineSegments ref={ref} geometry={geometry}><lineBasicMaterial color={GOLD} transparent opacity={.68} blending={THREE.AdditiveBlending} /></lineSegments>;
 }
 
 function BrandMark({ onReady }: { onReady?: () => void }) {
@@ -56,7 +56,7 @@ function BrandMark({ onReady }: { onReady?: () => void }) {
     group.current.position.y = Math.sin(t * 1.5) * .025;
   });
   return <group ref={group}>
-    {[[ -.16, 1.82, "#5c451c", .45 ],[-.07,1.72,"#a2762e",.72],[.06,1.62,"#fff7df",1]].map(([z, scale, color, opacity]) => <mesh key={String(z)} position={[0,0,Number(z)]} scale={[Number(scale),Number(scale),1]}><planeGeometry args={[1,1]} /><meshBasicMaterial map={texture} color={String(color)} transparent opacity={Number(opacity)} depthWrite={false} /></mesh>)}
+    {[[ -.18, 2.78, "#5c451c", .48 ],[-.08,2.58,"#a2762e",.76],[.06,2.38,"#fff7df",1]].map(([z, scale, color, opacity]) => <mesh key={String(z)} position={[0,0,Number(z)]} scale={[Number(scale),Number(scale),1]}><planeGeometry args={[1,1]} /><meshBasicMaterial map={texture} color={String(color)} transparent opacity={Number(opacity)} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh>)}
   </group>;
 }
 
@@ -65,7 +65,7 @@ function Scene({ onReady }: { onReady?: () => void }) {
   useFrame(({ clock }) => { if (light.current) light.current.intensity = 6 + Math.sin(clock.getElapsedTime() * 2.2) * 1.6; });
   return <>
     <color attach="background" args={["#030405"]} /><fog attach="fog" args={["#030405", 3, 8]} />
-    <ambientLight intensity={.22} /><pointLight ref={light} color="#c6a15b" position={[0,.3,2]} distance={6} /><pointLight color="#446bd8" intensity={3.2} position={[-2.4,.8,-1.5]} distance={5} />
+    <ambientLight intensity={.22} /><pointLight ref={light} color="#c6a15b" position={[0,.3,2]} distance={6} /><pointLight color="#f4ead1" intensity={1.2} position={[-2.4,.8,-1.5]} distance={5} />
     <ConstructionLines />
     <mesh rotation={[Math.PI / 2.2,0,-.3]} position={[0,0,-.58]}><torusGeometry args={[1.44,.009,8,120]} /><meshStandardMaterial color="#c6a15b" emissive="#50350d" emissiveIntensity={.9} metalness={.9} roughness={.28} /></mesh>
     <mesh rotation={[Math.PI / 2.95,.52,.65]} position={[0,0,-.42]}><torusGeometry args={[1.16,.007,8,120]} /><meshStandardMaterial color="#e3c078" emissive="#5b3d10" emissiveIntensity={.65} metalness={.92} roughness={.22} /></mesh>
