@@ -68,7 +68,10 @@ export default function AdminUpload({ premiumOnly = false }: { premiumOnly?: boo
         if (signed.direct) {
           setProgress(`Sending ${item.file.name} directly to secure artwork storage…`);
           if (!stored) {
-            const storageResponse = await fetchWithTimeout(signed.uploadUrl!, { method: "PUT", headers: { "Content-Type": item.file.type, "Cache-Control": "public, max-age=31536000, immutable", "x-upsert": "false" }, body: item.file }, 10 * 60_000);
+            // R2 signed uploads need only the content type that was signed.  Do
+            // not send Supabase-specific headers here: they trigger an avoidable
+            // CORS preflight and can make an otherwise valid browser upload fail.
+            const storageResponse = await fetchWithTimeout(signed.uploadUrl!, { method: "PUT", headers: { "Content-Type": item.file.type }, body: item.file }, 10 * 60_000);
             if (!storageResponse.ok) {
               if (!retryableStatus(storageResponse.status)) return { response: storageResponse, result: { error: `Artwork storage upload failed (${storageResponse.status}). Please retry this image.` } };
               signed = null;
