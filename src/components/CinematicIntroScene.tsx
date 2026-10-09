@@ -32,10 +32,21 @@ function ConstructionLines() {
   return <lineSegments ref={ref} geometry={geometry}><lineBasicMaterial color={GOLD} transparent opacity={.46} blending={THREE.AdditiveBlending} /></lineSegments>;
 }
 
-function BrandMark() {
+function BrandMark({ onReady }: { onReady?: () => void }) {
   const texture = useLoader(THREE.TextureLoader, "/brand/ap-symbol-intro.png");
   const group = useRef<THREE.Group>(null);
-  useEffect(() => { texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 4; }, [texture]);
+  const hasReportedReady = useRef(false);
+  useEffect(() => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 4;
+    // Keep the DOM fallback visible until the WebGL texture has actually loaded.
+    // A dynamic import can otherwise leave the opening sequence almost black.
+    if (!hasReportedReady.current) {
+      hasReportedReady.current = true;
+      const frame = requestAnimationFrame(() => onReady?.());
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [onReady, texture]);
   useFrame(({ clock }) => {
     const t = Math.min(clock.getElapsedTime(), 3.4), settle = 1 - Math.exp(-t * 2.15);
     if (!group.current) return;
@@ -49,7 +60,7 @@ function BrandMark() {
   </group>;
 }
 
-function Scene() {
+function Scene({ onReady }: { onReady?: () => void }) {
   const light = useRef<THREE.PointLight>(null);
   useFrame(({ clock }) => { if (light.current) light.current.intensity = 6 + Math.sin(clock.getElapsedTime() * 2.2) * 1.6; });
   return <>
@@ -58,10 +69,10 @@ function Scene() {
     <ConstructionLines />
     <mesh rotation={[Math.PI / 2.2,0,-.3]} position={[0,0,-.58]}><torusGeometry args={[1.44,.009,8,120]} /><meshStandardMaterial color="#c6a15b" emissive="#50350d" emissiveIntensity={.9} metalness={.9} roughness={.28} /></mesh>
     <mesh rotation={[Math.PI / 2.95,.52,.65]} position={[0,0,-.42]}><torusGeometry args={[1.16,.007,8,120]} /><meshStandardMaterial color="#e3c078" emissive="#5b3d10" emissiveIntensity={.65} metalness={.92} roughness={.22} /></mesh>
-    <BrandMark /><CameraMotion />
+    <BrandMark onReady={onReady} /><CameraMotion />
   </>;
 }
 
-export default function CinematicIntroScene() {
-  return <Canvas className="absolute inset-0" dpr={[1,1.5]} gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }} camera={{ position: [0,0,4.1], fov: 37 }}><Suspense fallback={null}><Scene /></Suspense></Canvas>;
+export default function CinematicIntroScene({ onReady }: { onReady?: () => void }) {
+  return <Canvas className="absolute inset-0" dpr={[1,1.5]} gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }} camera={{ position: [0,0,4.1], fov: 37 }}><Suspense fallback={null}><Scene onReady={onReady} /></Suspense></Canvas>;
 }

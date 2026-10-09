@@ -1,6 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useLayoutEffect, useState } from "react";
+import { useCallback, useLayoutEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const CinematicIntroScene = dynamic(() => import("./CinematicIntroScene"), { ssr: false });
@@ -9,6 +9,8 @@ const brandLetters = ["A", "n", "i", "P", "i", "n", "s"];
 export default function Intro() {
   const [show, setShow] = useState(true);
   const [enhanced, setEnhanced] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
+  const markSceneReady = useCallback(() => setSceneReady(true), []);
 
   useLayoutEffect(() => {
     // Cover the first WebView paint so the gallery never flashes before branding.
@@ -28,8 +30,8 @@ export default function Intro() {
       exit={{ opacity: 0, transition: { duration: .46, ease: [0.22, 1, .36, 1] } }}>
       <div className="absolute inset-0 intro-cinematic-vignette" aria-hidden="true" />
       <div className="relative grid h-[min(78vw,31rem)] w-[min(96vw,38rem)] place-items-center">
-        {enhanced && <CinematicIntroScene />}
-        <img src="/brand/ap-symbol-intro.png" alt="" aria-hidden="true" className={`intro-scene-fallback ${enhanced ? "opacity-0" : "opacity-100"}`} />
+        {enhanced && <CinematicIntroScene onReady={markSceneReady} />}
+        <img src="/brand/ap-symbol-intro.png" alt="" aria-hidden="true" className={`intro-scene-fallback ${sceneReady ? "opacity-0" : "opacity-100"}`} />
       </div>
       <motion.div className="pointer-events-none absolute bottom-[14vh] text-center"
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.76, duration: .38 }}>
