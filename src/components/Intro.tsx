@@ -56,20 +56,32 @@ export default function Intro() {
       {show && (
         <motion.div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-ink"
           exit={{ opacity: 0, transition: { duration: 0.5, ease: "easeInOut" } }}>
-          <div className="relative flex items-center justify-center">
+          <div className="intro-3d-scene relative flex h-80 w-80 items-center justify-center" style={{ perspective: "1000px" }}>
+            <div className="intro-star-field" aria-hidden="true" />
             <motion.div
-              className="absolute h-64 w-64 rounded-full"
+              className="absolute h-72 w-72 rounded-full"
               style={{ background: "radial-gradient(circle, rgba(198,161,91,0.28) 0%, rgba(198,161,91,0.08) 45%, transparent 70%)" }}
               initial={{ opacity: 0, scale: 0.6 }}
               animate={{ opacity: 1, scale: 1.15 }}
               transition={{ delay: 0.12, duration: 0.82, ease: "easeOut" }}
             />
-            <svg viewBox="0 0 160 160" className="absolute h-52 w-52 -rotate-90">
-              <motion.circle cx="80" cy="80" r="76" fill="none" stroke="#C6A15B" strokeWidth="1"
-                opacity="0.55" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-                transition={{ delay: 0.34, duration: 0.62, ease: "easeInOut" }} />
-            </svg>
-            <div className="relative h-32 w-32 sm:h-36 sm:w-36" aria-label="AniPins">
+            <motion.div className="absolute h-72 w-72 rounded-full border border-gold/25"
+              style={{ transform: "rotateX(70deg)" }} initial={{ opacity: 0, scale: .64, rotateZ: -24 }}
+              animate={{ opacity: .9, scale: 1, rotateZ: 336 }} transition={{ delay: .18, duration: 1.35, ease: "easeOut" }} />
+            <motion.div className="absolute h-60 w-60 rounded-full border border-gold/35"
+              style={{ transform: "rotateY(66deg)" }} initial={{ opacity: 0, scale: .7, rotateZ: 25 }}
+              animate={{ opacity: .78, scale: 1, rotateZ: -318 }} transition={{ delay: .27, duration: 1.42, ease: "easeOut" }} />
+            <motion.div className="absolute h-48 w-48 rounded-full border border-gold/45"
+              style={{ transform: "rotateX(42deg) rotateY(-42deg)" }} initial={{ opacity: 0, scale: .72 }}
+              animate={{ opacity: .65, scale: 1, rotateZ: 245 }} transition={{ delay: .36, duration: 1.32, ease: "easeOut" }} />
+            <motion.div className="intro-light-sweep absolute h-[26rem] w-12 -rotate-[28deg] bg-gradient-to-b from-transparent via-gold/45 to-transparent blur-[2px]"
+              initial={{ opacity: 0, x: -180 }} animate={{ opacity: [0, .9, 0], x: [-180, 180, 280] }}
+              transition={{ delay: .44, duration: 1.1, times: [0, .45, 1], ease: "easeInOut" }} />
+            <motion.div className="intro-logo-depth relative h-32 w-32 sm:h-36 sm:w-36" aria-label="AniPins"
+              style={{ transformStyle: "preserve-3d" }} initial={{ opacity: 0, rotateY: -58, rotateX: 24, z: -100, scale: .66 }}
+              animate={{ opacity: 1, rotateY: [ -58, 18, 0 ], rotateX: [24, -8, 0], z: [-100, 30, 0], scale: [ .66, 1.06, 1 ] }}
+              transition={{ delay: .28, duration: 1.18, times: [0, .72, 1], ease: [0.22, 1, 0.36, 1] }}>
+              <img src="/brand/ap-symbol-intro.png" alt="" aria-hidden="true" className="absolute inset-0 h-32 w-32 select-none object-contain opacity-30 blur-md sm:h-36 sm:w-36" style={{ transform: "translateZ(-26px) scale(1.08)" }} draggable={false} />
               {logoFragments.map((fragment) => (
                 <motion.img
                   key={fragment.clipPath}
@@ -93,7 +105,7 @@ export default function Intro() {
                 transition={{ delay: 0.66, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
                 draggable={false}
               />
-            </div>
+            </motion.div>
           </div>
           <p className="mt-6 flex font-display text-2xl font-semibold tracking-tight sm:text-3xl" aria-label="AniPins">
             {brandLetters.map((letter, index) => (

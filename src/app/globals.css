@@ -77,6 +77,12 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
 @keyframes premium-orbit { to { transform: translate(-50%, -50%) rotate(360deg); } }
 @keyframes premium-scan { from { transform: translateX(-120%); } to { transform: translateX(240%); } }
 
+.intro-3d-scene { isolation: isolate; transform-style: preserve-3d; }
+.intro-star-field { position: absolute; inset: 0; z-index: -1; opacity: .55; background-image: radial-gradient(circle at 18% 27%, rgba(255,255,255,.6) 0 1px, transparent 1.4px), radial-gradient(circle at 78% 21%, rgba(198,161,91,.72) 0 1px, transparent 1.5px), radial-gradient(circle at 72% 76%, rgba(255,255,255,.38) 0 1px, transparent 1.3px), radial-gradient(circle at 28% 80%, rgba(198,161,91,.42) 0 1px, transparent 1.5px); animation: intro-star-drift 3s ease-in-out both; }
+.intro-logo-depth { filter: drop-shadow(0 24px 22px rgba(0,0,0,.55)) drop-shadow(0 0 28px rgba(198,161,91,.32)); will-change: transform, opacity; }
+.intro-light-sweep { pointer-events: none; mix-blend-mode: screen; }
+@keyframes intro-star-drift { from { opacity: 0; transform: scale(.75) rotate(-10deg); } to { opacity: .55; transform: scale(1) rotate(8deg); } }
+
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
