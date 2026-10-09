@@ -33,7 +33,7 @@ function ConstructionLines() {
 }
 
 function BrandMark({ onReady }: { onReady?: () => void }) {
-  const texture = useLoader(THREE.TextureLoader, "/brand/ap-symbol-intro.png");
+  const texture = useLoader(THREE.TextureLoader, "/brand/ap-symbol-transparent.png");
   const group = useRef<THREE.Group>(null);
   const hasReportedReady = useRef(false);
   useEffect(() => {

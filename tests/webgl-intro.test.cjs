@@ -14,7 +14,7 @@ test("the opening uses a real WebGL scene and preserves the AniPins logo asset",
   assert.match(intro, /CinematicIntroScene/);
   const scene = fs.readFileSync(scenePath, "utf8");
   assert.match(scene, /<Canvas/);
-  assert.match(scene, /ap-symbol-intro\.png/);
+  assert.match(scene, /ap-symbol-transparent\.png/);
   assert.match(scene, /useFrame/);
   assert.match(scene, /camera=\{\{ position: \[0,0,4\.1\], fov: 37 \}\}/);
   assert.match(scene, /onReady/);

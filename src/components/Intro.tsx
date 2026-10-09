@@ -43,7 +43,7 @@ export default function Intro() {
       <div className="relative h-full w-full">
         {enhanced && <CinematicIntroScene onReady={markSceneReady} />}
         <div className={`intro-scene-fallback-wrap ${sceneReady ? "opacity-0" : "opacity-100"}`}>
-          <motion.img src="/brand/ap-symbol-intro.png" alt="" aria-hidden="true" className="intro-scene-fallback"
+          <motion.img src="/brand/ap-symbol-transparent.png" alt="" aria-hidden="true" className="intro-scene-fallback"
             initial={{ opacity: 0, scale: .56, rotateY: -28, rotateX: 9 }} animate={{ opacity: 1, scale: [ .56, 1.04, .94 ], rotateY: [ -28, 4, 0 ], rotateX: [ 9, -2, 0 ] }} transition={{ duration: 1.8, ease: [0.16, 1, .3, 1] }} />
         </div>
       </div>

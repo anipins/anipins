@@ -12,6 +12,9 @@ test("home keeps a black-and-gold WebGL backdrop that reacts to scroll", () => {
   assert.match(component, /scrollY/);
   assert.match(component, /addEventListener\("scroll"/);
   assert.match(component, /tetrahedronGeometry/);
+  assert.match(component, /octahedronGeometry/);
+  assert.match(component, /FloatingMark/);
+  assert.match(component, /ap-symbol-transparent\.png/);
   assert.doesNotMatch(component, /446bd8|rgba\(20,35,74/);
   assert.match(home, /<HomeDepthScene\s*\/>/);
   assert.match(styles, /\.cinematic-home-depth[^}]*mix-blend-mode:\s*screen/);
