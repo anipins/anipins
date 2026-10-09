@@ -78,14 +78,13 @@ export default function FeaturedSlider({ initialArts = [], premium = false }: { 
   const nextA = arts[(idx + 1) % arts.length];
 
   return (
-    <section className="cinematic-feature-stage mx-auto max-w-[1400px] px-4 md:px-8">
-      <div className="cinematic-architectural-lines" aria-hidden="true" />
+    <section className="mx-auto max-w-[1400px] px-4 md:px-8">
       <div className="relative mb-4 flex items-center gap-3">
         <span className="badge-gold">Featured / select archive</span>
         <div className="h-px flex-1 bg-white/10" />
         <span className="font-display text-sm text-fog tabular-nums">{String(idx + 1).padStart(2, "0")} / {String(arts.length).padStart(2, "0")}</span>
       </div>
-      <div className="cinematic-feature-frame relative flex h-[420px] items-stretch gap-4 sm:h-[470px] md:h-[560px] lg:h-[610px]">
+      <div className="relative flex h-[420px] items-stretch gap-4 sm:h-[470px] md:h-[560px] lg:h-[610px]">
         {[prevA, nextA].map((side, i) => (
           <button key={i} onClick={() => { setDir(i === 0 ? -1 : 1); setIdx(arts.indexOf(side)); }}
             className={`hidden lg:block relative w-[12%] overflow-hidden rounded-3xl opacity-40 hover:opacity-70 transition-opacity duration-300 ${i === 0 ? "order-first" : "order-last"}`}>

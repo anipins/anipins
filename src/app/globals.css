@@ -82,23 +82,10 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
 .intro-logo-depth { filter: drop-shadow(0 24px 22px rgba(0,0,0,.55)) drop-shadow(0 0 28px rgba(198,161,91,.32)); will-change: transform, opacity; }
 .intro-light-sweep { pointer-events: none; mix-blend-mode: screen; }
 @keyframes intro-star-drift { from { opacity: 0; transform: scale(.75) rotate(-10deg); } to { opacity: .55; transform: scale(1) rotate(8deg); } }
-.intro-reference-stage { perspective: 1600px; background: #030405; }
-.intro-cinematic-vignette { pointer-events: none; z-index: 2; background: radial-gradient(ellipse at 50% 45%, transparent 0 30%, rgba(3,4,5,.14) 53%, rgba(3,4,5,.96) 100%), linear-gradient(120deg, rgba(35,22,5,.34), transparent 42%, rgba(0,0,0,.76)); }
-.intro-reference-blueprint { position: absolute; z-index: 1; inset: -9%; width: 118%; height: 118%; fill: none; stroke: rgba(223,194,125,.72); stroke-width: 1.8; filter: drop-shadow(0 0 9px rgba(198,161,91,.18)); transform: perspective(1200px) rotateX(9deg) scale(1.08); }
-.intro-reference-flash { position: absolute; z-index: 4; inset: 0; pointer-events: none; transform-origin: 50% 50%; background: radial-gradient(ellipse at center, rgba(255,249,232,.94) 0 1%, rgba(235,211,151,.44) 9%, rgba(130,108,71,.12) 26%, transparent 56%); mix-blend-mode: screen; }
-.intro-scene-fallback-wrap { position: absolute; z-index: 3; left: 50%; top: 48%; width: min(72vw, 48rem); height: min(72vw, 48rem); transform: translate(-50%, -50%); transition: opacity .22s linear; }
-.intro-scene-fallback { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 42px rgba(198,161,91,.48)); }
-@media (max-width: 640px) { .intro-reference-blueprint { inset: -24% -46%; width: 192%; height: 148%; } .intro-scene-fallback-wrap { width: min(88vw, 31rem); height: min(88vw, 31rem); top: 46%; } }
-
-.cinematic-home { position: relative; isolation: isolate; }
-.cinematic-home-depth { pointer-events: none; position: fixed; z-index: 2; inset: 0; overflow: hidden; opacity: .64; mix-blend-mode: screen; mask-image: linear-gradient(to bottom, transparent 0, transparent 5rem, #000 10rem, #000 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent 5rem, #000 10rem, #000 100%); }
-.cinematic-home > :not(.cinematic-home-depth) { position: relative; z-index: 1; }
-.cinematic-feature-stage { position: relative; isolation: isolate; }
-.cinematic-architectural-lines { pointer-events: none; position: absolute; inset: -3rem 3% 1rem; z-index: -1; overflow: hidden; opacity: .8; background: linear-gradient(123deg, transparent 0 31%, rgba(198,161,91,.16) 31.1% 31.25%, transparent 31.4% 47%, rgba(255,255,255,.08) 47.1% 47.22%, transparent 47.4% 55%, rgba(198,161,91,.18) 55.1% 55.25%, transparent 55.4%), linear-gradient(57deg, transparent 0 37%, rgba(198,161,91,.13) 37.1% 37.25%, transparent 37.4% 60%, rgba(255,255,255,.06) 60.1% 60.2%, transparent 60.4%); mask-image: linear-gradient(to bottom, transparent, #000 13%, #000 75%, transparent); animation: cinematic-lines 13s ease-in-out infinite alternate; }
-.cinematic-feature-frame { perspective: 1400px; }
-.cinematic-feature-frame > :not(.cinematic-architectural-lines) { transform-style: preserve-3d; }
-@keyframes cinematic-lines { from { transform: translate3d(-1.5%, -1%, 0) scale(1); opacity: .45; } to { transform: translate3d(1.5%, 1%, 0) scale(1.025); opacity: .86; } }
-
+.intro-reference-stage { background: #000; }
+.intro-scene-fallback-wrap { position: absolute; z-index: 3; left: 50%; top: 50%; width: min(38vw, 18rem); height: min(38vw, 18rem); transform: translate(-50%, -50%); transition: opacity .18s linear; }
+.intro-scene-fallback { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 12px 22px rgba(119,78,16,.24)); }
+@media (max-width: 640px) { .intro-scene-fallback-wrap { width: min(52vw, 15rem); height: min(52vw, 15rem); } }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
