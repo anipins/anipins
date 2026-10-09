@@ -91,7 +91,7 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
 @media (max-width: 640px) { .intro-reference-blueprint { inset: -24% -46%; width: 192%; height: 148%; } .intro-scene-fallback-wrap { width: min(88vw, 31rem); height: min(88vw, 31rem); top: 46%; } }
 
 .cinematic-home { position: relative; isolation: isolate; }
-.cinematic-home-depth { pointer-events: none; position: fixed; z-index: 0; inset: 0; overflow: hidden; background: #000; }
+.cinematic-home-depth { pointer-events: none; position: fixed; z-index: 2; inset: 0; overflow: hidden; opacity: .38; mix-blend-mode: screen; }
 .cinematic-home > :not(.cinematic-home-depth) { position: relative; z-index: 1; }
 .cinematic-feature-stage { position: relative; isolation: isolate; }
 .cinematic-architectural-lines { pointer-events: none; position: absolute; inset: -3rem 3% 1rem; z-index: -1; overflow: hidden; opacity: .8; background: linear-gradient(123deg, transparent 0 31%, rgba(198,161,91,.16) 31.1% 31.25%, transparent 31.4% 47%, rgba(255,255,255,.08) 47.1% 47.22%, transparent 47.4% 55%, rgba(198,161,91,.18) 55.1% 55.25%, transparent 55.4%), linear-gradient(57deg, transparent 0 37%, rgba(198,161,91,.13) 37.1% 37.25%, transparent 37.4% 60%, rgba(255,255,255,.06) 60.1% 60.2%, transparent 60.4%); mask-image: linear-gradient(to bottom, transparent, #000 13%, #000 75%, transparent); animation: cinematic-lines 13s ease-in-out infinite alternate; }

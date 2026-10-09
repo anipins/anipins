@@ -50,7 +50,6 @@ function ArchitecturalField() {
 export default function HomeDepthScene() {
   return <div className="cinematic-home-depth" aria-hidden="true">
     <Canvas dpr={[1, 1.35]} gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }} camera={{ position: [0,0,6.4], fov: 42 }}>
-      <color attach="background" args={["#000000"]} />
       <ambientLight intensity={.08} />
       <pointLight color="#c6a15b" intensity={4.2} position={[0, 1.2, 2.2]} distance={8} />
       <ArchitecturalField />
