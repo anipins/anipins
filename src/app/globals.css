@@ -83,6 +83,13 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
 .intro-light-sweep { pointer-events: none; mix-blend-mode: screen; }
 @keyframes intro-star-drift { from { opacity: 0; transform: scale(.75) rotate(-10deg); } to { opacity: .55; transform: scale(1) rotate(8deg); } }
 
+.cinematic-home { position: relative; isolation: isolate; }
+.cinematic-feature-stage { position: relative; isolation: isolate; }
+.cinematic-architectural-lines { pointer-events: none; position: absolute; inset: -3rem 3% 1rem; z-index: -1; overflow: hidden; opacity: .8; background: linear-gradient(123deg, transparent 0 31%, rgba(198,161,91,.16) 31.1% 31.25%, transparent 31.4% 47%, rgba(255,255,255,.08) 47.1% 47.22%, transparent 47.4% 55%, rgba(198,161,91,.18) 55.1% 55.25%, transparent 55.4%), linear-gradient(57deg, transparent 0 37%, rgba(198,161,91,.13) 37.1% 37.25%, transparent 37.4% 60%, rgba(255,255,255,.06) 60.1% 60.2%, transparent 60.4%); mask-image: linear-gradient(to bottom, transparent, #000 13%, #000 75%, transparent); animation: cinematic-lines 13s ease-in-out infinite alternate; }
+.cinematic-feature-frame { perspective: 1400px; }
+.cinematic-feature-frame > :not(.cinematic-architectural-lines) { transform-style: preserve-3d; }
+@keyframes cinematic-lines { from { transform: translate3d(-1.5%, -1%, 0) scale(1); opacity: .45; } to { transform: translate3d(1.5%, 1%, 0) scale(1.025); opacity: .86; } }
+
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 

@@ -56,7 +56,7 @@ export default async function Home() {
     getArtworkCards({ sort: "random", limit: 36 }),
   ]);
   return (
-    <div className="pt-28 md:pt-32">
+    <div className="cinematic-home pt-28 md:pt-32">
       <JsonLd data={{ "@context": "https://schema.org", "@type": "CollectionPage", name: "AniPins anime artwork references", url: getSiteUrl(), description: "Discover, save and download curated anime character artwork references for drawing inspiration.", numberOfItems: discovery.length }} />
       <FeaturedSlider initialArts={featured} />
       <section className="w-full px-3 pt-12 sm:px-4 md:px-6 xl:px-8">

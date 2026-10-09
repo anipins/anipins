@@ -78,32 +78,34 @@ export default function FeaturedSlider({ initialArts = [], premium = false }: { 
   const nextA = arts[(idx + 1) % arts.length];
 
   return (
-    <section className="mx-auto max-w-[1400px] px-4 md:px-8">
-      <div className="mb-4 flex items-center gap-3">
-        <span className="badge-gold">Featured</span>
+    <section className="cinematic-feature-stage mx-auto max-w-[1400px] px-4 md:px-8">
+      <div className="cinematic-architectural-lines" aria-hidden="true" />
+      <div className="relative mb-4 flex items-center gap-3">
+        <span className="badge-gold">Featured / select archive</span>
         <div className="h-px flex-1 bg-white/10" />
         <span className="font-display text-sm text-fog tabular-nums">{String(idx + 1).padStart(2, "0")} / {String(arts.length).padStart(2, "0")}</span>
       </div>
-      <div className="relative flex h-[390px] items-stretch gap-4 sm:h-[430px] md:h-[500px] lg:h-[540px]">
+      <div className="cinematic-feature-frame relative flex h-[420px] items-stretch gap-4 sm:h-[470px] md:h-[560px] lg:h-[610px]">
         {[prevA, nextA].map((side, i) => (
           <button key={i} onClick={() => { setDir(i === 0 ? -1 : 1); setIdx(arts.indexOf(side)); }}
             className={`hidden lg:block relative w-[12%] overflow-hidden rounded-3xl opacity-40 hover:opacity-70 transition-opacity duration-300 ${i === 0 ? "order-first" : "order-last"}`}>
             <Image src={side.thumb_url || `/api/img/${side.thumb}`} alt="" fill sizes="12vw" loading="lazy" className="object-cover" />
           </button>
         ))}
-        <div className="relative flex-1 overflow-hidden rounded-3xl hairline">
+        <div className="relative flex-1 overflow-hidden rounded-3xl border border-gold/25 bg-black shadow-[0_28px_85px_rgba(0,0,0,.58)]">
           <AnimatePresence mode="popLayout" custom={dir}>
             <motion.div key={a.id} custom={dir}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.28, ease: "easeOut" }}
+              initial={{ opacity: 0, x: dir * 80, scale: .94, rotateY: dir * -8, filter: "blur(7px)" }}
+              animate={{ opacity: 1, x: 0, scale: 1, rotateY: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, x: dir * -72, scale: 1.035, rotateY: dir * 8, filter: "blur(5px)" }}
+              transition={{ duration: .56, ease: [0.22, 1, 0.36, 1] }}
+              style={{ transformPerspective: 1400 }}
               className="absolute inset-0">
               <FeaturedImage art={a} priority sizes="(max-width: 1023px) 100vw, 76vw" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-              <motion.div initial={{ y: 14, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.12, duration: 0.32 }}
+              <motion.div initial={{ y: 28, opacity: 0, x: -20 }} animate={{ y: 0, opacity: 1, x: 0 }} transition={{ delay: .2, duration: .48, ease: [0.22, 1, .36, 1] }}
                 className="absolute inset-x-0 bottom-0 p-6 md:p-9">
-                <p className="text-[11px] uppercase tracking-[0.3em] text-gold">{a.category || a.anime_name}</p>
+                <p className="text-[10px] uppercase tracking-[0.34em] text-gold">AniPins archive / {a.category || a.anime_name}</p>
                 <h3 className="mt-1.5 font-display text-3xl md:text-5xl font-semibold">{a.character_name}</h3>
                 <p className="mt-1 text-sm text-white/60">{a.anime_name}</p>
                 <div className="mt-5 flex flex-wrap gap-3">
