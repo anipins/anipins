@@ -38,6 +38,12 @@ function ArchitecturalField() {
 
   return <group ref={field}>
     <lineSegments geometry={geometry}><lineBasicMaterial color={GOLD} transparent opacity={.22} blending={THREE.AdditiveBlending} /></lineSegments>
+    <mesh rotation={[.42, -.54, .14]} position={[-.15,.12,-2.7]}>
+      <tetrahedronGeometry args={[3.15, 0]} /><meshBasicMaterial color="#c6a15b" wireframe transparent opacity={.2} blending={THREE.AdditiveBlending} />
+    </mesh>
+    <mesh rotation={[-.58, .7, -.12]} position={[.3,-.18,-2.2]}>
+      <tetrahedronGeometry args={[2.42, 0]} /><meshBasicMaterial color="#f1d99b" wireframe transparent opacity={.15} blending={THREE.AdditiveBlending} />
+    </mesh>
     <mesh rotation={[Math.PI / 2.1, .28, -.38]} position={[0,.1,-1.8]}>
       <torusGeometry args={[2.15,.009,8,128]} /><meshStandardMaterial color="#c6a15b" emissive="#35230b" emissiveIntensity={.7} metalness={.95} roughness={.28} transparent opacity={.42} />
     </mesh>
