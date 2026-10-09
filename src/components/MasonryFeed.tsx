@@ -15,9 +15,9 @@ const CACHE_TTL = 15_000;
 // attempts made a transient network problem look like an endless feed loader.
 const REQUEST_TIMEOUT = 10_000;
 const MAX_REQUEST_ATTEMPTS = 3;
-type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean };
+type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean; pageSize?: number };
 
-export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, eagerLoad = false }: Props) {
+export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, eagerLoad = false, pageSize = 36 }: Props) {
   const [items, setItems] = useState<any[]>(initialItems);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
@@ -73,9 +73,9 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     inFlight.current = true;
     if (!silent) setLoading(true);
     setLoadError(false);
-    // 36 is the payload size for one request, not a feed limit. Pages keep
+    // pageSize is the payload size for one request, not a feed limit. Pages keep
     // loading until the API explicitly reports that there is no more artwork.
-    const params = new URLSearchParams({ ...queryRef.current, page: String(page), limit: "36" });
+    const params = new URLSearchParams({ ...queryRef.current, page: String(page), limit: String(pageSize) });
     if (cursor) { params.delete("page"); params.set("cursor", cursor); }
     if (randomize) { if (!params.has("sort")) params.set("sort", "random"); params.set("seed", String(randomSeed.current)); }
     try {
@@ -104,7 +104,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       inFlight.current = false;
       if (mounted.current && !silent) setLoading(false);
     }
-  }, [key, randomize]);
+  }, [key, pageSize, randomize]);
 
   const loadNext = useCallback((force = false) => {
     if (!hasMore || inFlight.current) return;

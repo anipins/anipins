@@ -56,7 +56,7 @@ export default function PremiumMemberFeed({ featured, latest }: Props) {
             {FILTERS.map((item, index) => <button key={item.label} type="button" onClick={() => setFilter(index)} className={`chip whitespace-nowrap ${filter === index ? "chip-on" : ""}`}>{item.label}</button>)}
           </div>
         </div>
-        <MasonryFeed key={JSON.stringify(query)} query={query} initialItems={filter === 0 ? latest : []} initialHasMore={filter === 0 ? latest.length === 36 : true} />
+        <MasonryFeed key={JSON.stringify(query)} query={query} pageSize={18} initialItems={filter === 0 ? latest : []} initialHasMore={filter === 0 ? latest.length === 18 : true} />
       </section>
     </main>
   );

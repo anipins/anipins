@@ -32,13 +32,16 @@ function Lock() {
 
 export default async function PremiumPage() {
   const user = await getUser();
-  const hasPremium = !!user && await canAccessPremium(user);
-  if (hasPremium) {
-    const [featured, latest] = await Promise.all([
+  if (user) {
+    // Start independent work together. Previously the subscription query had
+    // to finish before either card query began, leaving the member route idle
+    // during a cold database connection.
+    const [hasPremium, featured, latest] = await Promise.all([
+      canAccessPremium(user),
       getArtworkCards({ sort: "featured", limit: 8, premium: true }),
-      getArtworkCards({ sort: "latest", limit: 36, premium: true }),
+      getArtworkCards({ sort: "latest", limit: 18, premium: true }),
     ]);
-    return <PremiumMemberFeed featured={featured} latest={latest} />;
+    if (hasPremium) return <PremiumMemberFeed featured={featured} latest={latest} />;
   }
   const existingSubscription = user ? await getUserSubscription(user.id) : null;
   // Do not replace checkout for an expired or cancelled past membership.

@@ -71,6 +71,9 @@ CREATE TABLE IF NOT EXISTS artworks (
 CREATE INDEX IF NOT EXISTS idx_art_char ON artworks(character_slug);
 CREATE INDEX IF NOT EXISTS idx_art_anime ON artworks(anime_slug);
 CREATE INDEX IF NOT EXISTS idx_art_pub ON artworks(published);
+CREATE INDEX IF NOT EXISTS idx_art_premium_feed ON artworks(created_at DESC, id DESC) WHERE published=1 AND COALESCE(premium, 0)=1 AND COALESCE(category, '') <> 'Wallpapers';
+CREATE INDEX IF NOT EXISTS idx_art_orig ON artworks(orig);
+CREATE INDEX IF NOT EXISTS idx_art_thumb ON artworks(thumb);
 CREATE INDEX IF NOT EXISTS idx_art_content_hash ON artworks(content_hash);
 CREATE INDEX IF NOT EXISTS idx_art_perceptual_hash ON artworks(perceptual_hash);
 CREATE TABLE IF NOT EXISTS collections (
