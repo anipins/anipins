@@ -82,6 +82,8 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
 .intro-logo-depth { filter: drop-shadow(0 24px 22px rgba(0,0,0,.55)) drop-shadow(0 0 28px rgba(198,161,91,.32)); will-change: transform, opacity; }
 .intro-light-sweep { pointer-events: none; mix-blend-mode: screen; }
 @keyframes intro-star-drift { from { opacity: 0; transform: scale(.75) rotate(-10deg); } to { opacity: .55; transform: scale(1) rotate(8deg); } }
+.intro-cinematic-vignette { pointer-events: none; background: radial-gradient(ellipse at 50% 43%, transparent 0 28%, rgba(3,4,5,.1) 48%, rgba(3,4,5,.94) 100%), linear-gradient(120deg, rgba(35,22,5,.3), transparent 34%, rgba(20,35,74,.18) 67%, rgba(0,0,0,.6)); }
+.intro-scene-fallback { position: absolute; width: 7.5rem; height: 7.5rem; object-fit: contain; filter: drop-shadow(0 0 28px rgba(198,161,91,.32)); transition: opacity .15s linear; }
 
 .cinematic-home { position: relative; isolation: isolate; }
 .cinematic-feature-stage { position: relative; isolation: isolate; }

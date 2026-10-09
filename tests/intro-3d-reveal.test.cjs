@@ -5,9 +5,9 @@ const test = require("node:test");
 
 const source = fs.readFileSync(path.join(__dirname, "..", "src", "components", "Intro.tsx"), "utf8");
 
-test("the AniPins opening uses a lightweight 3D-perspective reveal instead of a flat logo fade", () => {
-  assert.match(source, /intro-3d-scene/);
-  assert.match(source, /perspective: "1000px"/);
-  assert.match(source, /intro-logo-depth/);
-  assert.match(source, /intro-light-sweep/);
+test("the AniPins opening delegates its enhanced reveal to the dedicated 3D scene", () => {
+  assert.match(source, /CinematicIntroScene/);
+  assert.match(source, /enhanced && <CinematicIntroScene/);
+  assert.match(source, /prefers-reduced-motion/);
+  assert.match(source, /anipins_intro/);
 });
