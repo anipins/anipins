@@ -20,8 +20,9 @@ export default function Intro() {
     }
     sessionStorage.setItem("anipins_intro", "1");
     setEnhanced(true);
-    // The route is already loading behind this short brand sequence.
-    const timeout = window.setTimeout(() => setShow(false), 3400);
+    // The route continues loading behind the reveal. Five seconds gives the
+    // construction-lines → rotating mark → archive handoff enough room to read.
+    const timeout = window.setTimeout(() => setShow(false), 5000);
     return () => window.clearTimeout(timeout);
   }, []);
 
