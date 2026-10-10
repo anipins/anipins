@@ -5,9 +5,11 @@ const test = require("node:test");
 
 const source = fs.readFileSync(path.join(__dirname, "..", "src", "components", "Intro.tsx"), "utf8");
 
-test("the AniPins opening delegates its enhanced reveal to the dedicated 3D scene", () => {
-  assert.match(source, /CinematicIntroScene/);
-  assert.match(source, /enhanced && <CinematicIntroScene/);
+test("the AniPins opening restores the original assembled-logo animation", () => {
+  assert.match(source, /const logoFragments/);
+  assert.match(source, /ap-symbol-intro\.png/);
+  assert.match(source, /logoFragments\.map/);
+  assert.doesNotMatch(source, /CinematicIntroScene/);
   assert.match(source, /prefers-reduced-motion/);
   assert.match(source, /anipins_intro/);
 });

@@ -1,39 +1,99 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useCallback, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-const CinematicIntroScene = dynamic(() => import("./CinematicIntroScene"), { ssr: false });
+const logoFragments = [
+  { clipPath: "polygon(0 0, 53% 0, 46% 100%, 0 100%)", x: -92, y: 46, rotate: -20, delay: 0.14 },
+  { clipPath: "polygon(47% 0, 100% 0, 100% 61%, 55% 68%)", x: 82, y: -62, rotate: 18, delay: 0.3 },
+  { clipPath: "polygon(40% 44%, 100% 34%, 100% 100%, 32% 100%)", x: 58, y: 78, rotate: 14, delay: 0.46 },
+];
+
+const brandLetters = ["A", "n", "i", "P", "i", "n", "s"];
 
 export default function Intro() {
   const [show, setShow] = useState(true);
-  const [enhanced, setEnhanced] = useState(false);
-  const [sceneReady, setSceneReady] = useState(false);
-  const markSceneReady = useCallback(() => setSceneReady(true), []);
 
   useLayoutEffect(() => {
-    // Cover the first WebView paint so the gallery never flashes before branding.
-    if (sessionStorage.getItem("anipins_intro")) { setShow(false); return; }
+    // Show branding before the feed, once per browser or app session.
+    if (sessionStorage.getItem("anipins_intro")) {
+      setShow(false);
+      return;
+    }
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      sessionStorage.setItem("anipins_intro", "1"); setShow(false); return;
+      sessionStorage.setItem("anipins_intro", "1");
+      setShow(false);
+      return;
     }
     sessionStorage.setItem("anipins_intro", "1");
-    setEnhanced(true);
-    const timeout = window.setTimeout(() => setShow(false), 2700);
+    const timeout = window.setTimeout(() => setShow(false), 1750);
     return () => window.clearTimeout(timeout);
   }, []);
 
   return <AnimatePresence>
-    {show && <motion.div className="intro-reference-stage fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-black"
-      exit={{ opacity: 0, transition: { duration: .34, ease: [0.22, 1, .36, 1] } }}>
-      <div className="relative h-full w-full">
-        {enhanced && <CinematicIntroScene onReady={markSceneReady} />}
-        <div className={`intro-scene-fallback-wrap ${sceneReady ? "opacity-0" : "opacity-100"}`}>
-          <motion.img src="/brand/ap-symbol-transparent.png" alt="" aria-hidden="true" className="intro-scene-fallback"
-            initial={{ opacity: 0, scale: .72 }} animate={{ opacity: 1, scale: [.72, 1, .94] }} transition={{ duration: .8, ease: [0.16, 1, .3, 1] }} />
+    {show && <motion.div
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-ink"
+      exit={{ opacity: 0, transition: { duration: .5, ease: "easeInOut" } }}
+    >
+      <div className="relative flex items-center justify-center">
+        <motion.div
+          className="absolute h-64 w-64 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(198,161,91,0.28) 0%, rgba(198,161,91,0.08) 45%, transparent 70%)" }}
+          initial={{ opacity: 0, scale: .6 }}
+          animate={{ opacity: 1, scale: 1.15 }}
+          transition={{ delay: .12, duration: .82, ease: "easeOut" }}
+        />
+        <svg viewBox="0 0 160 160" className="absolute h-52 w-52 -rotate-90" aria-hidden="true">
+          <motion.circle
+            cx="80" cy="80" r="76" fill="none" stroke="#C6A15B" strokeWidth="1" opacity=".55"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+            transition={{ delay: .34, duration: .62, ease: "easeInOut" }}
+          />
+        </svg>
+        <div className="relative h-32 w-32 sm:h-36 sm:w-36" aria-label="AniPins">
+          {logoFragments.map((fragment) => <motion.img
+            key={fragment.clipPath}
+            src="/brand/ap-symbol-intro.png"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-32 w-32 select-none object-contain sm:h-36 sm:w-36"
+            style={{ clipPath: fragment.clipPath }}
+            initial={{ opacity: 0, x: fragment.x, y: fragment.y, rotate: fragment.rotate, scale: .82, filter: "blur(6px)" }}
+            animate={{ opacity: [0, 1, 1, 0], x: 0, y: 0, rotate: 0, scale: 1, filter: "blur(0px)" }}
+            transition={{ delay: fragment.delay / 2, duration: .78, times: [0, .24, .7, 1], ease: [0.22, 1, .36, 1] }}
+            draggable={false}
+          />)}
+          <motion.img
+            src="/brand/ap-symbol-intro.png"
+            alt="AniPins"
+            className="absolute inset-0 h-32 w-32 select-none object-contain sm:h-36 sm:w-36"
+            initial={{ opacity: 0, scale: .94, filter: "blur(5px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            transition={{ delay: .66, duration: .38, ease: [0.22, 1, .36, 1] }}
+            draggable={false}
+          />
         </div>
       </div>
+      <p className="mt-6 flex font-display text-2xl font-semibold tracking-tight sm:text-3xl" aria-label="AniPins">
+        {brandLetters.map((letter, index) => <motion.span
+          key={`${letter}-${index}`}
+          aria-hidden="true"
+          className={index > 2 ? "text-gold" : undefined}
+          initial={{ opacity: 0, x: (index - 3) * 20, y: index % 2 ? -20 : 20, rotate: (index - 3) * 7 }}
+          animate={{ opacity: 1, x: 0, y: 0, rotate: 0 }}
+          transition={{ delay: .72 + index * .045, duration: .38, ease: [0.22, 1, .36, 1] }}
+        >{letter}</motion.span>)}
+      </p>
+      <motion.div
+        className="mt-4 h-px w-32 origin-center bg-gold/50"
+        initial={{ scaleX: 0 }} animate={{ scaleX: 1 }}
+        transition={{ delay: 1.08, duration: .34, ease: "easeInOut" }}
+      />
+      <motion.p
+        className="mt-3 text-[10px] uppercase tracking-[.42em] text-fog"
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.22, duration: .3 }}
+      >Discover · Save · Create</motion.p>
     </motion.div>}
   </AnimatePresence>;
 }
