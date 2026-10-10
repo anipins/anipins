@@ -8,7 +8,8 @@
     "dev": "next dev -H 0.0.0.0 -p 3000",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "cf:deploy:staging": "wrangler deploy"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1147.0",
@@ -42,6 +43,7 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5.23",
     "tailwindcss": "^3.4.13",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "wrangler": "^4.149.0"
   }
 }

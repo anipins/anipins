@@ -1,0 +1,14 @@
+.env*
+.git/
+.next/
+.vercel/
+node_modules/
+artifacts/
+outputs/
+mobile/app/build/
+mobile/app/release/
+data/
+*.log
+*.apk
+*.aab
+tsconfig.tsbuildinfo
