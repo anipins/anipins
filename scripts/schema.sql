@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS hidden_artworks (
   user_id INTEGER NOT NULL,
   artwork_id INTEGER NOT NULL,
   reason TEXT DEFAULT 'not-interested',
-  created_at TIMESTAMPTZ DEFAULT now(),
+  created_at TEXT DEFAULT (datetime('now')),
   PRIMARY KEY (user_id, artwork_id)
 );
 CREATE INDEX IF NOT EXISTS idx_hidden_artworks_user ON hidden_artworks(user_id, artwork_id);
