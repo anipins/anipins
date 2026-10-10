@@ -2,8 +2,18 @@
 # the same Linux environment that will run it inside Cloudflare Containers.
 FROM node:22-bookworm-slim AS dependencies
 WORKDIR /app
+
+# better-sqlite3 and sharp contain native code. Build those modules in the
+# Debian build stage, then copy the working runtime modules into the final
+# minimal image instead of asking a compiler-less runtime to install them.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 RUN npm ci
+
+FROM dependencies AS production_dependencies
+RUN npm prune --omit=dev
 
 FROM dependencies AS build
 COPY . ./
@@ -16,7 +26,7 @@ ENV PORT=8080
 ENV HOSTNAME=0.0.0.0
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+COPY --from=production_dependencies /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/next.config.js ./next.config.js
