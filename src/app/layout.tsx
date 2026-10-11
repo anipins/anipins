@@ -13,6 +13,7 @@ import ClientTelemetry from "@/components/ClientTelemetry";
 import CookieConsent from "@/components/CookieConsent";
 import JsonLd from "@/components/JsonLd";
 import NativeExternalLinks from "@/components/NativeExternalLinks";
+import ReliabilityLayer from "@/components/ReliabilityLayer";
 import { absoluteUrl, getSiteUrl, SITE_NAME } from "@/lib/site";
 
 const lexend = Lexend({ subsets: ["latin"], variable: "--font-lexend", display: "swap" });
@@ -86,6 +87,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           ],
         }} />
         <Intro />
+        <ReliabilityLayer />
         <Navbar />
         <PullToRefresh />
         <main className="min-h-[70vh] pb-24 md:pb-0">{children}</main>

@@ -15,7 +15,7 @@ function SearchInner() {
       </h1>
       <p className="mt-1 text-sm text-fog">Search by character, anime, tags or category. Close spellings are suggested automatically.</p>
       <div className="mb-6 mt-4 flex gap-2 overflow-x-auto no-scrollbar"><a href={base} className={`chip ${!gender && !wallpapers ? "chip-on" : ""}`}>All</a>{["Male","Female","Non-binary"].map(g=><a key={g} href={`${base}&gender=${encodeURIComponent(g)}`} className={`chip ${gender===g && !wallpapers ? "chip-on" : ""}`}>{g}</a>)}<a href={`${base}&wallpapers=1`} className={`chip ${wallpapers ? "chip-on" : ""}`}>Wallpapers</a></div>
-      <MasonryFeed query={{ ...(q ? { q } : {}), ...(gender ? { gender } : {}), ...(wallpapers ? { wallpaper: "1" } : {}) }} />
+      <MasonryFeed query={{ ...(q ? { q } : {}), ...(gender ? { gender } : {}), ...(wallpapers ? { wallpaper: "1" } : {}) }} emptyMessage={q ? `No artwork matched “${q}”. Try another spelling, character, anime, or tag.` : "Start by searching for a character, anime, or tag."} emptyAction={q ? { href: "/explore", label: "Explore all artwork" } : undefined} />
     </section>
   );
 }

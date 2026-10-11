@@ -65,8 +65,11 @@ export default function Navbar() {
 
   useEffect(() => {
     fetch("/api/auth/me", { cache: "no-store", credentials: "include" })
-      .then(r => r.json())
-      .then(d => setUser(d.user))
+      .then(async r => ({ status: r.status, data: await r.json() }))
+      .then(({ status, data }) => {
+        if (status === 401 && data.sessionExpired) window.dispatchEvent(new CustomEvent("anipins:session-expired"));
+        setUser(data.user || null);
+      })
       .catch(() => {});
   }, [path]);
   useEffect(() => {
