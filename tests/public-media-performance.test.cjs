@@ -40,6 +40,7 @@ test("public art thumbnail is served from edge on repeat without touching contai
   assert.equal(cache.data.get(url).headers.get("Cache-Control"), "public, max-age=60");
   assert.equal(a.headers.get("Cache-Control"), "public, max-age=60");
   assert.equal(b.headers.get("Cache-Control"), "public, max-age=60");
+  assert.equal(a.headers.get("CDN-Cache-Control"), "public, max-age=60");
 });
 
 test("original artwork images can be cached only when upstream explicitly permits public caching", async () => {
@@ -49,6 +50,7 @@ test("original artwork images can be cached only when upstream explicitly permit
   assert.equal(r.status, 200);
   assert.equal(cache.data.size, 1);
   assert.equal(r.headers.get("Cache-Control"), "public, max-age=60");
+  assert.equal(r.headers.get("CDN-Cache-Control"), "public, max-age=60");
 });
 
 test("a signed-in visit cannot give a public artwork a year-long browser cache lifetime", async () => {

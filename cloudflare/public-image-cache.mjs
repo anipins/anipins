@@ -46,7 +46,9 @@ function withCacheStatus(response, value, browserCacheControl) {
   // public artwork media.
   if (browserCacheControl) {
     headers.set("Cache-Control", browserCacheControl);
-    headers.delete("CDN-Cache-Control");
+    // A dashboard cache rule may otherwise apply its longer default edge TTL
+    // after the Worker response leaves this Cache API layer.
+    headers.set("CDN-Cache-Control", browserCacheControl);
   }
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
