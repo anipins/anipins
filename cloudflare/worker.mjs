@@ -4,6 +4,10 @@ const PORT = 8080;
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
 const HEALTH_ATTEMPTS = 100;
 const HEALTH_INTERVAL_MS = 200;
+// Increment this only when a configuration rollout must restart the existing
+// durable container. Containers keep their startup environment for their
+// lifetime, so secret rotations otherwise wait for the next natural restart.
+const CONTAINER_BOOT_VERSION = "2026-10-11-r2-credentials";
 
 // Keep this allow-list in source control so every runtime dependency is
 // explicit. Values are configured as Worker secrets and are never committed.
@@ -61,6 +65,7 @@ export class AniPinsContainer extends DurableObject {
   }
 
   async fetch(request) {
+    await this.restartForConfigurationRollout();
     this.starting ??= this.startAndWaitForPort().finally(() => {
       this.starting = undefined;
     });
@@ -72,6 +77,19 @@ export class AniPinsContainer extends DurableObject {
     const forwarded = new Request(url, request);
     forwarded.headers.delete("host");
     return this.ctx.container.getTcpPort(PORT).fetch(forwarded);
+  }
+
+  async restartForConfigurationRollout() {
+    const storedVersion = await this.ctx.storage.get("containerBootVersion");
+    if (storedVersion === CONTAINER_BOOT_VERSION) return;
+
+    // This is intentionally limited to a versioned configuration rollout.
+    // The container has no persistent AniPins data, while the durable object
+    // state records that this one restart has completed.
+    if (this.ctx.container.running) {
+      await this.ctx.container.destroy("Configuration rollout");
+    }
+    await this.ctx.storage.put("containerBootVersion", CONTAINER_BOOT_VERSION);
   }
 
   async startAndWaitForPort() {
