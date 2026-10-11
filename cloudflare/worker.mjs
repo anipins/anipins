@@ -126,6 +126,9 @@ export class AniPinsContainer extends DurableObject {
 
 export default {
   fetch(request, env) {
-    return env.ANIPINS_CONTAINER.getByName("anipins-web").fetch(request);
+    // Containers have no persistent application data. A new named instance
+    // guarantees this deployment starts from the newly uploaded image rather
+    // than continuing to serve an older in-memory Next.js build.
+    return env.ANIPINS_CONTAINER.getByName("anipins-web-v2").fetch(request);
   },
 };

@@ -25,7 +25,7 @@ test("Cloudflare migration is staging-only and has a container readiness path", 
   assert.match(worker, /const PORT = 8080/);
   assert.match(worker, /getTcpPort\(PORT\)/);
   assert.match(worker, /http:\/\/container\/health/);
-  assert.match(worker, /getByName\("anipins-web"\)/);
+  assert.match(worker, /getByName\("anipins-web-v2"\)/);
 
   assert.match(dockerfile, /"\.\/node_modules\/\.bin\/next", "start", "-H", "0\.0\.0\.0", "-p", "8080"/);
   assert.match(dockerfile, /EXPOSE 8080/);
