@@ -24,6 +24,14 @@ const getHomeFeatured = unstable_cache(
   { revalidate: 10 },
 );
 
+// Keep the discovery set fresh but avoid a costly ORDER BY RANDOM() database
+// query for every page open. Cards are shuffled in the client on each visit.
+const getHomeDiscovery = unstable_cache(
+  () => getArtworkCards({ sort: "random", limit: 36 }),
+  ["public-home-discovery-v1"],
+  { revalidate: 5 },
+);
+
 async function BrowseLinks() {
   const [anime, characters] = await Promise.all([getAnime(), getCharacters()]);
   return (
@@ -49,11 +57,11 @@ async function BrowseLinks() {
 }
 
 export default async function Home() {
-  // Home is discovery, not a static newest-upload shelf. The artwork set is
-  // intentionally uncached so every document refresh can rotate the library.
+  // A five-second public cache prevents concurrent visitors from each running
+  // the costly random query; the rendered cards still rotate client-side.
   const [featured, discovery] = await Promise.all([
     getHomeFeatured(),
-    getArtworkCards({ sort: "random", limit: 36 }),
+    getHomeDiscovery(),
   ]);
   return (
     <div className="pt-28 md:pt-32">
