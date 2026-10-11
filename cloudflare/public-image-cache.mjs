@@ -5,6 +5,7 @@
  */
 const ARTWORK_TTL_SECONDS = 60;
 const STATIC_TTL_SECONDS = 86400;
+const ARTWORK_CACHE_UNTIL_HEADER = "x-anipins-artwork-cache-until";
 
 function cacheKind(request) {
   if (request.method !== "GET") return null;
@@ -38,6 +39,7 @@ function canStore(response, kind) {
 function withCacheStatus(response, value, browserCacheControl) {
   const headers = new Headers(response.headers);
   headers.set("X-AniPins-Edge-Cache", value);
+  headers.delete(ARTWORK_CACHE_UNTIL_HEADER);
   // The application correctly marks published artwork as immutable because its
   // object key is content-addressed. The Worker, however, is also the access
   // boundary for a later unpublish or move to Premium. Do not let a browser
@@ -46,8 +48,6 @@ function withCacheStatus(response, value, browserCacheControl) {
   // public artwork media.
   if (browserCacheControl) {
     headers.set("Cache-Control", browserCacheControl);
-    // A dashboard cache rule may otherwise apply its longer default edge TTL
-    // after the Worker response leaves this Cache API layer.
     headers.set("CDN-Cache-Control", browserCacheControl);
   }
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
@@ -64,7 +64,16 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
   const key = new Request(request.url, { method: "GET" });
   try {
     const cached = await cache.match(key);
-    if (cached) return withCacheStatus(cached, "HIT");
+    if (cached) {
+      // Cache API stores artwork entries independently of the HTTP cache TTL.
+      // Keep an explicit expiry marker so a public image never remains usable
+      // after an administrator changes its visibility.
+      const until = Number(cached.headers.get(ARTWORK_CACHE_UNTIL_HEADER));
+      if (kind !== "artwork" || (Number.isFinite(until) && until > Date.now())) {
+        return withCacheStatus(cached, "HIT", kind === "artwork" ? "private, no-store" : undefined);
+      }
+      await cache.delete(key);
+    }
   } catch {}
 
   const response = await upstream();
@@ -74,7 +83,10 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
   // authorization boundary. Private/Premium responses retain their upstream
   // `private, no-store` policy untouched.
   const browserCacheControl = kind === "artwork" && publicResponse
-    ? `public, max-age=${ARTWORK_TTL_SECONDS}`
+    // Keep the cache private to the Worker. Cloudflare's Cache API is fast,
+    // whereas a second shared CDN/browser cache would hide a later change to
+    // Premium or unpublished state.
+    ? "private, no-store"
     : undefined;
   if ((kind === "artwork" && authenticated) || !publicResponse) {
     return withCacheStatus(response, "BYPASS", browserCacheControl);
@@ -83,6 +95,7 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
   try {
     const headers = new Headers(response.headers);
     headers.set("Cache-Control", `public, max-age=${kind === "static" ? STATIC_TTL_SECONDS : ARTWORK_TTL_SECONDS}`);
+    if (kind === "artwork") headers.set(ARTWORK_CACHE_UNTIL_HEADER, String(Date.now() + ARTWORK_TTL_SECONDS * 1000));
     headers.delete("CDN-Cache-Control");
     headers.delete("Set-Cookie");
     const entry = new Response(response.clone().body, { status: 200, headers });

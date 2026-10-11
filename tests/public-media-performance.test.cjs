@@ -11,6 +11,7 @@ function fakeCache() {
     data,
     async match(request) { return data.get(request.url)?.clone(); },
     async put(request, response) { data.set(request.url, response.clone()); },
+    async delete(request) { return data.delete(request.url); },
   };
 }
 async function run(request, origin, cache) {
@@ -38,9 +39,9 @@ test("public art thumbnail is served from edge on repeat without touching contai
   assert.equal(originCount, 1);
   assert.equal(cache.data.size, 1);
   assert.equal(cache.data.get(url).headers.get("Cache-Control"), "public, max-age=60");
-  assert.equal(a.headers.get("Cache-Control"), "public, max-age=60");
-  assert.equal(b.headers.get("Cache-Control"), "public, max-age=60");
-  assert.equal(a.headers.get("CDN-Cache-Control"), "public, max-age=60");
+  assert.equal(a.headers.get("Cache-Control"), "private, no-store");
+  assert.equal(b.headers.get("Cache-Control"), "private, no-store");
+  assert.equal(a.headers.get("CDN-Cache-Control"), "private, no-store");
 });
 
 test("original artwork images can be cached only when upstream explicitly permits public caching", async () => {
@@ -49,17 +50,31 @@ test("original artwork images can be cached only when upstream explicitly permit
   const r = await run(new Request(original), publicImage, cache);
   assert.equal(r.status, 200);
   assert.equal(cache.data.size, 1);
-  assert.equal(r.headers.get("Cache-Control"), "public, max-age=60");
-  assert.equal(r.headers.get("CDN-Cache-Control"), "public, max-age=60");
+  assert.equal(r.headers.get("Cache-Control"), "private, no-store");
+  assert.equal(r.headers.get("CDN-Cache-Control"), "private, no-store");
 });
 
-test("a signed-in visit cannot give a public artwork a year-long browser cache lifetime", async () => {
+test("a signed-in visit cannot give a public artwork a retained browser cache lifetime", async () => {
   const cache = fakeCache();
   const request = new Request(url, { headers: { Cookie: "anipins_session=member" } });
   const r = await run(request, publicImage, cache);
   assert.equal(r.headers.get("X-AniPins-Edge-Cache"), "BYPASS");
-  assert.equal(r.headers.get("Cache-Control"), "public, max-age=60");
+  assert.equal(r.headers.get("Cache-Control"), "private, no-store");
   assert.equal(cache.data.size, 0);
+});
+
+test("an expired artwork Cache API entry is deleted and refreshed before it can be served", async () => {
+  const cache = fakeCache();
+  cache.data.set(url, new Response("stale", { headers: {
+    "Content-Type": "image/webp",
+    "Cache-Control": "public, max-age=60",
+    "x-anipins-artwork-cache-until": "1",
+  } }));
+  let calls = 0;
+  const r = await run(new Request(url), () => { calls += 1; return publicImage(); }, cache);
+  assert.equal(calls, 1);
+  assert.equal(r.headers.get("X-AniPins-Edge-Cache"), "MISS");
+  assert.equal(await r.text(), "image-payload");
 });
 
 test("private, premium, unpublished and session-bearing requests never enter shared cache", async () => {
