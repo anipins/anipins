@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { forwardToContainer } from "./forwarding.mjs";
+import { servePublicImage } from "./public-image-cache.mjs";
 
 const PORT = 8080;
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
@@ -8,7 +9,7 @@ const HEALTH_INTERVAL_MS = 200;
 // Increment this only when a configuration rollout must restart the existing
 // durable container. Containers keep their startup environment for their
 // lifetime, so secret rotations otherwise wait for the next natural restart.
-const CONTAINER_BOOT_VERSION = "2026-10-12-public-origin-forwarding";
+const CONTAINER_BOOT_VERSION = "2026-10-12-edge-image-home-speed";
 
 // Keep this allow-list in source control so every runtime dependency is
 // explicit. Values are configured as Worker secrets and are never committed.
@@ -122,10 +123,13 @@ export class AniPinsContainer extends DurableObject {
 }
 
 export default {
-  fetch(request, env) {
-    // Containers have no persistent application data. A new named instance
-    // guarantees this deployment starts from the newly uploaded image rather
-    // than continuing to serve an older in-memory Next.js build.
-    return env.ANIPINS_CONTAINER.getByName("anipins-web-v2").fetch(request);
+  fetch(request, env, ctx) {
+    const target = env.ANIPINS_CONTAINER.getByName("anipins-web-v2");
+    return servePublicImage(
+      request,
+      () => target.fetch(request),
+      caches.default,
+      promise => ctx.waitUntil(promise),
+    );
   },
 };
