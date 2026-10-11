@@ -36,7 +36,7 @@ test("save API enforces collection ownership before writing into a user collecti
   assert.match(source, /SELECT id FROM collections WHERE id=\? AND user_id=\?/);
   assert.match(source, /SELECT id, COALESCE\(premium, 0\) AS premium FROM artworks WHERE id=\? AND published=1/);
   assert.match(source, /canAccessPremium\(u\)/);
-  assert.match(source, /positiveId\(artworkId\)/);
+  assert.match(source, /positiveId\(payload\?\.artworkId\)/);
   assert.match(source, /positiveId\(collectionId\)/);
 });
 
