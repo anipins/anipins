@@ -7,13 +7,16 @@ import { r2Get } from "@/lib/r2";
 import { getUser } from "@/lib/auth";
 import { recordActivity } from "@/lib/activity";
 import { canAccessPremium } from "@/lib/billing";
+import { positiveId } from "@/lib/input-validation";
+import { mayDownloadArtwork } from "@/lib/artwork-access";
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const id = parseInt(params.id);
+  const id = positiveId(params.id);
+  if (!id) return new NextResponse("Not found", { status: 404 });
   const user = await getUser();
   const art = await row("SELECT * FROM artworks WHERE id=?", id);
-  if (!art) return new NextResponse("Not found", { status: 404 });
+  if (!mayDownloadArtwork(art, user)) return new NextResponse("Not found", { status: 404 });
   if (Number(art.premium || 0) === 1 && (!user || !(await canAccessPremium(user)))) return new NextResponse("Premium membership required", { status: 403 });
   await run("UPDATE artworks SET downloads = downloads + 1 WHERE id=?", id);
   // Public downloads are counted for artwork analytics. Personal history is
