@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { forwardToContainer } from "./forwarding.mjs";
 
 const PORT = 8080;
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
@@ -7,7 +8,7 @@ const HEALTH_INTERVAL_MS = 200;
 // Increment this only when a configuration rollout must restart the existing
 // durable container. Containers keep their startup environment for their
 // lifetime, so secret rotations otherwise wait for the next natural restart.
-const CONTAINER_BOOT_VERSION = "2026-10-12-verified-main-14134b8";
+const CONTAINER_BOOT_VERSION = "2026-10-12-public-origin-forwarding";
 
 // Keep this allow-list in source control so every runtime dependency is
 // explicit. Values are configured as Worker secrets and are never committed.
@@ -71,11 +72,7 @@ export class AniPinsContainer extends DurableObject {
     });
     await this.starting;
 
-    const url = new URL(request.url);
-    url.protocol = "http:";
-    url.host = "container";
-    const forwarded = new Request(url, request);
-    forwarded.headers.delete("host");
+    const forwarded = forwardToContainer(request);
     return this.ctx.container.getTcpPort(PORT).fetch(forwarded);
   }
 
