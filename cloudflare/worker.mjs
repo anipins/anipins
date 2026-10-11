@@ -7,7 +7,7 @@ const HEALTH_INTERVAL_MS = 200;
 // Increment this only when a configuration rollout must restart the existing
 // durable container. Containers keep their startup environment for their
 // lifetime, so secret rotations otherwise wait for the next natural restart.
-const CONTAINER_BOOT_VERSION = "2026-10-11-reliability-states";
+const CONTAINER_BOOT_VERSION = "2026-10-12-verified-main-14134b8";
 
 // Keep this allow-list in source control so every runtime dependency is
 // explicit. Values are configured as Worker secrets and are never committed.
