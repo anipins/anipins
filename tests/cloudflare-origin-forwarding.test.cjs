@@ -1,0 +1,42 @@
+const test = require("node:test");
+const assert = require("node:assert/strict");
+
+const getForwarder = async () => (await import("../cloudflare/forwarding.mjs")).forwardToContainer;
+
+test("forwards the public hostname so legitimate same-origin POST requests pass origin checks", async () => {
+  const forwardToContainer = await getForwarder();
+  const incoming = new Request("https://anipins.com/api/saves", {
+    method: "POST",
+    headers: { "origin": "https://anipins.com", "content-type": "application/json" },
+    body: '{"artworkId":11}',
+  });
+  const forwarded = forwardToContainer(incoming);
+  assert.equal(new URL(forwarded.url).host, "container");
+  assert.equal(new URL(forwarded.url).protocol, "http:");
+  assert.equal(forwarded.method, "POST");
+  assert.equal(forwarded.headers.get("origin"), "https://anipins.com");
+  assert.equal(forwarded.headers.get("x-forwarded-host"), "anipins.com");
+  assert.equal(forwarded.headers.get("x-forwarded-proto"), "https");
+  assert.equal(await forwarded.text(), '{"artworkId":11}');
+});
+
+test("replaces any caller-supplied forwarded hostname instead of trusting it", async () => {
+  const forwardToContainer = await getForwarder();
+  const incoming = new Request("https://www.anipins.com/api/likes", {
+    method: "POST",
+    headers: { "origin": "https://www.anipins.com", "x-forwarded-host": "attacker.example" },
+  });
+  const forwarded = forwardToContainer(incoming);
+  assert.equal(forwarded.headers.get("x-forwarded-host"), "www.anipins.com");
+});
+
+test("does not convert a cross-site Origin into a trusted Origin", async () => {
+  const forwardToContainer = await getForwarder();
+  const incoming = new Request("https://anipins.com/api/saves", {
+    method: "POST",
+    headers: { "origin": "https://attacker.example" },
+  });
+  const forwarded = forwardToContainer(incoming);
+  assert.equal(forwarded.headers.get("origin"), "https://attacker.example");
+  assert.equal(forwarded.headers.get("x-forwarded-host"), "anipins.com");
+});
