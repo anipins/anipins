@@ -19,6 +19,13 @@ test("an artwork card needs deliberate movement-free touch before opening", () =
   assert.match(card, /setTimeout\(\(\) => \{ suppressOpen\.current = false; \}, 400\)/);
 });
 
+test("desktop pointer intent warms one full-size artwork without preloading the whole feed", () => {
+  const card = source("src/components/ArtCard.tsx");
+  assert.match(card, /onPointerEnter=\{event => \{ if \(event\.pointerType === "mouse"\) warmOriginal/);
+  assert.match(card, /const warmingOriginals = new Set<string>\(\)/);
+  assert.match(card, /original\.addEventListener\("error", \(\) => warmingOriginals\.delete\(url\)/);
+});
+
 test("pull to refresh can only start from the top edge", () => {
   const refresh = source("src/components/PullToRefresh.tsx");
   assert.match(refresh, /event\.touches\[0\]\.clientY <= START_ZONE/);

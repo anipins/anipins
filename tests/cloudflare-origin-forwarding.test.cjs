@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const getForwarder = async () => (await import("../cloudflare/forwarding.mjs")).forwardToContainer;
+const getHostCheck = async () => (await import("../cloudflare/forwarding.mjs")).isAllowedPublicHost;
 
 test("forwards the public hostname so legitimate same-origin POST requests pass origin checks", async () => {
   const forwardToContainer = await getForwarder();
@@ -39,4 +40,11 @@ test("does not convert a cross-site Origin into a trusted Origin", async () => {
   const forwarded = forwardToContainer(incoming);
   assert.equal(forwarded.headers.get("origin"), "https://attacker.example");
   assert.equal(forwarded.headers.get("x-forwarded-host"), "anipins.com");
+});
+
+test("accepts only the configured public domains as forwarded hosts", async () => {
+  const isAllowedPublicHost = await getHostCheck();
+  assert.equal(isAllowedPublicHost(new Request("https://anipins.com/api/saves")), true);
+  assert.equal(isAllowedPublicHost(new Request("https://www.anipins.com/api/saves")), true);
+  assert.equal(isAllowedPublicHost(new Request("https://anipins-staging.example.workers.dev/api/saves")), false);
 });

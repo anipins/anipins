@@ -12,13 +12,28 @@ import ReportArtwork from "./ReportArtwork";
 import DownloadButton from "./DownloadButton";
 import { getArtworkImageFit } from "@/lib/artwork-layout";
 
+const warmingOriginals = new Set<string>();
+
+function warmOriginal(url?: string) {
+  if (!url || typeof window === "undefined" || warmingOriginals.has(url)) return;
+  // Desktop pointer intent is a high-signal moment to begin the larger image.
+  // We intentionally do not preload every card: that would consume mobile
+  // data and slow the feed far more than it helps a single open action.
+  warmingOriginals.add(url);
+  const original = new window.Image();
+  original.decoding = "async";
+  // A temporary connection failure must not permanently suppress a later
+  // deliberate click in this tab.
+  original.addEventListener("error", () => warmingOriginals.delete(url), { once: true });
+  original.src = url;
+}
+
 export function openArtwork(id: number, art?: any) {
   if (typeof window !== "undefined") {
     // Start the original image immediately, alongside the detail request.
     // This keeps feed thumbnails fast while avoiding a second wait after tap.
     if (art?.orig) {
-      const original = new window.Image();
-      original.src = `/api/img/${art.orig}`;
+      warmOriginal(art.orig_url || `/api/img/${art.orig}`);
     }
     window.dispatchEvent(new CustomEvent("anipins:open-art", { detail: { id, art } }));
   }
@@ -64,6 +79,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
               if (suppressOpen.current) window.setTimeout(() => { suppressOpen.current = false; }, 400);
             }}
             onTouchCancel={() => { touchStart.current = null; suppressOpen.current = true; window.setTimeout(() => { suppressOpen.current = false; }, 400); }}
+            onPointerEnter={event => { if (event.pointerType === "mouse") warmOriginal(art.orig_url || `/api/img/${art.orig}`); }}
             onClick={() => { if (!suppressOpen.current) openArtwork(art.id, art); }}
             className="block w-full touch-pan-y text-left cursor-zoom-in">
             <div style={{ aspectRatio: `1 / ${ratio}`, minHeight: landscape ? "clamp(180px, 44vw, 360px)" : undefined }} className={`relative w-full overflow-hidden bg-ink ${imageReady ? "" : "skeleton"}`}>

@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { forwardToContainer } from "./forwarding.mjs";
+import { forwardToContainer, isAllowedPublicHost } from "./forwarding.mjs";
 import { servePublicImage } from "./public-image-cache.mjs";
 
 const PORT = 8080;
@@ -124,6 +124,9 @@ export class AniPinsContainer extends DurableObject {
 
 export default {
   fetch(request, env, ctx) {
+    // Do not allow an arbitrary Worker/custom-domain hostname to become the
+    // forwarded host trusted by the application for same-origin checks.
+    if (!isAllowedPublicHost(request)) return new Response("Misdirected request", { status: 421 });
     const target = env.ANIPINS_CONTAINER.getByName("anipins-web-v2");
     return servePublicImage(
       request,

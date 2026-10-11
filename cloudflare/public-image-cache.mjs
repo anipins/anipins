@@ -35,9 +35,19 @@ function canStore(response, kind) {
     && !/(?:^|,)\s*(?:\*|cookie|authorization)\s*(?:,|$)/i.test(vary);
 }
 
-function withCacheStatus(response, value) {
+function withCacheStatus(response, value, browserCacheControl) {
   const headers = new Headers(response.headers);
   headers.set("X-AniPins-Edge-Cache", value);
+  // The application correctly marks published artwork as immutable because its
+  // object key is content-addressed. The Worker, however, is also the access
+  // boundary for a later unpublish or move to Premium. Do not let a browser
+  // hold a formerly-public image for a year while the edge entry expires after
+  // one minute. Static build assets remain immutable; this applies only to
+  // public artwork media.
+  if (browserCacheControl) {
+    headers.set("Cache-Control", browserCacheControl);
+    headers.delete("CDN-Cache-Control");
+  }
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
@@ -56,7 +66,17 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
   } catch {}
 
   const response = await upstream();
-  if ((kind === "artwork" && authenticated) || !canStore(response, kind)) return withCacheStatus(response, "BYPASS");
+  const publicResponse = canStore(response, kind);
+  // Even a signed-in visitor can view an already-public image, but a public
+  // artwork response must never get a longer browser lifetime than the edge
+  // authorization boundary. Private/Premium responses retain their upstream
+  // `private, no-store` policy untouched.
+  const browserCacheControl = kind === "artwork" && publicResponse
+    ? `public, max-age=${ARTWORK_TTL_SECONDS}`
+    : undefined;
+  if ((kind === "artwork" && authenticated) || !publicResponse) {
+    return withCacheStatus(response, "BYPASS", browserCacheControl);
+  }
 
   try {
     const headers = new Headers(response.headers);
@@ -66,5 +86,5 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
     const entry = new Response(response.clone().body, { status: 200, headers });
     waitUntil(Promise.resolve(cache.put(key, entry)).catch(() => {}));
   } catch {}
-  return withCacheStatus(response, "MISS");
+  return withCacheStatus(response, "MISS", browserCacheControl);
 }

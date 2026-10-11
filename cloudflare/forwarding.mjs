@@ -1,9 +1,16 @@
+const PUBLIC_HOSTS = new Set(["anipins.com", "www.anipins.com"]);
+
+export function isAllowedPublicHost(request) {
+  return PUBLIC_HOSTS.has(new URL(request.url).hostname);
+}
+
 /** Preserve the original public host across the Worker-to-Container hop.
  * Next.js middleware uses x-forwarded-host for same-origin POST protection.
  * Overwrite the inbound header: browsers must not control this trust signal.
  */
 export function forwardToContainer(request) {
   const publicUrl = new URL(request.url);
+  if (!PUBLIC_HOSTS.has(publicUrl.hostname)) throw new Error("Untrusted public host");
   const url = new URL(request.url);
   url.protocol = "http:";
   url.host = "container";
