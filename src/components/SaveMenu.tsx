@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "./Toaster";
 import { haptic, rememberArtwork } from "@/lib/native";
+import { requestArtworkSave } from "@/lib/save-request";
 
 export default function SaveMenu({ artworkId, onClose }: { artworkId: number; onClose: () => void }) {
   const [cols, setCols] = useState<any[]>([]);
@@ -13,24 +14,44 @@ export default function SaveMenu({ artworkId, onClose }: { artworkId: number; on
   const router = useRouter();
 
   useEffect(() => {
-    fetch("/api/collections").then(r => r.json()).then(d => { setCols(d.collections || []); setGuest(!!d.guest); });
+    let active = true;
+    fetch("/api/collections")
+      .then(r => { if (!r.ok) throw new Error("Collections unavailable"); return r.json(); })
+      .then(d => { if (active) { setCols(d.collections || []); setGuest(!!d.guest); } })
+      .catch(() => { if (active) toast("Could not load collections. Please retry.", "err"); });
+    return () => { active = false; };
   }, []);
 
   const save = async (collectionId?: number) => {
     setBusy(true);
-    const r = await fetch("/api/saves", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artworkId, collectionId }) });
-    setBusy(false);
-    if (r.status === 401) { router.push("/login"); return; }
-    haptic("success"); rememberArtwork(artworkId, "saved"); toast("Saved to collection");
-    onClose();
+    try {
+      const result = await requestArtworkSave(artworkId, collectionId);
+      if (result.status === "unauthorized") { router.push("/login"); return; }
+      if (result.status !== "saved") { toast("Could not save artwork. Please try again.", "err"); return; }
+      haptic("success"); rememberArtwork(artworkId, "saved"); toast("Saved to collection");
+      onClose();
+    } catch {
+      toast("Could not save artwork. Please try again.", "err");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const createAndSave = async () => {
     if (!newName.trim()) return;
     setBusy(true);
-    const r = await fetch("/api/collections", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newName }) });
-    const d = await r.json();
-    if (d.id) await save(d.id); else setBusy(false);
+    try {
+      const r = await fetch("/api/collections", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newName }) });
+      if (r.status === 401) { router.push("/login"); return; }
+      if (!r.ok) throw new Error("Collection creation failed");
+      const d = await r.json();
+      if (!Number.isSafeInteger(d.id) || d.id <= 0) throw new Error("Invalid collection response");
+      await save(d.id);
+    } catch {
+      toast("Could not create collection. Please try again.", "err");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
