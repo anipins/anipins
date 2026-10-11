@@ -4,4 +4,9 @@ function mayDownloadArtwork(art, user) {
   return Number(art.published || 0) === 1 || user?.role === "ADMIN";
 }
 
-module.exports = { mayDownloadArtwork };
+/** Admins can preview staged uploads; visitors can only read published artwork. */
+function mayReadArtworkMedia(art, user) {
+  return user?.role === "ADMIN" || Boolean(art && Number(art.published || 0) === 1);
+}
+
+module.exports = { mayDownloadArtwork, mayReadArtworkMedia };
