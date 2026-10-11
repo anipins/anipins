@@ -110,3 +110,50 @@ test("production Worker routes eligible requests through the cache before enteri
   assert.match(source, /caches\.default/);
   assert.match(source, /ctx\.waitUntil\(promise\)/);
 });
+
+test("immutable Next.js scripts and styles are cached at the edge for a full day", async () => {
+  const cache = fakeCache();
+  let calls = 0;
+  const js = "https://anipins.com/_next/static/chunks/app/gallery/page-abcdef1234.js";
+  const css = "https://anipins.com/_next/static/css/app-abcdef1234.css";
+  for (const [address, type] of [[js, "application/javascript"], [css, "text/css"]]) {
+    const upstream = () => { calls += 1; return new Response("asset", { status: 200, headers: { "Content-Type": type, "Cache-Control": "public, max-age=31536000, immutable" } }); };
+    const a = await run(new Request(address), upstream, cache);
+    const b = await run(new Request(address), upstream, cache);
+    assert.equal(a.headers.get("X-AniPins-Edge-Cache"), "MISS");
+    assert.equal(b.headers.get("X-AniPins-Edge-Cache"), "HIT");
+    assert.equal(cache.data.get(address).headers.get("Cache-Control"), "public, max-age=86400");
+  }
+  assert.equal(calls, 2);
+});
+
+test("logged-in WebView visitors may read previously verified public cache entries, but cannot populate image cache with private content", async () => {
+  const cache = fakeCache();
+  const authenticated = new Request(url, { headers: { Cookie: "anipins_session=private" } });
+  const noCache = await run(authenticated, () => publicImage(), cache);
+  assert.equal(noCache.headers.get("X-AniPins-Edge-Cache"), "BYPASS");
+  assert.equal(cache.data.size, 0);
+  await run(new Request(url), () => publicImage(), cache);
+  const warmed = await run(authenticated, () => privateImage(), cache);
+  assert.equal(warmed.headers.get("X-AniPins-Edge-Cache"), "HIT");
+  assert.equal(await warmed.text(), "image-payload");
+});
+
+test("a logged-in WebView can populate shared cache only for explicitly public immutable Next.js static files", async () => {
+  const cache = fakeCache();
+  const asset = "https://anipins.com/_next/static/chunks/hashed.js";
+  const request = new Request(asset, { headers: { Cookie: "anipins_session=private" } });
+  const response = await run(request, () => new Response("public-code", {
+    status: 200, headers: { "Content-Type": "application/javascript", "Cache-Control": "public, max-age=31536000, immutable" },
+  }), cache);
+  assert.equal(response.headers.get("X-AniPins-Edge-Cache"), "MISS");
+  assert.equal(cache.data.size, 1);
+});
+
+test("dynamic pages and executable HTML never enter shared static cache", async () => {
+  const cache = fakeCache();
+  const html = "https://anipins.com/_next/static/chunks/forged.js";
+  const response = await run(new Request(html), () => new Response("<html>private</html>", { headers: { "Content-Type": "text/html", "Cache-Control": "public, max-age=600" } }), cache);
+  assert.equal(response.headers.get("X-AniPins-Edge-Cache"), "BYPASS");
+  assert.equal(cache.data.size, 0);
+});
