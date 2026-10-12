@@ -178,23 +178,20 @@ export default function ArtLightbox() {
                   </>
                 )}
               </div>
-              {data?.related?.length > 0 && <aside className="hidden border-l border-paper/10 bg-ink/35 p-4 xl:block">
-                <div className="flex items-center justify-between px-1"><h3 className="font-display text-base font-semibold">More like this</h3><span className="text-[10px] uppercase tracking-[.16em] text-fog">Discover</span></div>
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  {data.related.slice(0, 8).map((item: any) => <button key={item.id} type="button" onClick={() => { setPreview(item); setId(item.id); }} className="group overflow-hidden rounded-xl border border-paper/10 bg-soft text-left transition-colors hover:border-gold/50">
-                    <img src={item.thumb_url || `/api/img/${item.thumb}`} alt={item.title || item.character_name} loading="lazy" className="aspect-[3/4] w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]" />
-                    <span className="block truncate px-2 py-1.5 text-xs text-fog group-hover:text-paper">{item.character_name}</span>
+              {data?.related?.length > 0 && <aside aria-label="Related artwork" className="hidden border-l border-paper/10 bg-panel p-4 xl:row-span-2 xl:block">
+                <div className="columns-2 gap-3">
+                  {data.related.slice(0, 12).map((item: any) => <button key={item.id} type="button" onClick={() => { setPreview(item); setId(item.id); }} className="group mb-3 block w-full break-inside-avoid overflow-hidden rounded-[14px] bg-soft text-left outline-none transition-shadow hover:ring-1 hover:ring-gold/60 focus-visible:ring-2 focus-visible:ring-gold/70">
+                    <img src={item.thumb_url || `/api/img/${item.thumb}`} alt={item.title || item.character_name} loading="lazy" style={{ aspectRatio: `${item.width || 3} / ${item.height || 4}` }} className="w-full object-cover transition-transform duration-300 group-hover:scale-[1.035]" />
                   </button>)}
                 </div>
               </aside>}
+              {data?.related?.length > 0 && (
+                <section className="border-t border-paper/10 p-5 md:col-span-2 md:p-8 xl:col-span-2 xl:border-t-0 xl:pr-6 xl:pt-6">
+                  <div className="xl:hidden"><h3 className="font-display text-xl font-semibold">More to explore</h3><p className="mt-1 text-xs text-fog">Fresh picks from every series—choose any image to continue.</p></div>
+                  <div className="mt-5 xl:mt-0"><MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize eagerLoad initialItems={data.related.slice(12)} initialHasMore /></div>
+                </section>
+              )}
             </div>
-            {data?.related?.length > 0 && (
-              <section className="border-t border-paper/10 p-5 md:p-8">
-                <h3 className="font-display text-xl font-semibold">More to explore</h3>
-                <p className="mt-1 text-xs text-fog">Fresh picks from every series—choose any image to continue.</p>
-                <div className="mt-5"><MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize eagerLoad initialItems={data.related} initialHasMore /></div>
-              </section>
-            )}
           </motion.div>
           <AnimatePresence>
             {save && art && <SaveMenu artworkId={art.id} onClose={() => setSave(false)} />}
