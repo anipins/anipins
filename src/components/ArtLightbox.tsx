@@ -188,7 +188,7 @@ export default function ArtLightbox() {
               {data?.related?.length > 0 && (
                 <section className="border-t border-paper/10 p-5 md:col-span-2 md:p-8 xl:col-span-2 xl:border-t-0 xl:pr-6 xl:pt-6">
                   <div className="xl:hidden"><h3 className="font-display text-xl font-semibold">More to explore</h3><p className="mt-1 text-xs text-fog">Fresh picks from every series—choose any image to continue.</p></div>
-                  <div className="mt-5 xl:mt-0"><MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize eagerLoad initialItems={data.related.slice(12)} initialHasMore /></div>
+                  <div className="mt-5 xl:mt-0"><MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize initialItems={data.related.slice(12)} initialHasMore imagePriority={false} /></div>
                 </section>
               )}
             </div>

@@ -8,12 +8,7 @@ import { artworkAlt } from "@/lib/site";
 import DownloadButton from "./DownloadButton";
 
 function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: boolean; sizes: string }) {
-  const [sharpReady, setSharpReady] = useState(false);
   const previewSrc = art.thumb_url || `/api/img/${art.thumb}`;
-  // Paint the cacheable preview immediately, then fade in a sharp source for
-  // public featured artwork. This replaces the old duplicate blurred image,
-  // which was expensive to decode while scrolling on phones.
-  const sharpSrc = !art.premium && (art.orig_url || (art.orig ? `/api/img/${art.orig}` : ""));
 
   return (
     <div className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_50%_20%,rgba(198,161,91,0.18),transparent_48%),#080808]">
@@ -24,19 +19,8 @@ function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: 
         sizes={sizes}
         priority={priority}
         loading={priority ? "eager" : "lazy"}
-        className={`object-contain transition-opacity duration-300 ${sharpReady ? "opacity-0" : "opacity-100"}`}
+        className="object-contain"
       />
-      {sharpSrc && <Image
-        src={sharpSrc}
-        alt=""
-        aria-hidden="true"
-        fill
-        sizes={sizes}
-        quality={82}
-        loading={priority ? "eager" : "lazy"}
-        onLoad={() => setSharpReady(true)}
-        className={`object-contain transition-opacity duration-300 ${sharpReady ? "opacity-100" : "opacity-0"}`}
-      />}
     </div>
   );
 }

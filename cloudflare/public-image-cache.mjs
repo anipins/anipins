@@ -6,6 +6,7 @@
 const ARTWORK_TTL_SECONDS = 60;
 const STATIC_TTL_SECONDS = 86400;
 const PUBLIC_FEED_TTL_SECONDS = 10;
+const PUBLIC_DOCUMENT_TTL_SECONDS = 10;
 const ARTWORK_CACHE_UNTIL_HEADER = "x-anipins-artwork-cache-until";
 
 function cacheKind(request) {
@@ -15,6 +16,10 @@ function cacheKind(request) {
   const signedPublicMedia = /^\/api\/img\/(?:t|o)\/[a-zA-Z0-9._-]+$/.test(url.pathname)
     && url.searchParams.size === 2 && url.searchParams.has("e") && url.searchParams.has("s");
   const publicFeed = url.pathname === "/api/artworks" && !["1", "true"].includes(url.searchParams.get("premium") || "") && !["following", "for-you"].includes(url.searchParams.get("sort") || "latest");
+  // Cache only the anonymous document shell. Next's RSC requests, route
+  // prefetches and every signed-in visit remain outside this cache so account
+  // UI and personalised data can never be shared.
+  const publicDocument = url.pathname === "/" && !url.search && !request.headers.has("rsc") && !request.headers.has("next-router-state-tree") && !request.headers.has("next-router-prefetch");
   if (url.search && !signedPublicMedia && !publicFeed) return null;
   if (["range", "if-range", "if-none-match", "if-modified-since"].some(key => request.headers.has(key))) return null;
   if (/no-cache|no-store/i.test(request.headers.get("cache-control") || "")) return null;
@@ -22,6 +27,7 @@ function cacheKind(request) {
   // The normal browse API is account-independent. Cache only its public
   // variants at the edge; member, Following and For You calls never qualify.
   if (publicFeed) return "feed";
+  if (publicDocument) return "document";
   if (/^\/api\/img\/(?:o|t)\/.+/.test(url.pathname)) return "artwork";
   return null;
 }
@@ -56,9 +62,11 @@ function canStore(response, kind) {
     ? /^(?:application\/(?:javascript|x-javascript)|text\/(?:javascript|css)|font\/(?:woff|woff2)|application\/(?:font-woff|font-woff2)|image\/(?:svg\+xml|jpeg|png|webp|gif|avif))(?:;|$)/i.test(type)
     : kind === "feed"
       ? /^application\/json(?:;|$)/i.test(type)
+      : kind === "document"
+        ? /^text\/html(?:;|$)/i.test(type)
     : /^image\/(?:jpeg|png|webp|gif|avif)(?:;|$)/i.test(type);
   return validType
-    && /(?:^|,)\s*public\b/i.test(control)
+    && (kind === "document" || /(?:^|,)\s*public\b/i.test(control))
     && !/(?:^|,)\s*(?:private|no-store|no-cache)\b/i.test(control)
     && (kind !== "static" || /\bimmutable\b/i.test(control))
     && !headers.has("set-cookie")
@@ -91,6 +99,7 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
   // Signed-in users can still read that already-verified public cache entry,
   // giving the Android WebView the same speed benefit without leaking premium.
   const authenticated = request.headers.has("cookie") || request.headers.has("authorization");
+  if (kind === "document" && authenticated) return withCacheStatus(await upstream(), "BYPASS");
   const key = new Request(request.url, { method: "GET" });
   try {
     const cached = await cache.match(key);
@@ -127,7 +136,7 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
 
   try {
     const headers = new Headers(response.headers);
-    const ttl = kind === "static" ? STATIC_TTL_SECONDS : kind === "feed" ? PUBLIC_FEED_TTL_SECONDS : ARTWORK_TTL_SECONDS;
+    const ttl = kind === "static" ? STATIC_TTL_SECONDS : kind === "feed" ? PUBLIC_FEED_TTL_SECONDS : kind === "document" ? PUBLIC_DOCUMENT_TTL_SECONDS : ARTWORK_TTL_SECONDS;
     headers.set("Cache-Control", `public, max-age=${ttl}`);
     if (kind === "artwork") headers.set(ARTWORK_CACHE_UNTIL_HEADER, String(Date.now() + ARTWORK_TTL_SECONDS * 1000));
     headers.delete("CDN-Cache-Control");

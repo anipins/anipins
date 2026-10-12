@@ -15,9 +15,9 @@ const CACHE_TTL = 15_000;
 // attempts made a transient network problem look like an endless feed loader.
 const REQUEST_TIMEOUT = 10_000;
 const MAX_REQUEST_ATTEMPTS = 3;
-type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean; pageSize?: number; emptyMessage?: string; emptyAction?: { href: string; label: string } };
+type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean; pageSize?: number; emptyMessage?: string; emptyAction?: { href: string; label: string }; imagePriority?: boolean };
 
-export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, eagerLoad = false, pageSize = 36, emptyMessage = "No artwork found.", emptyAction }: Props) {
+export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, eagerLoad = false, pageSize = 36, emptyMessage = "No artwork found.", emptyAction, imagePriority }: Props) {
   const [items, setItems] = useState<any[]>(initialItems);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
@@ -186,7 +186,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   return <div className="w-full max-w-none">
     {initial ? <div className="masonry">{Array.from({ length: 8 }).map((_, i) => <div key={i} className="skeleton rounded-2xl" style={{ height: 180 + ((i * 97) % 220) }} />)}</div>
       : !items.length ? <div className="py-24 text-center text-fog"><p>{emptyMessage}</p>{emptyAction ? <a href={emptyAction.href} className="btn-primary mt-5 inline-flex">{emptyAction.label}</a> : null}</div>
-      : <div className="masonry">{items.map((art, index) => <ArtCard key={art.id} art={art} index={index} />)}</div>}
+      : <div className="masonry">{items.map((art, index) => <ArtCard key={art.id} art={art} index={index} priority={imagePriority} />)}</div>}
     <div ref={sentinel} className="h-10" aria-hidden="true" />
     {loading && !initial && <div className="py-6 text-center text-sm text-fog">Loading more artwork…</div>}
     {loadError && !loading && <div className="py-5 text-center"><p className="mb-3 text-sm text-fog">More artwork could not load.</p><button type="button" className="chip" onClick={() => loadNext(true)}>Retry loading artwork</button></div>}

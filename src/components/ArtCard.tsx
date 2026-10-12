@@ -42,7 +42,8 @@ export function openArtwork(id: number, art?: any) {
 export default function ArtCard({ art, index = 0, priority }: { art: any; index?: number; priority?: boolean }) {
   const [save, setSave] = useState(false);
   const [share, setShare] = useState(false);
-  const [imageReady, setImageReady] = useState(false);
+  const [imageState, setImageState] = useState<"loading" | "ready" | "failed">("loading");
+  const [imageAttempt, setImageAttempt] = useState(0);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const suppressOpen = useRef(false);
   const ratio = art.width && art.height ? art.height / art.width : 1.3;
@@ -53,7 +54,9 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
   const imageFit = getArtworkImageFit(art);
   // Fill the first visible masonry viewport promptly. The remainder stay lazy
   // so a large library never competes with the artwork the visitor can see.
-  const criticalImage = priority ?? index < 10;
+  // Four thumbnails cover the first phone viewport without fighting the
+  // featured image or a just-opened artwork for the mobile connection.
+  const criticalImage = priority ?? index < 4;
   const hideArtwork = async () => {
     window.dispatchEvent(new CustomEvent("anipins:hide-art", { detail: { id: art.id } }));
     try { await fetch("/api/hides", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artworkId: art.id }) }); } catch {}
@@ -85,17 +88,20 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
             onPointerEnter={event => { if (event.pointerType === "mouse") warmOriginal(art.orig_url || `/api/img/${art.orig}`); }}
             onClick={() => { if (!suppressOpen.current) openArtwork(art.id, art); }}
             className="block w-full touch-pan-y text-left cursor-zoom-in">
-            <div style={{ aspectRatio: `1 / ${ratio}`, minHeight: landscape ? "clamp(180px, 44vw, 360px)" : undefined }} className={`relative w-full overflow-hidden bg-ink ${imageReady ? "" : "skeleton"}`}>
+            <div style={{ aspectRatio: `1 / ${ratio}`, minHeight: landscape ? "clamp(180px, 44vw, 360px)" : undefined }} className={`relative w-full overflow-hidden bg-ink ${imageState === "loading" ? "skeleton" : ""}`}>
               <Image
+                key={imageAttempt}
                 src={art.thumb_url || `/api/img/${art.thumb}`}
                 alt={artworkAlt(art)}
                 fill
                 sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1439px) 25vw, 20vw"
                 priority={criticalImage}
                 loading={criticalImage ? "eager" : "lazy"}
-                onLoad={() => setImageReady(true)}
-                className={`object-${imageFit} transition-opacity duration-200 ${imageFit === "cover" ? "group-hover:scale-[1.025]" : ""} ${imageReady ? "opacity-100" : "opacity-0"}`}
+                onLoad={() => setImageState("ready")}
+                onError={() => setImageState("failed")}
+                className={`object-${imageFit} transition-opacity duration-200 ${imageFit === "cover" ? "group-hover:scale-[1.025]" : ""} ${imageState === "ready" ? "opacity-100" : "opacity-0"}`}
               />
+              {imageState === "failed" && <span className="absolute inset-0 grid place-items-center bg-soft/90 p-3 text-center text-xs text-fog">Preview unavailable. Open to retry.</span>}
             </div>
           </button>
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
