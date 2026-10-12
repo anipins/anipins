@@ -25,8 +25,6 @@ export const metadata: Metadata = {
   description: "Anime artwork references for sketching, character study and creative inspiration. Discover, save, share and download high-quality anime character art.",
   applicationName: SITE_NAME,
   verification: process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : undefined,
-  // Pinterest supplies this public, domain-specific value during website claiming.
-  other: { "p:domain_verify": "1812c5729786e986e9853a47f64afced" },
   icons: {
     icon: [
       { url: "/favicon.png", type: "image/png", sizes: "512x512" },
@@ -58,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${lexend.variable} ${grotesk.variable}`} suppressHydrationWarning>
       <head>
+        <meta name="p:domain_verify" content="1812c5729786e986e9853a47f64afced" />
         <link rel="preconnect" href="https://synqmyiwjyvvrbrhcetw.supabase.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://synqmyiwjyvvrbrhcetw.supabase.co" />
         <script
