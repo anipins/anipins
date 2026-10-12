@@ -9,7 +9,7 @@ const HEALTH_INTERVAL_MS = 200;
 // Increment this only when a configuration rollout must restart the existing
 // durable container. Containers keep their startup environment for their
 // lifetime, so secret rotations otherwise wait for the next natural restart.
-const CONTAINER_BOOT_VERSION = "2026-10-12-continuous-detail-rail";
+const CONTAINER_BOOT_VERSION = "2026-10-12-upload-r2-read-proxy";
 const MAX_ARTWORK_UPLOAD_BYTES = 40 * 1024 * 1024;
 const UPLOAD_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -83,6 +83,28 @@ async function signedArtworkUpload(request, secret) {
     const cryptoKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
     const valid = await crypto.subtle.verify("HMAC", cryptoKey, base64UrlBytes(signature), new TextEncoder().encode(`upload:${key}:${premium ? "1" : "0"}:${expiresAt}`));
     return valid ? { key, premium, contentType } : { error: "invalid" };
+  } catch {
+    return { error: "invalid" };
+  }
+}
+
+// The application container needs the staged original once to generate its
+// thumbnail and fingerprint. Read it through the Worker-bound R2 bucket so
+// finalising an upload never depends on a second, separately configured S3
+// credential path inside the container.
+async function signedArtworkRead(request, secret) {
+  const url = new URL(request.url);
+  if (url.pathname !== "/api/storage-read") return null;
+  if (request.method !== "GET") return { error: "method" };
+  const key = url.searchParams.get("key") || "";
+  const premium = url.searchParams.get("p") === "1";
+  const expiresAt = Number(url.searchParams.get("e"));
+  const signature = url.searchParams.get("s") || "";
+  if (!/^o\/[a-f0-9]{32}\.(?:jpg|jpeg|png|webp)$/.test(key) || !secret || !Number.isSafeInteger(expiresAt) || expiresAt < Math.floor(Date.now() / 1000) || expiresAt > Math.floor(Date.now() / 1000) + 300 || !signature) return { error: "invalid" };
+  try {
+    const cryptoKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+    const valid = await crypto.subtle.verify("HMAC", cryptoKey, base64UrlBytes(signature), new TextEncoder().encode(`read:${key}:${premium ? "1" : "0"}:${expiresAt}`));
+    return valid ? { key, premium } : { error: "invalid" };
   } catch {
     return { error: "invalid" };
   }
@@ -167,6 +189,18 @@ export default {
       if (!bucket) return new Response("Artwork storage is temporarily unavailable", { status: 503 });
       await bucket.put(upload.key, request.body, { httpMetadata: { contentType: upload.contentType } });
       return new Response(null, { status: 201, headers: { "Cache-Control": "no-store" } });
+    }
+    const stagedRead = await signedArtworkRead(request, env.NEXTAUTH_SECRET);
+    if (stagedRead) {
+      if (stagedRead.error) return new Response(stagedRead.error === "method" ? "Method not allowed" : "Invalid or expired read capability", { status: stagedRead.error === "method" ? 405 : 403 });
+      const bucket = stagedRead.premium ? env.ARTWORKS_PREMIUM : env.ARTWORKS_PUBLIC;
+      if (!bucket) return new Response("Artwork storage is temporarily unavailable", { status: 503 });
+      const object = await bucket.get(stagedRead.key);
+      if (!object) return new Response("Staged artwork was not found", { status: 404 });
+      return new Response(object.body, { headers: {
+        "Content-Type": object.httpMetadata?.contentType || "application/octet-stream",
+        "Cache-Control": "no-store",
+      } });
     }
     const publicMediaKey = await signedPublicMediaKey(request, env.NEXTAUTH_SECRET);
     if (publicMediaKey) {

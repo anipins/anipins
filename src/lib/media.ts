@@ -77,6 +77,25 @@ async function putMedia(key: string, buf: Buffer, contentType: string, premium =
 
 async function getMedia(key: string, premium = false) {
   if (USE_R2_MEDIA) {
+    const secret = process.env.NEXTAUTH_SECRET;
+    const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL;
+    // Production uploads first go through the Worker-bound R2 bucket. Use a
+    // signed, short-lived same-origin read to retrieve that staged object for
+    // Sharp processing. This avoids a fragile second S3 credential hop from
+    // the container and works for both the public and Premium buckets.
+    if (secret && origin && !/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)/i.test(origin)) {
+      const expiresAt = Math.floor(Date.now() / 1000) + 300;
+      const scope = premium ? "1" : "0";
+      const signature = crypto.createHmac("sha256", secret).update(`read:${key}:${scope}:${expiresAt}`).digest("base64url");
+      const url = new URL("/api/storage-read", origin);
+      url.searchParams.set("key", key);
+      url.searchParams.set("p", scope);
+      url.searchParams.set("e", String(expiresAt));
+      url.searchParams.set("s", signature);
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error(`Staged artwork read failed (${response.status})`);
+      return Buffer.from(await response.arrayBuffer());
+    }
     const object = await r2Get(key, premium);
     if (!object.Body) throw new Error("Storage object has no body");
     return Buffer.from(await object.Body.transformToByteArray());
