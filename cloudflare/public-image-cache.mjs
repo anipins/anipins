@@ -132,7 +132,13 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
     headers.delete("CDN-Cache-Control");
     headers.delete("Set-Cookie");
     const entry = new Response(response.clone().body, { status: 200, headers });
-    waitUntil(Promise.resolve(cache.put(key, entry)).catch(() => {}));
+    const write = cache.put(key, entry);
+    // Feed pagination commonly asks for the next page immediately after this
+    // response. Await its tiny JSON cache write so that next request can
+    // reliably hit the edge rather than racing a deferred waitUntil task.
+    // Larger static/image bodies stay asynchronous to preserve first-paint.
+    if (kind === "feed") await write;
+    else waitUntil(Promise.resolve(write).catch(() => {}));
   } catch {}
   return withCacheStatus(response, "MISS", browserCacheControl);
 }
