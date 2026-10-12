@@ -21,8 +21,12 @@ export default function InstagramLink({ children, onClick, ...props }: Props) {
 
     const nativeInstagram = (window as any).AniPinsAndroid?.openInstagram;
     if (typeof nativeInstagram === "function") {
+      // Older installed AniPins APKs hardcode the previous profile in this
+      // native method, so calling it would open the WRONG account. Send this
+      // through the Android WebView's external-host handler instead. The
+      // mobile hostname bypasses legacy exact-host routing of instagram.com.
       event.preventDefault();
-      nativeInstagram();
+      window.location.href = "https://m.instagram.com/anipins.verse/";
       return;
     }
 
@@ -39,7 +43,9 @@ export default function InstagramLink({ children, onClick, ...props }: Props) {
     window.setTimeout(() => {
       document.removeEventListener("visibilitychange", markHidden);
       if (!leftPage && document.visibilityState === "visible") {
-        window.location.href = INSTAGRAM_WEB_URL;
+        window.location.href = /Android/i.test(navigator.userAgent)
+          ? "https://m.instagram.com/anipins.verse/"
+          : INSTAGRAM_WEB_URL;
       }
     }, 1200);
   };
