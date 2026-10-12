@@ -14,7 +14,7 @@ import ReportArtwork from "@/components/ReportArtwork";
 
 const IG_URL = "https://www.instagram.com/anipins.art/";
 
-export default function ArtworkDetailClient({ params, initialData }: { params: { id: string }; initialData: any }) {
+export default function ArtworkDetailClient({ initialData }: { initialData: any }) {
   const [data, setData] = useState<any>(initialData);
   const [save, setSave] = useState(false);
   const [share, setShare] = useState(false);
@@ -22,13 +22,6 @@ export default function ArtworkDetailClient({ params, initialData }: { params: {
   const [likeCount, setLikeCount] = useState(0);
   const router = useRouter();
   const touch = useRef<number | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setData(initialData);
-    fetch(`/api/artworks/${params.id}`, { signal: controller.signal }).then(r => r.ok ? r.json() : Promise.reject()).then((d) => { setData(d); setLiked(!!d.liked); setLikeCount(d.likeCount || 0); }).catch(() => { /* Keep valid server-rendered content on transient network errors. */ });
-    return () => controller.abort();
-  }, [params.id]);
 
   const nav = useCallback((dir: "prev" | "next") => {
     const id = dir === "prev" ? data?.prevId : data?.nextId;

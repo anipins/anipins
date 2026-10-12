@@ -77,7 +77,7 @@ export default async function ArtworkPage(props: { params: Promise<{ id: string 
         isPartOf: { "@type": "WebSite", name: "AniPins", url: absoluteUrl("/") },
         about: [{ "@type": "Thing", name: art.character_name }, { "@type": "CreativeWorkSeries", name: art.anime_name }],
       }} />
-      <ArtworkDetailClient params={params} initialData={initialData} />
+      <ArtworkDetailClient initialData={initialData} />
     </>
   );
 }
