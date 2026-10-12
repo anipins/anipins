@@ -11,8 +11,11 @@ test("Instagram link opens the stable anipins.verse profile and mobile native in
   const source = read("src/components/InstagramLink.tsx");
   assert.ok(source.includes('INSTAGRAM_WEB_URL = "' + link + '"'));
   assert.ok(source.includes('INSTAGRAM_APP_URL = "instagram://user?username=anipins.verse"'));
-  assert.match(source, /nativeInstagram\(\)/);
-  assert.match(source, /window\.location\.href = INSTAGRAM_WEB_URL/);
+  // The old APK bridge has the old profile hardcoded: never call it.
+  assert.doesNotMatch(source, /nativeInstagram\(\)/);
+  assert.ok(source.includes('window.location.href = "https://m.instagram.com/anipins.verse/"'));
+  assert.ok(source.includes('? "https://m.instagram.com/anipins.verse/"'));
+  assert.ok(source.includes(': INSTAGRAM_WEB_URL;'));
   assert.doesNotMatch(source, oldHandle);
 });
 
