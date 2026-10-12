@@ -56,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${lexend.variable} ${grotesk.variable}`} suppressHydrationWarning>
       <head>
-        <meta name="p:domain_verify" content="81812c5729786ec6e9853a47f64afced" />
+        <meta name="p:domain_verify" content="1812c5729786ec6e9853a47f64afced" />
         <link rel="preconnect" href="https://synqmyiwjyvvrbrhcetw.supabase.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://synqmyiwjyvvrbrhcetw.supabase.co" />
         <script
