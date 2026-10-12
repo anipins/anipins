@@ -180,5 +180,5 @@ CREATE INDEX IF NOT EXISTS idx_billing_subscriptions_user ON billing_subscriptio
 INSERT OR IGNORE INTO settings (key, value) VALUES
  ('site_name','AniPins'),
  ('tagline','Anime artwork for inspiration.'),
- ('instagram_handle','@anipins.art'),
- ('instagram_url','https://www.instagram.com/anipins.art/');
+ ('instagram_handle','@anipins.verse'),
+ ('instagram_url','https://www.instagram.com/anipins.verse/');

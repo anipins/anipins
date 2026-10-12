@@ -24,7 +24,7 @@ export function openArtwork(id: number, art?: any) {
   }
 }
 
-export default function ArtCard({ art, index = 0, priority }: { art: any; index?: number; priority?: boolean }) {
+export default function ArtCard({ art, index = 0, priority, desktopHidden = false }: { art: any; index?: number; priority?: boolean; desktopHidden?: boolean }) {
   const [save, setSave] = useState(false);
   const [share, setShare] = useState(false);
   const [imageReady, setImageReady] = useState(false);
@@ -45,7 +45,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
   return (
     <>
       <div
-        className={`art-card ${landscape ? "art-card--landscape" : ""}`}
+        className={`art-card ${landscape ? "art-card--landscape" : ""} ${desktopHidden ? "lg:hidden" : ""}`}
       >
         <Tilt max={3.5} className="group relative overflow-hidden rounded-2xl bg-soft hairline hover:border-gold-dim transition-colors duration-200">
           <button

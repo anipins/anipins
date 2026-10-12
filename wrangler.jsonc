@@ -31,5 +31,15 @@
       "type": "durable-object",
       "storage": "sqlite"
     }
-  }
+  },
+  "r2_buckets": [
+    {
+      "binding": "ARTWORKS_PUBLIC",
+      "bucket_name": "anipins-public-media"
+    },
+    {
+      "binding": "ARTWORKS_PREMIUM",
+      "bucket_name": "anipins-premium-media"
+    }
+  ]
 }
