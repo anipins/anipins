@@ -26,6 +26,13 @@ test("desktop pointer intent warms one full-size artwork without preloading the 
   assert.match(card, /original\.addEventListener\("error", \(\) => warmingOriginals\.delete\(url\)/);
 });
 
+test("the visible masonry viewport receives priority before lower cards", () => {
+  const card = source("src/components/ArtCard.tsx");
+  assert.match(card, /const criticalImage = priority \?\? index < 10/);
+  assert.match(card, /priority=\{criticalImage\}/);
+  assert.match(card, /loading=\{criticalImage \? "eager" : "lazy"\}/);
+});
+
 test("pull to refresh can only start from the top edge", () => {
   const refresh = source("src/components/PullToRefresh.tsx");
   assert.match(refresh, /event\.touches\[0\]\.clientY <= START_ZONE/);

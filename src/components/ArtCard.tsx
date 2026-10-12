@@ -51,6 +51,9 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
   // full-width rows on phone screens.
   const landscape = ratio < 0.9;
   const imageFit = getArtworkImageFit(art);
+  // Fill the first visible masonry viewport promptly. The remainder stay lazy
+  // so a large library never competes with the artwork the visitor can see.
+  const criticalImage = priority ?? index < 10;
   const hideArtwork = async () => {
     window.dispatchEvent(new CustomEvent("anipins:hide-art", { detail: { id: art.id } }));
     try { await fetch("/api/hides", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artworkId: art.id }) }); } catch {}
@@ -88,8 +91,8 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
                 alt={artworkAlt(art)}
                 fill
                 sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1439px) 25vw, 20vw"
-                priority={priority ?? index < 2}
-                loading={priority ?? index < 2 ? "eager" : "lazy"}
+                priority={criticalImage}
+                loading={criticalImage ? "eager" : "lazy"}
                 onLoad={() => setImageReady(true)}
                 className={`object-${imageFit} transition-opacity duration-200 ${imageFit === "cover" ? "group-hover:scale-[1.025]" : ""} ${imageReady ? "opacity-100" : "opacity-0"}`}
               />

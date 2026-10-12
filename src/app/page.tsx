@@ -75,7 +75,7 @@ export default async function Home() {
           </ScrollReveal>
           <FilterChips />
         </div>
-        <MasonryFeed query={HOME_DISCOVERY_QUERY} randomize initialItems={discovery} initialHasMore={discovery.length === 36} />
+        <MasonryFeed query={HOME_DISCOVERY_QUERY} randomize initialItems={discovery} initialHasMore={discovery.length === 36} eagerLoad />
       </section>
       {/* Legacy inline browse section retained here only as a reference while the
           streamed component below keeps it off the first-screen critical path.

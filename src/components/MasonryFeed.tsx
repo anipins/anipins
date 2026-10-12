@@ -122,7 +122,10 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   }, [initialItems.length, requestPage]);
   useEffect(() => {
     if (!eagerLoad || !initialItems.length) return;
-    const timer = window.setTimeout(() => { void requestPage(nextPage.current, false, false, true, nextCursor.current); }, 150);
+    // Give the first visible thumbnails a short head start, then fetch the
+    // next metadata page in the background. Lazy image loading means this
+    // does not download a second screen of pictures until it approaches view.
+    const timer = window.setTimeout(() => { void requestPage(nextPage.current, false, false, true, nextCursor.current); }, 600);
     return () => window.clearTimeout(timer);
   }, [eagerLoad, initialItems.length, requestPage]);
   useEffect(() => {
@@ -150,7 +153,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   useEffect(() => {
     const element = sentinel.current;
     if (!element) return;
-    const observer = new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) loadNext(); }, { rootMargin: "800px 0px" });
+    const observer = new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) loadNext(); }, { rootMargin: "1600px 0px" });
     observer.observe(element);
     return () => observer.disconnect();
   }, [loadNext]);
@@ -165,7 +168,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       requestAnimationFrame(() => {
         ticking = false;
         const remaining = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
-        if (remaining < 1200) loadNext();
+        if (remaining < 2000) loadNext();
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
