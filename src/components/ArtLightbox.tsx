@@ -85,8 +85,8 @@ export default function ArtLightbox() {
   };
 
   const art = data?.art || preview;
-  const fullImage = data?.art?.orig ? `/api/img/${data.art.orig}` : art?.thumb ? `/api/img/${art.thumb}` : "";
-  const previewImage = data?.art?.orig && art?.thumb ? `/api/img/${art.thumb}` : undefined;
+  const fullImage = data?.art?.original_url || art?.orig_url || (data?.art?.orig ? `/api/img/${data.art.orig}` : art?.thumb ? `/api/img/${art.thumb}` : "");
+  const previewImage = data?.art?.orig && art?.thumb ? (data.art.thumb_url || art.thumb_url || `/api/img/${art.thumb}`) : undefined;
   return (
     <AnimatePresence>
       {id !== null && (

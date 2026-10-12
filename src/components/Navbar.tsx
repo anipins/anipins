@@ -68,6 +68,7 @@ export default function Navbar() {
       .then(async r => ({ status: r.status, data: await r.json() }))
       .then(({ status, data }) => {
         if (status === 401 && data.sessionExpired) window.dispatchEvent(new CustomEvent("anipins:session-expired"));
+        if (data.user) window.dispatchEvent(new CustomEvent("anipins:session-restored"));
         setUser(data.user || null);
       })
       .catch(() => {});
@@ -129,7 +130,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className={`site-navbar fixed top-0 z-50 w-full transition-all duration-300 ${navVisible || open ? "translate-y-0" : "max-md:-translate-y-[calc(100%+1rem)] md:translate-y-0"} ${scrolled ? "site-navbar--scrolled glass border-b border-paper/10 pb-2" : "pb-4"}`}>
+    <header className={`site-navbar fixed top-0 z-50 w-full transition-all duration-300 ${navVisible || open ? "translate-y-0" : "-translate-y-[calc(100%+1rem)]"} ${scrolled ? "site-navbar--scrolled glass border-b border-paper/10 pb-2" : "pb-4"}`}>
       <div className="mx-auto flex max-w-[1600px] items-center gap-2 px-3 sm:gap-4 sm:px-4 md:px-8">
         {path !== "/" && (
           <button
@@ -210,6 +211,9 @@ export default function Navbar() {
                 <span className="hidden max-w-24 truncate min-[1800px]:block">{user.nickname || user.name || "Profile"}</span>
               </Link>
               <Link href="/saves" className="hidden rounded-full px-3 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors min-[1650px]:block">Saves</Link>
+              <Link href="/settings" title="Settings" aria-label="Settings" className="grid h-10 w-10 place-items-center rounded-full text-fog transition-colors hover:bg-paper/5 hover:text-gold">
+                <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.04 1.56V20.3h-3v-.08A1.7 1.7 0 0 0 10.66 18.66a1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 15a1.7 1.7 0 0 0-1.56-1.04h-.08v-3h.08A1.7 1.7 0 0 0 7 9.92a1.7 1.7 0 0 0-.34-1.88L6.6 7.98l2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 11.7 4.7v-.08h3v.08a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0 0 19.4 9.92a1.7 1.7 0 0 0 1.56 1.04h.08v3h-.08A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+              </Link>
               {user.role === "ADMIN" && (
                 <Link href="/admin" className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors">
                   <span className="hidden min-[1450px]:inline">AniPins </span>Admin <span className="badge-gold !hidden !px-2 !py-0.5 min-[1800px]:!inline-flex">Owner</span>

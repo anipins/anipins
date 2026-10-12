@@ -1,5 +1,5 @@
 import { row, rows } from "@/lib/db";
-import { publicMediaUrl, publicThumbnailUrl } from "@/lib/media";
+import { publicMediaUrl, publicOriginalUrl, publicThumbnailUrl } from "@/lib/media";
 import { premiumArtworkFilter } from "@/lib/premium-artwork";
 import { nonWallpaperFilter, wallpaperFilter } from "@/lib/wallpaper-feed-utils";
 
@@ -64,7 +64,7 @@ export async function getArtworkCards(options: {
     // Premium artwork is stored in a separate private bucket. It must travel
     // through the authorized application route, never the public R2 shortcut.
     thumb_url: premium ? publicMediaUrl(item.thumb) : publicThumbnailUrl(item.thumb),
-    orig_url: publicMediaUrl(item.orig),
+    orig_url: premium ? publicMediaUrl(item.orig) : publicOriginalUrl(item.orig),
   }));
 }
 

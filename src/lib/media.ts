@@ -181,6 +181,20 @@ export function publicThumbnailUrl(rel: string) {
   return `/api/img/${rel}?e=${expiresAt}&s=${signature}`;
 }
 
+/**
+ * Published, non-Premium originals can take the Worker-to-public-R2 fast path
+ * too. The short HMAC is minted only after the application has selected a
+ * public artwork record, so an object name alone never grants media access.
+ */
+export function publicOriginalUrl(rel: string) {
+  if (!isSafeMediaKey(rel) || !rel.startsWith("o/")) return publicMediaUrl(rel);
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) return publicMediaUrl(rel);
+  const expiresAt = Math.floor(Date.now() / 1000) + 60;
+  const signature = crypto.createHmac("sha256", secret).update(`original:${rel}:${expiresAt}`).digest("base64url");
+  return `/api/img/${rel}?e=${expiresAt}&s=${signature}`;
+}
+
 export async function saveAvatar(buffer: Buffer, userId: number) {
   const key = `avatars/${userId}-${crypto.randomBytes(8).toString("hex")}.webp`;
   const avatar = await sharp(buffer)

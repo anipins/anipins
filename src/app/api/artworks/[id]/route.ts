@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { row, rows, run } from "@/lib/db";
 import { COOKIE, getUser } from "@/lib/auth";
 import { recordActivity } from "@/lib/activity";
-import { publicMediaUrl } from "@/lib/media";
+import { publicMediaUrl, publicOriginalUrl, publicThumbnailUrl } from "@/lib/media";
 import { ensurePremiumArtworkSchema } from "@/lib/premium-artwork";
 import { canAccessPremium } from "@/lib/billing";
 export const dynamic = "force-dynamic";
@@ -53,8 +53,12 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   });
 
   return NextResponse.json({
-    art: { ...art, thumb_url: publicMediaUrl(art.thumb), original_url: publicMediaUrl(art.orig) },
-    related: related.map((item: any) => ({ ...item, thumb_url: publicMediaUrl(item.thumb) })),
+    art: {
+      ...art,
+      thumb_url: premiumOnly ? publicMediaUrl(art.thumb) : publicThumbnailUrl(art.thumb),
+      original_url: premiumOnly ? publicMediaUrl(art.orig) : publicOriginalUrl(art.orig),
+    },
+    related: related.map((item: any) => ({ ...item, thumb_url: premiumOnly ? publicMediaUrl(item.thumb) : publicThumbnailUrl(item.thumb) })),
     prevId: adjacent?.prev_id ?? null,
     nextId: adjacent?.next_id ?? null,
     likeCount: art.like_count ?? 0,

@@ -7,6 +7,7 @@ import { row } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { canAccessPremium } from "@/lib/billing";
 import { absoluteUrl, artworkAlt } from "@/lib/site";
+import { publicMediaUrl, publicOriginalUrl, publicThumbnailUrl } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,18 @@ export default async function ArtworkPage(props: { params: Promise<{ id: string 
     getArtworkCards({ limit: 36, sort: "trending", excludeId: id, premium: premiumOnly }),
     row(`SELECT MAX(CASE WHEN id < ? THEN id END) AS prev_id, MIN(CASE WHEN id > ? THEN id END) AS next_id FROM artworks WHERE published=1 AND COALESCE(premium, 0)=?`, id, id, premiumOnly ? 1 : 0),
   ]);
-  const initialData = { art, related, prevId: adjacent?.prev_id ?? null, nextId: adjacent?.next_id ?? null, likeCount: 0, liked: false };
+  const initialData = {
+    art: {
+      ...art,
+      thumb_url: premiumOnly ? publicMediaUrl(art.thumb) : publicThumbnailUrl(art.thumb),
+      original_url: premiumOnly ? publicMediaUrl(art.orig) : publicOriginalUrl(art.orig),
+    },
+    related,
+    prevId: adjacent?.prev_id ?? null,
+    nextId: adjacent?.next_id ?? null,
+    likeCount: 0,
+    liked: false,
+  };
   return (
     <>
       <JsonLd data={{

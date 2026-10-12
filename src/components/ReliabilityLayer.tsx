@@ -18,6 +18,7 @@ export default function ReliabilityLayer() {
       setMessage(connectionMessage({ online: navigator.onLine, effectiveType: connection?.effectiveType, saveData: connection?.saveData }));
     };
     const expired = () => { setSessionExpired(true); toast("Your session expired. Please sign in again.", "err"); };
+    const restored = () => setSessionExpired(false);
     const invalid = (event: Event) => {
       const field = event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
       if (field?.validationMessage) toast(field.validationMessage, "err");
@@ -26,11 +27,13 @@ export default function ReliabilityLayer() {
     window.addEventListener("online", updateConnection);
     window.addEventListener("offline", updateConnection);
     window.addEventListener("anipins:session-expired", expired);
+    window.addEventListener("anipins:session-restored", restored);
     document.addEventListener("invalid", invalid, true);
     return () => {
       window.removeEventListener("online", updateConnection);
       window.removeEventListener("offline", updateConnection);
       window.removeEventListener("anipins:session-expired", expired);
+      window.removeEventListener("anipins:session-restored", restored);
       document.removeEventListener("invalid", invalid, true);
     };
   }, []);

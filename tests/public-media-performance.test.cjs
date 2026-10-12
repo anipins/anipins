@@ -43,7 +43,6 @@ test("public art thumbnail is served from edge on repeat without touching contai
   assert.equal(b.headers.get("Cache-Control"), "private, no-store");
   assert.equal(a.headers.get("CDN-Cache-Control"), "private, no-store");
 });
-
 test("original artwork images can be cached only when upstream explicitly permits public caching", async () => {
   const cache = fakeCache();
   const original = url.replace("/t/", "/o/").replace(".jpg", ".png");
@@ -142,11 +141,11 @@ test("normal public artwork pages are edge-cached, while Premium remains private
   assert.equal(calls, 2);
 });
 
-test("the Worker accepts only signed thumbnail queries for its direct R2 path", () => {
+test("the Worker accepts only signed public-media queries for its direct R2 path", () => {
   const source = fs.readFileSync(path.join(__dirname, "../cloudflare/worker.mjs"), "utf8");
   const cache = fs.readFileSync(path.join(__dirname, "../cloudflare/public-image-cache.mjs"), "utf8");
-  assert.match(source, /signedThumbnailKey\(request, env\.NEXTAUTH_SECRET\)/);
-  assert.match(source, /env\.ARTWORKS_PUBLIC\.get\(thumbnailKey\)/);
+  assert.match(source, /signedPublicMediaKey\(request, env\.NEXTAUTH_SECRET\)/);
+  assert.match(source, /env\.ARTWORKS_PUBLIC\.get\(publicMediaKey\)/);
   assert.match(cache, /expiresAt > Math\.floor\(Date\.now\(\) \/ 1000\) \+ 120/);
 });
 
@@ -160,7 +159,7 @@ test("homepage rotating discovery query uses a short-lived 5-second shared serve
 
 test("production Worker routes eligible requests through the cache before entering the container", () => {
   const source = fs.readFileSync(path.join(__dirname, "../cloudflare/worker.mjs"), "utf8");
-  assert.match(source, /import \{ servePublicImage(?:, signedThumbnailKey)? \} from "\.\/public-image-cache\.mjs"/);
+  assert.match(source, /import \{ servePublicImage, signedPublicMediaKey \} from "\.\/public-image-cache\.mjs"/);
   assert.match(source, /return servePublicImage\(/);
   assert.match(source, /caches\.default/);
   assert.match(source, /ctx\.waitUntil\(promise\)/);

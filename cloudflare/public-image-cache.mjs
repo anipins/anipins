@@ -12,10 +12,10 @@ function cacheKind(request) {
   if (request.method !== "GET") return null;
   const url = new URL(request.url);
   if (url.protocol !== "https:" || !["anipins.com", "www.anipins.com"].includes(url.hostname)) return null;
-  const signedThumbnail = /^\/api\/img\/t\/[a-zA-Z0-9._-]+$/.test(url.pathname)
+  const signedPublicMedia = /^\/api\/img\/(?:t|o)\/[a-zA-Z0-9._-]+$/.test(url.pathname)
     && url.searchParams.size === 2 && url.searchParams.has("e") && url.searchParams.has("s");
   const publicFeed = url.pathname === "/api/artworks" && !["1", "true"].includes(url.searchParams.get("premium") || "") && !["following", "for-you"].includes(url.searchParams.get("sort") || "latest");
-  if (url.search && !signedThumbnail && !publicFeed) return null;
+  if (url.search && !signedPublicMedia && !publicFeed) return null;
   if (["range", "if-range", "if-none-match", "if-modified-since"].some(key => request.headers.has(key))) return null;
   if (/no-cache|no-store/i.test(request.headers.get("cache-control") || "")) return null;
   if (/^\/_next\/static\/(?:chunks|css|media)\/.+/.test(url.pathname)) return "static";
@@ -32,15 +32,16 @@ function base64UrlBytes(value) {
   return Uint8Array.from(binary, char => char.charCodeAt(0));
 }
 
-export async function signedThumbnailKey(request, secret) {
+export async function signedPublicMediaKey(request, secret) {
   const url = new URL(request.url);
-  const match = url.pathname.match(/^\/api\/img\/(t\/[a-zA-Z0-9._-]+)$/);
+  const match = url.pathname.match(/^\/api\/img\/((?:t|o)\/[a-zA-Z0-9._-]+)$/);
   const expiresAt = Number(url.searchParams.get("e"));
   const signature = url.searchParams.get("s") || "";
   if (!match || !secret || !Number.isSafeInteger(expiresAt) || expiresAt < Math.floor(Date.now() / 1000) || expiresAt > Math.floor(Date.now() / 1000) + 120 || !signature) return null;
   try {
     const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
-    const valid = await crypto.subtle.verify("HMAC", key, base64UrlBytes(signature), new TextEncoder().encode(`thumbnail:${match[1]}:${expiresAt}`));
+    const scope = match[1].startsWith("t/") ? "thumbnail" : "original";
+    const valid = await crypto.subtle.verify("HMAC", key, base64UrlBytes(signature), new TextEncoder().encode(`${scope}:${match[1]}:${expiresAt}`));
     return valid ? match[1] : null;
   } catch { return null; }
 }

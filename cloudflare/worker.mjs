@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { forwardToContainer, isAllowedPublicHost } from "./forwarding.mjs";
-import { servePublicImage, signedThumbnailKey } from "./public-image-cache.mjs";
+import { servePublicImage, signedPublicMediaKey } from "./public-image-cache.mjs";
 
 const PORT = 8080;
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
@@ -168,12 +168,12 @@ export default {
       await bucket.put(upload.key, request.body, { httpMetadata: { contentType: upload.contentType } });
       return new Response(null, { status: 201, headers: { "Cache-Control": "no-store" } });
     }
-    const thumbnailKey = await signedThumbnailKey(request, env.NEXTAUTH_SECRET);
-    if (thumbnailKey) {
+    const publicMediaKey = await signedPublicMediaKey(request, env.NEXTAUTH_SECRET);
+    if (publicMediaKey) {
       return servePublicImage(
         request,
         async () => {
-          const object = await env.ARTWORKS_PUBLIC.get(thumbnailKey);
+          const object = await env.ARTWORKS_PUBLIC.get(publicMediaKey);
           if (!object) return new Response("Not found", { status: 404 });
           return new Response(object.body, { headers: {
             "Content-Type": object.httpMetadata?.contentType || "image/webp",

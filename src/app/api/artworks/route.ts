@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { row, rows, USE_PG } from "@/lib/db";
 import { getUser } from "@/lib/auth";
-import { publicMediaUrl, publicThumbnailUrl } from "@/lib/media";
+import { publicMediaUrl, publicOriginalUrl, publicThumbnailUrl } from "@/lib/media";
 import { ensurePremiumArtworkSchema, premiumArtworkFilter } from "@/lib/premium-artwork";
 import { canAccessPremium } from "@/lib/billing";
 import { nonWallpaperFilter, wallpaperFilter } from "@/lib/wallpaper-feed-utils";
@@ -9,10 +9,10 @@ import { decodeArtworkCursor, encodeArtworkCursor } from "@/lib/artwork-cursor";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const clientItems = (items: any[], signedPublicThumbnails = false) => items.map(({ _cursor_created_at, ...item }) => ({
+const clientItems = (items: any[], signedPublicMedia = false) => items.map(({ _cursor_created_at, ...item }) => ({
   ...item,
-  thumb_url: signedPublicThumbnails ? publicThumbnailUrl(item.thumb) : publicMediaUrl(item.thumb),
-  orig_url: publicMediaUrl(item.orig),
+  thumb_url: signedPublicMedia ? publicThumbnailUrl(item.thumb) : publicMediaUrl(item.thumb),
+  orig_url: signedPublicMedia ? publicOriginalUrl(item.orig) : publicMediaUrl(item.orig),
 }));
 const publicBrowseHeaders = { "Cache-Control": "public, max-age=5, s-maxage=10, stale-while-revalidate=45" };
 

@@ -63,7 +63,7 @@ export default function ArtworkDetailClient({ params, initialData }: { params: {
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="grid gap-8 lg:grid-cols-[1.15fr,1fr]">
             <div className="relative">
               <div className="overflow-hidden rounded-3xl hairline bg-soft">
-                <ZoomableArtwork src={`/api/img/${art.orig}`} previewSrc={`/api/img/${art.thumb}`} alt={art.title || art.character_name} onSwipe={nav} className="mx-auto max-h-[80vh] w-full" />
+                <ZoomableArtwork src={art.original_url || `/api/img/${art.orig}`} previewSrc={art.thumb_url || `/api/img/${art.thumb}`} alt={art.title || art.character_name} onSwipe={nav} className="mx-auto max-h-[80vh] w-full" />
               </div>
               <div className="mt-4 flex items-center justify-between">
                 <button onClick={() => nav("prev")} disabled={!data.prevId}
