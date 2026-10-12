@@ -11,8 +11,7 @@ import FollowButton from "@/components/FollowButton";
 import ZoomableArtwork from "@/components/ZoomableArtwork";
 import DownloadButton from "@/components/DownloadButton";
 import ReportArtwork from "@/components/ReportArtwork";
-
-const IG_URL = "https://www.instagram.com/anipins.art/";
+import InstagramLink from "@/components/InstagramLink";
 
 export default function ArtworkDetailClient({ params, initialData }: { params: { id: string }; initialData: any }) {
   const [data, setData] = useState<any>(initialData);
@@ -103,7 +102,7 @@ export default function ArtworkDetailClient({ params, initialData }: { params: {
                 <button onClick={() => setSave(true)} className="btn-primary">Save</button>
                 <DownloadButton artworkId={art.id} />
                 <button onClick={() => setShare(true)} className="btn-ghost">Share</button>
-                <a href={IG_URL} target="_blank" rel="noopener noreferrer" className="btn-ghost" title="@anipins.art">Instagram</a>
+                <InstagramLink target="_blank" rel="noopener noreferrer" className="btn-ghost" title="@anipins.verse">Instagram</InstagramLink>
               </div>
               <div className="mt-6 flex gap-5 text-xs text-fog">
                 <span>{art.views} views</span><span>{art.downloads} downloads</span>
