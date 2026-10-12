@@ -6,6 +6,8 @@ const test = require("node:test");
 const root = path.join(__dirname, "..");
 const premiumPage = fs.readFileSync(path.join(root, "src", "app", "premium", "page.tsx"), "utf8");
 const schema = fs.readFileSync(path.join(root, "src", "lib", "pgschema.ts"), "utf8");
+const content = fs.readFileSync(path.join(root, "src", "lib", "content.ts"), "utf8");
+const memberFeed = fs.readFileSync(path.join(root, "src", "components", "PremiumMemberFeed.tsx"), "utf8");
 
 test("Premium begins its membership check and initial artwork fetches together", () => {
   assert.match(premiumPage, /Promise\.all\(\[\s*canAccessPremium\(user\),\s*getArtworkCards\(\{ sort: "featured", limit: 8, premium: true \}\),\s*getArtworkCards\(\{ sort: "latest", limit: 18, premium: true \}\)/s);
@@ -13,6 +15,8 @@ test("Premium begins its membership check and initial artwork fetches together",
 
 test("Premium first paint is capped while infinite scrolling retains the rest of the library", () => {
   assert.match(premiumPage, /getArtworkCards\(\{ sort: "latest", limit: 18, premium: true \}\)/);
+  assert.match(memberFeed, /pageSize=\{18\} eagerLoad/);
+  assert.match(content, /thumb_url: premium \? publicMediaUrl\(item\.thumb\) : publicThumbnailUrl\(item\.thumb\)/);
 });
 
 test("Postgres has targeted indexes for Premium feeds and protected image lookups", () => {

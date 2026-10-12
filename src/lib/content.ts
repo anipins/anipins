@@ -59,7 +59,13 @@ export async function getArtworkCards(options: {
   } else {
     items = await rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ?`, ...args, limit);
   }
-  return items.map((item: any) => ({ ...item, thumb_url: publicThumbnailUrl(item.thumb), orig_url: publicMediaUrl(item.orig) }));
+  return items.map((item: any) => ({
+    ...item,
+    // Premium artwork is stored in a separate private bucket. It must travel
+    // through the authorized application route, never the public R2 shortcut.
+    thumb_url: premium ? publicMediaUrl(item.thumb) : publicThumbnailUrl(item.thumb),
+    orig_url: publicMediaUrl(item.orig),
+  }));
 }
 
 /** Low-detail cards for the public Premium sales page. The image route returns

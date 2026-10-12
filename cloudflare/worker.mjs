@@ -9,7 +9,9 @@ const HEALTH_INTERVAL_MS = 200;
 // Increment this only when a configuration rollout must restart the existing
 // durable container. Containers keep their startup environment for their
 // lifetime, so secret rotations otherwise wait for the next natural restart.
-const CONTAINER_BOOT_VERSION = "2026-10-12-uninterrupted-home-feed";
+const CONTAINER_BOOT_VERSION = "2026-10-12-reliable-r2-upload";
+const MAX_ARTWORK_UPLOAD_BYTES = 40 * 1024 * 1024;
+const UPLOAD_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 // Keep this allow-list in source control so every runtime dependency is
 // explicit. Values are configured as Worker secrets and are never committed.
@@ -53,6 +55,32 @@ function runtimeEnvironment(env) {
       return typeof value === "string" && value.length > 0 ? [[key, value]] : [];
     }),
   );
+}
+
+function base64UrlBytes(value) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(normalized + "=".repeat((4 - normalized.length % 4) % 4));
+  return Uint8Array.from(binary, char => char.charCodeAt(0));
+}
+
+async function signedArtworkUpload(request, secret) {
+  const url = new URL(request.url);
+  if (url.pathname !== "/api/storage-upload") return null;
+  if (request.method !== "PUT") return { error: "method" };
+  const key = url.searchParams.get("key") || "";
+  const premium = url.searchParams.get("p") === "1";
+  const expiresAt = Number(url.searchParams.get("e"));
+  const signature = url.searchParams.get("s") || "";
+  const contentType = (request.headers.get("content-type") || "").split(";", 1)[0].toLowerCase();
+  const length = Number(request.headers.get("content-length") || 0);
+  if (!/^o\/[a-f0-9]{32}\.(?:jpg|jpeg|png|webp)$/.test(key) || !secret || !Number.isSafeInteger(expiresAt) || expiresAt < Math.floor(Date.now() / 1000) || expiresAt > Math.floor(Date.now() / 1000) + 300 || !signature || !UPLOAD_TYPES.has(contentType) || !Number.isFinite(length) || length < 1 || length > MAX_ARTWORK_UPLOAD_BYTES || !request.body) return { error: "invalid" };
+  try {
+    const cryptoKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+    const valid = await crypto.subtle.verify("HMAC", cryptoKey, base64UrlBytes(signature), new TextEncoder().encode(`upload:${key}:${premium ? "1" : "0"}:${expiresAt}`));
+    return valid ? { key, premium, contentType } : { error: "invalid" };
+  } catch {
+    return { error: "invalid" };
+  }
 }
 
 export class AniPinsContainer extends DurableObject {
@@ -127,6 +155,14 @@ export default {
     // Do not allow an arbitrary Worker/custom-domain hostname to become the
     // forwarded host trusted by the application for same-origin checks.
     if (!isAllowedPublicHost(request)) return new Response("Misdirected request", { status: 421 });
+    const upload = await signedArtworkUpload(request, env.NEXTAUTH_SECRET);
+    if (upload) {
+      if (upload.error) return new Response(upload.error === "method" ? "Method not allowed" : "Invalid or expired upload capability", { status: upload.error === "method" ? 405 : 403 });
+      const bucket = upload.premium ? env.ARTWORKS_PREMIUM : env.ARTWORKS_PUBLIC;
+      if (!bucket) return new Response("Artwork storage is temporarily unavailable", { status: 503 });
+      await bucket.put(upload.key, request.body, { httpMetadata: { contentType: upload.contentType } });
+      return new Response(null, { status: 201, headers: { "Cache-Control": "no-store" } });
+    }
     const thumbnailKey = await signedThumbnailKey(request, env.NEXTAUTH_SECRET);
     if (thumbnailKey) {
       return servePublicImage(

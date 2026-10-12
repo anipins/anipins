@@ -5,6 +5,7 @@
  */
 const ARTWORK_TTL_SECONDS = 60;
 const STATIC_TTL_SECONDS = 86400;
+const PUBLIC_FEED_TTL_SECONDS = 10;
 const ARTWORK_CACHE_UNTIL_HEADER = "x-anipins-artwork-cache-until";
 
 function cacheKind(request) {
@@ -13,10 +14,14 @@ function cacheKind(request) {
   if (url.protocol !== "https:" || !["anipins.com", "www.anipins.com"].includes(url.hostname)) return null;
   const signedThumbnail = /^\/api\/img\/t\/[a-zA-Z0-9._-]+$/.test(url.pathname)
     && url.searchParams.size === 2 && url.searchParams.has("e") && url.searchParams.has("s");
-  if (url.search && !signedThumbnail) return null;
+  const publicFeed = url.pathname === "/api/artworks" && !["1", "true"].includes(url.searchParams.get("premium") || "") && !["following", "for-you"].includes(url.searchParams.get("sort") || "latest");
+  if (url.search && !signedThumbnail && !publicFeed) return null;
   if (["range", "if-range", "if-none-match", "if-modified-since"].some(key => request.headers.has(key))) return null;
   if (/no-cache|no-store/i.test(request.headers.get("cache-control") || "")) return null;
   if (/^\/_next\/static\/(?:chunks|css|media)\/.+/.test(url.pathname)) return "static";
+  // The normal browse API is account-independent. Cache only its public
+  // variants at the edge; member, Following and For You calls never qualify.
+  if (publicFeed) return "feed";
   if (/^\/api\/img\/(?:o|t)\/.+/.test(url.pathname)) return "artwork";
   return null;
 }
@@ -48,6 +53,8 @@ function canStore(response, kind) {
   const type = headers.get("content-type") || "";
   const validType = kind === "static"
     ? /^(?:application\/(?:javascript|x-javascript)|text\/(?:javascript|css)|font\/(?:woff|woff2)|application\/(?:font-woff|font-woff2)|image\/(?:svg\+xml|jpeg|png|webp|gif|avif))(?:;|$)/i.test(type)
+    : kind === "feed"
+      ? /^application\/json(?:;|$)/i.test(type)
     : /^image\/(?:jpeg|png|webp|gif|avif)(?:;|$)/i.test(type);
   return validType
     && /(?:^|,)\s*public\b/i.test(control)
@@ -110,13 +117,17 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
     // Premium or unpublished state.
     ? "private, no-store"
     : undefined;
+  // Public feed queries never use the session, so a signed-in visitor can
+  // safely warm the same short-lived entry as a guest. This avoids every
+  // scroll page waiting on the container/database when the app is logged in.
   if ((kind === "artwork" && authenticated) || !publicResponse) {
     return withCacheStatus(response, "BYPASS", browserCacheControl);
   }
 
   try {
     const headers = new Headers(response.headers);
-    headers.set("Cache-Control", `public, max-age=${kind === "static" ? STATIC_TTL_SECONDS : ARTWORK_TTL_SECONDS}`);
+    const ttl = kind === "static" ? STATIC_TTL_SECONDS : kind === "feed" ? PUBLIC_FEED_TTL_SECONDS : ARTWORK_TTL_SECONDS;
+    headers.set("Cache-Control", `public, max-age=${ttl}`);
     if (kind === "artwork") headers.set(ARTWORK_CACHE_UNTIL_HEADER, String(Date.now() + ARTWORK_TTL_SECONDS * 1000));
     headers.delete("CDN-Cache-Control");
     headers.delete("Set-Cookie");

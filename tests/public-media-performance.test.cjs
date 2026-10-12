@@ -124,6 +124,24 @@ test("non-artwork API and POST requests pass through uncached", async () => {
   assert.equal(pending.length, 0);
 });
 
+test("normal public artwork pages are edge-cached, while Premium remains private", async () => {
+  const cache = fakeCache();
+  let calls = 0;
+  const publicFeed = () => {
+    calls += 1;
+    return new Response(JSON.stringify({ items: [] }), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=5" } });
+  };
+  const address = "https://anipins.com/api/artworks?sort=latest&limit=36";
+  await run(new Request(address, { headers: { Cookie: "anipins_session=member" } }), publicFeed, cache);
+  const second = await run(new Request(address), publicFeed, cache);
+  assert.equal(second.headers.get("X-AniPins-Edge-Cache"), "HIT");
+  assert.equal(calls, 1);
+
+  const member = await run(new Request("https://anipins.com/api/artworks?premium=1"), publicFeed, cache);
+  assert.equal(member.headers.get("X-AniPins-Edge-Cache"), "BYPASS");
+  assert.equal(calls, 2);
+});
+
 test("the Worker accepts only signed thumbnail queries for its direct R2 path", () => {
   const source = fs.readFileSync(path.join(__dirname, "../cloudflare/worker.mjs"), "utf8");
   const cache = fs.readFileSync(path.join(__dirname, "../cloudflare/public-image-cache.mjs"), "utf8");

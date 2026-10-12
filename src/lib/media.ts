@@ -3,7 +3,7 @@ import fs from "fs";
 import sharp from "sharp";
 import crypto from "crypto";
 import { UPLOADS_DIR } from "./db";
-import { r2Delete, r2Get, r2Put, r2SignedPutUrl, USE_R2_STORAGE } from "./r2";
+import { r2Delete, r2Get, r2Put, USE_R2_STORAGE } from "./r2";
 
 const SB_URL = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -91,7 +91,18 @@ async function getMedia(key: string, premium = false) {
 
 export async function createSignedArtworkUpload(key: string, premium = false) {
   if (!isSafeMediaKey(key) || !key.startsWith("o/")) return null;
-  if (USE_R2_MEDIA) return { key, uploadUrl: await r2SignedPutUrl(key, MIME[path.extname(key).toLowerCase()] || "application/octet-stream", premium), token: "" };
+  if (USE_R2_MEDIA) {
+    // A browser PUT directly to the S3-compatible R2 hostname is vulnerable
+    // to WebView CORS and connection failures. Issue a very short-lived
+    // same-origin capability instead; the Cloudflare Worker streams it into
+    // the correct R2 bucket without sending the image through the container.
+    const secret = process.env.NEXTAUTH_SECRET;
+    if (!secret) throw new Error("Secure upload signing is not configured");
+    const expiresAt = Math.floor(Date.now() / 1000) + 300;
+    const scope = premium ? "1" : "0";
+    const signature = crypto.createHmac("sha256", secret).update(`upload:${key}:${scope}:${expiresAt}`).digest("base64url");
+    return { key, uploadUrl: `/api/storage-upload?key=${encodeURIComponent(key)}&p=${scope}&e=${expiresAt}&s=${signature}`, token: "" };
+  }
   if (!USE_SUPABASE_STORAGE) return null;
   const response = await fetch(`${SB_URL}/storage/v1/object/upload/sign/${BUCKET}/${key}`, {
     method: "POST",
