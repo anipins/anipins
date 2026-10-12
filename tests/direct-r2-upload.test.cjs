@@ -12,6 +12,7 @@ test("same-origin Worker uploads only require the signed content type header", (
   assert.match(signing, /\/api\/storage-upload\?key=/);
   assert.match(worker, /ARTWORKS_PREMIUM/);
   assert.match(worker, /bucket\.put\(upload\.key, request\.body/);
+  assert.match(worker, /streaming body without a\s*\/\/ Content-Length header/s);
   assert.doesNotMatch(source, /"x-upsert"/);
   assert.doesNotMatch(source, /"Cache-Control":\s*"public, max-age=31536000, immutable"/);
 });

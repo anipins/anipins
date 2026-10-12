@@ -72,8 +72,13 @@ async function signedArtworkUpload(request, secret) {
   const expiresAt = Number(url.searchParams.get("e"));
   const signature = url.searchParams.get("s") || "";
   const contentType = (request.headers.get("content-type") || "").split(";", 1)[0].toLowerCase();
-  const length = Number(request.headers.get("content-length") || 0);
-  if (!/^o\/[a-f0-9]{32}\.(?:jpg|jpeg|png|webp)$/.test(key) || !secret || !Number.isSafeInteger(expiresAt) || expiresAt < Math.floor(Date.now() / 1000) || expiresAt > Math.floor(Date.now() / 1000) + 300 || !signature || !UPLOAD_TYPES.has(contentType) || !Number.isFinite(length) || length < 1 || length > MAX_ARTWORK_UPLOAD_BYTES || !request.body) return { error: "invalid" };
+  const lengthHeader = request.headers.get("content-length");
+  const length = lengthHeader ? Number(lengthHeader) : null;
+  // HTTP/2 browser uploads are allowed to use a streaming body without a
+  // Content-Length header. Validate it when supplied, but do not reject a
+  // valid mobile/WebView upload merely because the transport is chunked.
+  const invalidLength = length !== null && (!Number.isFinite(length) || length < 1 || length > MAX_ARTWORK_UPLOAD_BYTES);
+  if (!/^o\/[a-f0-9]{32}\.(?:jpg|jpeg|png|webp)$/.test(key) || !secret || !Number.isSafeInteger(expiresAt) || expiresAt < Math.floor(Date.now() / 1000) || expiresAt > Math.floor(Date.now() / 1000) + 300 || !signature || !UPLOAD_TYPES.has(contentType) || invalidLength || !request.body) return { error: "invalid" };
   try {
     const cryptoKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
     const valid = await crypto.subtle.verify("HMAC", cryptoKey, base64UrlBytes(signature), new TextEncoder().encode(`upload:${key}:${premium ? "1" : "0"}:${expiresAt}`));
