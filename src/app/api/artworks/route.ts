@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { row, rows, USE_PG } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { publicMediaUrl, publicOriginalUrl, publicThumbnailUrl } from "@/lib/media";
-import { ensurePremiumArtworkSchema, premiumArtworkFilter } from "@/lib/premium-artwork";
+import { premiumArtworkFilter } from "@/lib/premium-artwork";
 import { canAccessPremium } from "@/lib/billing";
 import { nonWallpaperFilter, wallpaperFilter } from "@/lib/wallpaper-feed-utils";
 import { decodeArtworkCursor, encodeArtworkCursor } from "@/lib/artwork-cursor";
@@ -17,7 +17,6 @@ const clientItems = (items: any[], signedPublicMedia = false) => items.map(({ _c
 const publicBrowseHeaders = { "Cache-Control": "public, max-age=5, s-maxage=10, stale-while-revalidate=45" };
 
 export async function GET(req: NextRequest) {
-  await ensurePremiumArtworkSchema();
   const sp = req.nextUrl.searchParams;
   const page = Math.max(0, parseInt(sp.get("page") || "0"));
   const limit = Math.min(40, parseInt(sp.get("limit") || "20"));

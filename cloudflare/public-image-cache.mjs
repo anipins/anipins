@@ -103,7 +103,14 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
   // giving the Android WebView the same speed benefit without leaking premium.
   const authenticated = request.headers.has("cookie") || request.headers.has("authorization");
   if (kind === "document" && authenticated) return withCacheStatus(await upstream(), "BYPASS");
-  const key = new Request(request.url, { method: "GET" });
+  // Signed artwork URLs deliberately expire quickly. The signature is checked
+  // before this function is reached, so it is safe to cache the immutable R2
+  // object by path rather than by its constantly changing `e` and `s` query
+  // values. Keeping the signature in the cache key made every fresh feed
+  // response look like a new image and defeated the 60-second edge cache.
+  const cacheUrl = new URL(request.url);
+  if (kind === "artwork") cacheUrl.search = "";
+  const key = new Request(cacheUrl.toString(), { method: "GET" });
   try {
     const cached = await cache.match(key);
     if (cached) {
@@ -112,7 +119,7 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
       // after an administrator changes its visibility.
       const until = Number(cached.headers.get(ARTWORK_CACHE_UNTIL_HEADER));
       if (kind !== "artwork" || (Number.isFinite(until) && until > Date.now())) {
-        return withCacheStatus(cached, "HIT", kind === "artwork" ? "private, no-store" : undefined);
+        return withCacheStatus(cached, "HIT", kind === "artwork" ? "private, max-age=60, stale-while-revalidate=60" : undefined);
       }
       await cache.delete(key);
     }
@@ -128,7 +135,10 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
     // Keep the cache private to the Worker. Cloudflare's Cache API is fast,
     // whereas a second shared CDN/browser cache would hide a later change to
     // Premium or unpublished state.
-    ? "private, no-store"
+    // Keep the browser copy private, but allow it to reuse a thumbnail for the
+    // same one-minute authorization window. This prevents flicker and duplicate
+    // downloads while a user scrolls away and back through the feed.
+    ? "private, max-age=60, stale-while-revalidate=60"
     : undefined;
   // Public feed queries never use the session, so a signed-in visitor can
   // safely warm the same short-lived entry as a guest. This avoids every

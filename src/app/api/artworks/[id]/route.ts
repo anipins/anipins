@@ -4,12 +4,10 @@ import { row, rows, run } from "@/lib/db";
 import { COOKIE, getUser } from "@/lib/auth";
 import { recordActivity } from "@/lib/activity";
 import { publicMediaUrl, publicOriginalUrl, publicThumbnailUrl } from "@/lib/media";
-import { ensurePremiumArtworkSchema } from "@/lib/premium-artwork";
 import { canAccessPremium } from "@/lib/billing";
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
-  await ensurePremiumArtworkSchema();
   const params = await props.params;
   const id = parseInt(params.id);
   const user = await getUser();
