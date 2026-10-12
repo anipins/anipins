@@ -15,7 +15,7 @@ const CACHE_TTL = 15_000;
 // attempts made a transient network problem look like an endless feed loader.
 const REQUEST_TIMEOUT = 10_000;
 const MAX_REQUEST_ATTEMPTS = 3;
-type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean; pageSize?: number; emptyMessage?: string; emptyAction?: { href: string; label: string }; imagePriority?: boolean };
+type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean; pageSize?: number; emptyMessage?: string; emptyAction?: { href: string; label: string }; imagePriority?: boolean; maxColumns?: number };
 
 function columnsForWidth(width: number) {
   if (width >= 2200) return 7;
@@ -45,7 +45,7 @@ function distributeAcrossColumns(items: any[], columnCount: number) {
   return columns;
 }
 
-export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, eagerLoad = false, pageSize = 36, emptyMessage = "No artwork found.", emptyAction, imagePriority }: Props) {
+export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, eagerLoad = false, pageSize = 36, emptyMessage = "No artwork found.", emptyAction, imagePriority, maxColumns }: Props) {
   const [items, setItems] = useState<any[]>(initialItems);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
@@ -218,9 +218,10 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     return () => window.removeEventListener("anipins:hide-art", hide);
   }, []);
 
+  const renderedColumnCount = maxColumns ? Math.min(columnCount, maxColumns) : columnCount;
   const renderGrid = (artwork: any[]) => {
-    const columns = distributeAcrossColumns(artwork, columnCount);
-    return <div className="masonry-grid" style={{ "--masonry-columns": columnCount } as React.CSSProperties}>
+    const columns = distributeAcrossColumns(artwork, renderedColumnCount);
+    return <div className="masonry-grid" style={{ "--masonry-columns": renderedColumnCount } as React.CSSProperties}>
       {columns.map((column, columnIndex) => <div className="masonry-grid__column" key={columnIndex}>
         {column.map((art) => <ArtCard key={art.id} art={art} index={artwork.indexOf(art)} priority={imagePriority} />)}
       </div>)}
@@ -228,7 +229,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   };
 
   return <div className="w-full max-w-none">
-    {initial ? <div className="masonry-grid masonry-grid--loading" style={{ "--masonry-columns": columnCount } as React.CSSProperties}>{Array.from({ length: columnCount }).map((_, column) => <div className="masonry-grid__column" key={column}>{Array.from({ length: 4 }).map((__, row) => <div key={row} className="skeleton rounded-2xl" style={{ height: 180 + (((column * 4 + row) * 97) % 220) }} />)}</div>)}</div>
+    {initial ? <div className="masonry-grid masonry-grid--loading" style={{ "--masonry-columns": renderedColumnCount } as React.CSSProperties}>{Array.from({ length: renderedColumnCount }).map((_, column) => <div className="masonry-grid__column" key={column}>{Array.from({ length: 4 }).map((__, row) => <div key={row} className="skeleton rounded-2xl" style={{ height: 180 + (((column * 4 + row) * 97) % 220) }} />)}</div>)}</div>
       : !items.length ? <div className="py-24 text-center text-fog"><p>{emptyMessage}</p>{emptyAction ? <a href={emptyAction.href} className="btn-primary mt-5 inline-flex">{emptyAction.label}</a> : null}</div>
       : renderGrid(items)}
     <div ref={sentinel} className="h-10" aria-hidden="true" />

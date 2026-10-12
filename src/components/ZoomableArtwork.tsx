@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { haptic } from "@/lib/native";
 import { isImageAlreadyLoaded } from "@/lib/image-loading-state";
 
-export default function ZoomableArtwork({ src, previewSrc, alt, onSwipe, className = "max-h-[80vh] w-full" }: { src: string; previewSrc?: string; alt: string; onSwipe?: (direction: "prev" | "next") => void; className?: string }) {
+export default function ZoomableArtwork({ src, previewSrc, alt, onSwipe, className = "max-h-[80vh] w-full", align = "center" }: { src: string; previewSrc?: string; alt: string; onSwipe?: (direction: "prev" | "next") => void; className?: string; align?: "center" | "start" }) {
   const [scale,setScale]=useState(1),[point,setPoint]=useState({x:0,y:0}),[loadedSrc,setLoadedSrc]=useState(""),[failedSrc,setFailedSrc]=useState("");
   const gesture=useRef<any>({});
   const imageRef=useRef<HTMLImageElement>(null);
@@ -18,9 +18,10 @@ export default function ZoomableArtwork({ src, previewSrc, alt, onSwipe, classNa
   const touchEnd=(e:React.TouchEvent)=>{e.stopPropagation();if(scale===1&&gesture.current.x!==undefined&&e.changedTouches[0]){const dx=e.changedTouches[0].clientX-gesture.current.x;if(Math.abs(dx)>70)onSwipe?.(dx>0?"prev":"next");}gesture.current={};};
   const toggle=()=>{haptic();if(scale>1){setScale(1);setPoint({x:0,y:0});}else setScale(2.5);};
   const transform=`translate(${point.x}px,${point.y}px) scale(${scale})`;
+  const alignment = align === "start" ? "ml-0 mr-auto" : "mx-auto";
   return <div className="relative h-auto w-full touch-none overflow-hidden md:h-full" onTouchStart={touchStart} onTouchMove={touchMove} onTouchEnd={touchEnd} onDoubleClick={toggle}>
-    {previewSrc ? <img src={previewSrc} alt="" aria-hidden="true" draggable={false} className={`${className} mx-auto block select-none object-contain transition-[opacity,transform] duration-300 ${loaded?"opacity-0":"opacity-100"}`} style={{transform}} /> : null}
-    <img ref={imageRef} src={src} alt={alt} draggable={false} decoding="async" fetchPriority="high" onLoad={()=>{setLoadedSrc(src);setFailedSrc("");}} onError={()=>setFailedSrc(src)} className={`${className} ${previewSrc?"absolute inset-0":""} mx-auto block select-none object-contain transition-[opacity,transform] duration-300 ${loaded||!previewSrc?"opacity-100":"opacity-0"}`} style={{transform}} />
+    {previewSrc ? <img src={previewSrc} alt="" aria-hidden="true" draggable={false} className={`${className} ${alignment} block select-none object-contain transition-[opacity,transform] duration-300 ${loaded?"opacity-0":"opacity-100"}`} style={{transform}} /> : null}
+    <img ref={imageRef} src={src} alt={alt} draggable={false} decoding="async" fetchPriority="high" onLoad={()=>{setLoadedSrc(src);setFailedSrc("");}} onError={()=>setFailedSrc(src)} className={`${className} ${previewSrc?"absolute inset-0":""} ${alignment} block select-none object-contain transition-[opacity,transform] duration-300 ${loaded||!previewSrc?"opacity-100":"opacity-0"}`} style={{transform}} />
     {!loaded&&previewSrc&&failedSrc!==src?<span className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] text-white">Loading full quality…</span>:null}
     {failedSrc===src?<span role="status" className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-black/70 px-2.5 py-1 text-[10px] text-white">Full quality unavailable. {previewSrc?"Showing preview.":"Please try again later."}</span>:null}
     <button type="button" onClick={toggle} className="absolute bottom-3 right-3 rounded-full bg-black/65 px-3 py-2 text-xs text-white backdrop-blur">{scale>1?"Reset":"Zoom"}</button>
