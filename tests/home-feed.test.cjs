@@ -27,5 +27,5 @@ test("home starts the next metadata page in the background before the visitor re
 
 test("the server-rendered random Home screen is not immediately replaced during hydration", () => {
   const feed = fs.readFileSync(path.join(__dirname, "../src/components/MasonryFeed.tsx"), "utf8");
-  assert.match(feed, /if \(initialItems\.length && !randomize\) void requestPage\(0, true, false, true\)/);
+  assert.match(feed, /if \(initialItems\.length && !randomize && !eagerLoad\) void requestPage\(0, true, false, true\)/);
 });

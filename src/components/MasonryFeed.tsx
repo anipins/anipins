@@ -115,14 +115,12 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   }, [hasMore, requestPage]);
   useEffect(() => { if (!initialItems.length) void requestPage(0, true); }, [initialItems.length, requestPage]);
   useEffect(() => {
-    // Hydrate an exact server-issued cursor for the SSR cards. This avoids
-    // offset drift if artwork is published between the server render and the
-    // visitor's first infinite-scroll request. Random Home cards intentionally
-    // skip this: they are already a complete, cached 36-card server screen,
-    // and replacing them immediately causes needless network work, layout
-    // churn, and visible image placeholders on slower phones.
-    if (initialItems.length && !randomize) void requestPage(0, true, false, true);
-  }, [initialItems.length, randomize, requestPage]);
+    // Hydrate an exact server-issued cursor for ordinary SSR lists. Eager
+    // feeds already start page 1 themselves; a simultaneous page-zero
+    // hydration request used to occupy the single request slot and make the
+    // Premium prefetch silently disappear.
+    if (initialItems.length && !randomize && !eagerLoad) void requestPage(0, true, false, true);
+  }, [eagerLoad, initialItems.length, randomize, requestPage]);
   useEffect(() => {
     if (!eagerLoad || !initialItems.length) return;
     // Give the first visible thumbnails a minimal head start, then request
