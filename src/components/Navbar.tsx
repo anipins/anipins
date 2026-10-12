@@ -27,6 +27,16 @@ function PremiumMark() {
   return <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m4 8 4 4 4-7 4 7 4-4-2 10H6L4 8Z" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 21h10" strokeLinecap="round"/></svg>;
 }
 
+function SettingsMark() {
+  return (
+    <svg className="h-[19px] w-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3.5v2.25M12 18.25v2.25M20.5 12h-2.25M5.75 12H3.5M18.01 5.99l-1.59 1.59M7.58 16.42l-1.59 1.59M18.01 18.01l-1.59-1.59M7.58 7.58 5.99 5.99" />
+      <circle cx="12" cy="12" r="4.25" />
+      <circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [navVisible, setNavVisible] = useState(true);
@@ -207,8 +217,8 @@ export default function Navbar() {
             <>
               <AccountMenu user={user} />
               <Link href="/saves" className="hidden rounded-full px-3 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors min-[1650px]:block">Saves</Link>
-              <Link href="/settings" title="Settings" aria-label="Settings" className="grid h-10 w-10 place-items-center rounded-full text-fog transition-colors hover:bg-paper/5 hover:text-gold">
-                <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.04 1.56V20.3h-3v-.08A1.7 1.7 0 0 0 10.66 18.66a1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 15a1.7 1.7 0 0 0-1.56-1.04h-.08v-3h.08A1.7 1.7 0 0 0 7 9.92a1.7 1.7 0 0 0-.34-1.88L6.6 7.98l2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 11.7 4.7v-.08h3v.08a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0 0 19.4 9.92a1.7 1.7 0 0 0 1.56 1.04h.08v3h-.08A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+              <Link href="/settings" title="Settings" aria-label="Settings" className="grid h-10 w-10 place-items-center rounded-full border border-paper/10 bg-paper/[0.035] text-fog transition-all hover:border-gold/45 hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70">
+                <SettingsMark />
               </Link>
               {user.role === "ADMIN" && (
                 <Link href="/admin" className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors">
