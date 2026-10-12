@@ -17,12 +17,41 @@ const REQUEST_TIMEOUT = 10_000;
 const MAX_REQUEST_ATTEMPTS = 3;
 type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean; pageSize?: number; emptyMessage?: string; emptyAction?: { href: string; label: string }; imagePriority?: boolean };
 
+function columnsForWidth(width: number) {
+  if (width >= 2200) return 7;
+  if (width >= 1680) return 6;
+  if (width >= 1360) return 5;
+  if (width >= 1024) return 4;
+  if (width >= 640) return 3;
+  return 2;
+}
+
+function distributeAcrossColumns(items: any[], columnCount: number) {
+  const columns = Array.from({ length: columnCount }, () => [] as any[]);
+  // Each card already carries its intrinsic dimensions. Assigning the next
+  // card to the shortest column gives us Pinterest-style vertical stacks
+  // instead of CSS multi-column's visually uneven newspaper flow.
+  const heights = Array.from({ length: columnCount }, () => 0);
+  for (const item of items) {
+    let target = 0;
+    for (let index = 1; index < columnCount; index++) {
+      if (heights[index] < heights[target]) target = index;
+    }
+    columns[target].push(item);
+    const width = Number(item.width) || 1;
+    const height = Number(item.height) || width * 1.3;
+    heights[target] += height / width;
+  }
+  return columns;
+}
+
 export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, eagerLoad = false, pageSize = 36, emptyMessage = "No artwork found.", emptyAction, imagePriority }: Props) {
   const [items, setItems] = useState<any[]>(initialItems);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [initial, setInitial] = useState(initialItems.length === 0);
+  const [columnCount, setColumnCount] = useState(2);
   const sentinel = useRef<HTMLDivElement>(null);
   const inFlight = useRef(false);
   const nextPage = useRef(initialItems.length ? 1 : 0);
@@ -41,6 +70,12 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     // from being discarded after that harmless development-mode cycle.
     mounted.current = true;
     return () => { mounted.current = false; };
+  }, []);
+  useEffect(() => {
+    const updateColumns = () => setColumnCount(columnsForWidth(window.innerWidth));
+    updateColumns();
+    window.addEventListener("resize", updateColumns);
+    return () => window.removeEventListener("resize", updateColumns);
   }, []);
   useEffect(() => {
     // router.refresh() supplies fresh server-rendered cards. Keep the client
@@ -183,10 +218,19 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     return () => window.removeEventListener("anipins:hide-art", hide);
   }, []);
 
+  const renderGrid = (artwork: any[]) => {
+    const columns = distributeAcrossColumns(artwork, columnCount);
+    return <div className="masonry-grid" style={{ "--masonry-columns": columnCount } as React.CSSProperties}>
+      {columns.map((column, columnIndex) => <div className="masonry-grid__column" key={columnIndex}>
+        {column.map((art) => <ArtCard key={art.id} art={art} index={artwork.indexOf(art)} priority={imagePriority} />)}
+      </div>)}
+    </div>;
+  };
+
   return <div className="w-full max-w-none">
-    {initial ? <div className="masonry">{Array.from({ length: 8 }).map((_, i) => <div key={i} className="skeleton rounded-2xl" style={{ height: 180 + ((i * 97) % 220) }} />)}</div>
+    {initial ? <div className="masonry-grid masonry-grid--loading" style={{ "--masonry-columns": columnCount } as React.CSSProperties}>{Array.from({ length: columnCount }).map((_, column) => <div className="masonry-grid__column" key={column}>{Array.from({ length: 4 }).map((__, row) => <div key={row} className="skeleton rounded-2xl" style={{ height: 180 + (((column * 4 + row) * 97) % 220) }} />)}</div>)}</div>
       : !items.length ? <div className="py-24 text-center text-fog"><p>{emptyMessage}</p>{emptyAction ? <a href={emptyAction.href} className="btn-primary mt-5 inline-flex">{emptyAction.label}</a> : null}</div>
-      : <div className="masonry">{items.map((art, index) => <ArtCard key={art.id} art={art} index={index} priority={imagePriority} />)}</div>}
+      : renderGrid(items)}
     <div ref={sentinel} className="h-10" aria-hidden="true" />
     {loading && !initial && <div className="py-6 text-center text-sm text-fog">Loading more artwork…</div>}
     {loadError && !loading && <div className="py-5 text-center"><p className="mb-3 text-sm text-fog">More artwork could not load.</p><button type="button" className="chip" onClick={() => loadNext(true)}>Retry loading artwork</button></div>}
