@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class ArtworkActivity extends Activity {
-    private static final String INSTAGRAM_URL = "https://www.instagram.com/anipins.art/";
+    private static final String INSTAGRAM_URL = "https://www.instagram.com/anipins.verse/";
     private ApiClient api; private LinearLayout content; private int artworkId; private Artwork artwork; private ArtworkAdapter relatedAdapter; private RecyclerView relatedList; private int relatedPage=0; private long relatedSeed=System.currentTimeMillis(); private boolean relatedLoading=false,relatedHasMore=true;
     @Override protected void onCreate(Bundle state){super.onCreate(state);getWindow().setStatusBarColor(Ui.INK);getWindow().setNavigationBarColor(Ui.INK);api=new ApiClient(this);artworkId=getIntent().getIntExtra("id",0);buildLoading();load();}
     private void buildLoading(){LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Ui.INK);LinearLayout bar=new LinearLayout(this);bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(Ui.dp(this,12),Ui.dp(this,8),Ui.dp(this,16),Ui.dp(this,8));Button back=button("←");back.setOnClickListener(v->finish());bar.addView(back,new LinearLayout.LayoutParams(Ui.dp(this,52),Ui.dp(this,48)));TextView name=Ui.text(this,"Artwork",20,Ui.PAPER,true);name.setPadding(Ui.dp(this,12),0,0,0);bar.addView(name);root.addView(bar);ProgressBar loading=new ProgressBar(this);root.addView(loading,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1));setContentView(root);}
