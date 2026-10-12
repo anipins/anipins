@@ -125,10 +125,10 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   }, [initialItems.length, randomize, requestPage]);
   useEffect(() => {
     if (!eagerLoad || !initialItems.length) return;
-    // Give the first visible thumbnails a short head start, then fetch the
-    // next metadata page in the background. Lazy image loading means this
-    // does not download a second screen of pictures until it approaches view.
-    const timer = window.setTimeout(() => { void requestPage(nextPage.current, false, false, true, nextCursor.current); }, 600);
+    // Give the first visible thumbnails a minimal head start, then request
+    // the next metadata page before the visitor can reach the feed boundary.
+    // Images themselves remain lazy, so this does not download another screen.
+    const timer = window.setTimeout(() => { void requestPage(nextPage.current, false, false, true, nextCursor.current); }, 120);
     return () => window.clearTimeout(timer);
   }, [eagerLoad, initialItems.length, requestPage]);
   useEffect(() => {

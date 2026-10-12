@@ -1,15 +1,12 @@
 import FeaturedSlider from "@/components/FeaturedSlider";
 import FilterChips from "@/components/FilterChips";
 import MasonryFeed from "@/components/MasonryFeed";
-import TrendingRow from "@/components/TrendingRow";
-import Link from "next/link";
 import JsonLd from "@/components/JsonLd";
 import ScrollReveal from "@/components/ScrollReveal";
-import { getAnime, getArtworkCards, getCharacters } from "@/lib/content";
+import { getArtworkCards } from "@/lib/content";
 import { getSiteUrl } from "@/lib/site";
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
-import { Suspense } from "react";
 import { HOME_DISCOVERY_QUERY } from "@/lib/home-feed";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
@@ -32,30 +29,6 @@ const getHomeDiscovery = unstable_cache(
   { revalidate: 5 },
 );
 
-async function BrowseLinks() {
-  const [anime, characters] = await Promise.all([getAnime(), getCharacters()]);
-  return (
-    <ScrollReveal className="w-full px-3 py-12 sm:px-4 md:px-6 xl:px-8">
-      <section aria-labelledby="browse-anipins">
-        <h2 id="browse-anipins" className="font-display text-2xl font-semibold md:text-3xl">Browse anime art by series and character</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-fog">Explore AniPins collections for anime sketch references, character study and creative inspiration, with direct links to artwork from popular series and characters. New uploads appear automatically in every collection.</p>
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
-          <div className="rounded-2xl bg-soft p-5 hairline">
-            <h3 className="font-display text-lg font-semibold">Popular anime series</h3>
-            <div className="mt-4 flex flex-wrap gap-2">{anime.slice(0, 12).map((item: any) => <Link key={item.slug} href={`/anime/${item.slug}`} className="chip">{item.name} ({item.count})</Link>)}</div>
-            <Link href="/anime" className="mt-5 inline-block text-sm text-gold hover:underline">View every anime collection →</Link>
-          </div>
-          <div className="rounded-2xl bg-soft p-5 hairline">
-            <h3 className="font-display text-lg font-semibold">Popular characters</h3>
-            <div className="mt-4 flex flex-wrap gap-2">{characters.slice(0, 12).map((item: any) => <Link key={item.slug} href={`/c/${item.slug}`} className="chip">{item.name} ({item.count})</Link>)}</div>
-            <Link href="/characters" className="mt-5 inline-block text-sm text-gold hover:underline">View every character →</Link>
-          </div>
-        </div>
-      </section>
-    </ScrollReveal>
-  );
-}
-
 export default async function Home() {
   // A five-second public cache prevents concurrent visitors from each running
   // the costly random query; the rendered cards still rotate client-side.
@@ -77,28 +50,6 @@ export default async function Home() {
         </div>
         <MasonryFeed query={HOME_DISCOVERY_QUERY} randomize initialItems={discovery} initialHasMore={discovery.length === 36} eagerLoad />
       </section>
-      {/* Legacy inline browse section retained here only as a reference while the
-          streamed component below keeps it off the first-screen critical path.
-      <ScrollReveal className="w-full px-3 py-12 sm:px-4 md:px-6 xl:px-8">
-      <section aria-labelledby="browse-anipins">
-        <h2 id="browse-anipins" className="font-display text-2xl font-semibold md:text-3xl">Browse anime art by series and character</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-fog">Explore AniPins collections for anime sketch references, character study and creative inspiration, with direct links to artwork from popular series and characters. New uploads appear automatically in every collection.</p>
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
-          <div className="rounded-2xl bg-soft p-5 hairline">
-            <h3 className="font-display text-lg font-semibold">Popular anime series</h3>
-            <div className="mt-4 flex flex-wrap gap-2">{anime.slice(0, 12).map((item: any) => <Link key={item.slug} href={`/anime/${item.slug}`} className="chip">{item.name} ({item.count})</Link>)}</div>
-            <Link href="/anime" className="mt-5 inline-block text-sm text-gold hover:underline">View every anime collection →</Link>
-          </div>
-          <div className="rounded-2xl bg-soft p-5 hairline">
-            <h3 className="font-display text-lg font-semibold">Popular characters</h3>
-            <div className="mt-4 flex flex-wrap gap-2">{characters.slice(0, 12).map((item: any) => <Link key={item.slug} href={`/c/${item.slug}`} className="chip">{item.name} ({item.count})</Link>)}</div>
-            <Link href="/characters" className="mt-5 inline-block text-sm text-gold hover:underline">View every character →</Link>
-          </div>
-        </div>
-      </section>
-      </ScrollReveal> */}
-      <Suspense fallback={<div className="h-28" aria-hidden="true" />}><BrowseLinks /></Suspense>
-      <TrendingRow />
     </div>
   );
 }

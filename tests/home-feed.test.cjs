@@ -21,6 +21,8 @@ test("home starts the next metadata page in the background before the visitor re
   assert.match(home, /<MasonryFeed query=\{HOME_DISCOVERY_QUERY\} randomize initialItems=\{discovery\} initialHasMore=\{discovery\.length === 36\} eagerLoad \/>/);
   assert.match(feed, /rootMargin: "1600px 0px"/);
   assert.match(feed, /remaining < 2000/);
+  assert.match(feed, /}, 120\)/);
+  assert.doesNotMatch(home, /Browse anime art by series and character/);
 });
 
 test("the server-rendered random Home screen is not immediately replaced during hydration", () => {
