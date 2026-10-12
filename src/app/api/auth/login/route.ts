@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { row, run } from "@/lib/db";
-import { checkPassword, createSession, COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
+import { checkPassword, createSession, COOKIE, rememberAccountSession, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
 import { createLoginAlert, decryptSecret, ensureSecuritySchema, hashRecovery, requestInfo, verifyTotp } from "@/lib/admin-security";
 
 export async function POST(req: NextRequest) {
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     if (!valid) return NextResponse.json({ error: "Incorrect authentication or recovery code." }, { status: 401 });
     await run("DELETE FROM login_challenges WHERE token=?", String(challenge));
     const token = await createSession(pending.user_id, info); await createLoginAlert(pending.user_id, info.ip, info.ua);
-    const res = NextResponse.json({ ok: true, role: pending.role }); res.cookies.set(COOKIE, token, SESSION_COOKIE_OPTIONS); return res;
+    const res = NextResponse.json({ ok: true, role: pending.role }); res.cookies.set(COOKIE, token, SESSION_COOKIE_OPTIONS); await rememberAccountSession(req, res, token, pending.user_id); return res;
   }
   const em = String(email || "").toLowerCase().trim();
   const u = await row("SELECT * FROM users WHERE email=?", em);
@@ -38,5 +38,6 @@ export async function POST(req: NextRequest) {
   if (u.role === "ADMIN") await createLoginAlert(u.id, info.ip, info.ua);
   const res = NextResponse.json({ ok: true, role: u.role });
   res.cookies.set(COOKIE, token, SESSION_COOKIE_OPTIONS);
+  await rememberAccountSession(req, res, token, u.id);
   return res;
 }

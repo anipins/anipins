@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { row, run } from "@/lib/db";
-import { hashPassword, createSession, COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
+import { hashPassword, createSession, COOKIE, rememberAccountSession, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
 import { ensureSecuritySchema, requestInfo } from "@/lib/admin-security";
 import { sendWelcomeEmail } from "@/lib/email";
 
@@ -21,5 +21,6 @@ export async function POST(req: NextRequest) {
   void sendWelcomeEmail(em, displayName);
   const res = NextResponse.json({ ok: true, role });
   res.cookies.set(COOKIE, token, SESSION_COOKIE_OPTIONS);
+  await rememberAccountSession(req, res, token, u.id);
   return res;
 }

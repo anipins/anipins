@@ -5,6 +5,7 @@ import { row, run } from "./db";
 
 export const ADMIN_EMAIL = "anipins01@gmail.com";
 export const COOKIE = "anipins_session";
+export const ACCOUNTS_COOKIE = "anipins_accounts";
 
 export const SESSION_COOKIE_OPTIONS = {
   httpOnly: true,
@@ -14,6 +15,38 @@ export const SESSION_COOKIE_OPTIONS = {
   maxAge: 60 * 60 * 24 * 30,
   priority: "high" as const,
 };
+
+type StoredAccount = { userId: number; token: string };
+
+function encodeAccounts(accounts: StoredAccount[]) {
+  const payload = Buffer.from(JSON.stringify(accounts)).toString("base64url");
+  const signature = crypto.createHmac("sha256", process.env.NEXTAUTH_SECRET || "").update(payload).digest("base64url");
+  return `${payload}.${signature}`;
+}
+
+export function storedAccounts(value?: string): StoredAccount[] {
+  try {
+    const [payload, signature] = String(value || "").split(".");
+    if (!payload || !signature || !process.env.NEXTAUTH_SECRET) return [];
+    const expected = crypto.createHmac("sha256", process.env.NEXTAUTH_SECRET).update(payload).digest("base64url");
+    if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return [];
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    return Array.isArray(parsed) ? parsed.filter((item: any) => Number.isInteger(item?.userId) && /^[a-f0-9]{64}$/.test(item?.token || "")).slice(0, 4) : [];
+  } catch { return []; }
+}
+
+export async function rememberAccountSession(request: { cookies: { get(name: string): { value?: string } | undefined } }, response: { cookies: { set(name: string, value: string, options: typeof SESSION_COOKIE_OPTIONS): void } }, token: string, userId: number) {
+  const accounts = storedAccounts(request.cookies.get(ACCOUNTS_COOKIE)?.value);
+  const previousToken = request.cookies.get(COOKIE)?.value;
+  if (previousToken && previousToken !== token) {
+    const previous = await row("SELECT user_id FROM sessions WHERE token=? AND expires_at>?", previousToken, Date.now());
+    if (previous) accounts.push({ userId: Number(previous.user_id), token: previousToken });
+  }
+  const next = [{ userId, token }, ...accounts.filter(account => account.token !== token && account.userId !== userId)].slice(0, 4);
+  response.cookies.set(ACCOUNTS_COOKIE, encodeAccounts(next), SESSION_COOKIE_OPTIONS);
+}
+
+export function accountCookieFor(accounts: StoredAccount[]) { return encodeAccounts(accounts); }
 
 export type SessionUser = { id: number; email: string; name: string; nickname: string; avatar: string; cover: string; bio: string; is_public: number; notify_following: number; notify_updates: number; role: string };
 

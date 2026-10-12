@@ -113,7 +113,7 @@ export default function ArtLightbox() {
             style={{ transformPerspective: 1100 }}
             onClick={e => e.stopPropagation()}
             className="min-h-full w-full max-w-none overflow-hidden bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
-            <div className="grid md:min-h-dvh md:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
+            <div className="grid md:min-h-dvh md:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)] xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.55fr)_280px]">
               <div className="relative flex min-h-0 w-full items-center justify-center overflow-hidden bg-black md:h-dvh">
                 {art && fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} className="mx-auto h-auto w-full max-h-none md:max-h-full" />
                   : <div className="skeleton h-[50vh] w-full" />}
@@ -178,6 +178,15 @@ export default function ArtLightbox() {
                   </>
                 )}
               </div>
+              {data?.related?.length > 0 && <aside className="hidden border-l border-paper/10 bg-ink/35 p-4 xl:block">
+                <div className="flex items-center justify-between px-1"><h3 className="font-display text-base font-semibold">More like this</h3><span className="text-[10px] uppercase tracking-[.16em] text-fog">Discover</span></div>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  {data.related.slice(0, 8).map((item: any) => <button key={item.id} type="button" onClick={() => { setPreview(item); setId(item.id); }} className="group overflow-hidden rounded-xl border border-paper/10 bg-soft text-left transition-colors hover:border-gold/50">
+                    <img src={item.thumb_url || `/api/img/${item.thumb}`} alt={item.title || item.character_name} loading="lazy" className="aspect-[3/4] w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]" />
+                    <span className="block truncate px-2 py-1.5 text-xs text-fog group-hover:text-paper">{item.character_name}</span>
+                  </button>)}
+                </div>
+              </aside>}
             </div>
             {data?.related?.length > 0 && (
               <section className="border-t border-paper/10 p-5 md:p-8">

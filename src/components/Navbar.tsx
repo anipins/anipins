@@ -8,6 +8,7 @@ import ThemeToggle from "./ThemeToggle";
 import NotificationBell from "./NotificationBell";
 import InstagramLink from "./InstagramLink";
 import { toast } from "./Toaster";
+import AccountMenu from "./AccountMenu";
 
 const APP_URL = "/downloads/AniPins-2.5.20.apk";
 const APP_DOWNLOAD_KEY = "anipins-app-download-requested-v1";
@@ -204,12 +205,7 @@ export default function Navbar() {
           </InstagramLink>
           {user ? (
             <>
-              <Link href="/profile" title="Profile" className="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-fog hover:bg-paper/5 hover:text-paper transition-colors">
-                <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-soft text-xs font-semibold text-gold hairline">
-                  {user.avatar ? <img src={`/api/img/${user.avatar}`} alt="" className="h-full w-full object-cover" /> : (user.nickname || user.name || user.email || "A").slice(0, 1).toUpperCase()}
-                </span>
-                <span className="hidden max-w-24 truncate min-[1800px]:block">{user.nickname || user.name || "Profile"}</span>
-              </Link>
+              <AccountMenu user={user} />
               <Link href="/saves" className="hidden rounded-full px-3 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors min-[1650px]:block">Saves</Link>
               <Link href="/settings" title="Settings" aria-label="Settings" className="grid h-10 w-10 place-items-center rounded-full text-fog transition-colors hover:bg-paper/5 hover:text-gold">
                 <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.04 1.56V20.3h-3v-.08A1.7 1.7 0 0 0 10.66 18.66a1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 15a1.7 1.7 0 0 0-1.56-1.04h-.08v-3h.08A1.7 1.7 0 0 0 7 9.92a1.7 1.7 0 0 0-.34-1.88L6.6 7.98l2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 11.7 4.7v-.08h3v.08a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0 0 19.4 9.92a1.7 1.7 0 0 0 1.56 1.04h.08v3h-.08A1.7 1.7 0 0 0 19.4 15Z"/></svg>

@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { COOKIE, createSession, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
+import { COOKIE, createSession, rememberAccountSession, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
 import {
   createLoginAlert,
   ensureSecuritySchema,
@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
     if (user.isNew) void sendWelcomeEmail(user.email, String(payload.name || ""));
     const response = NextResponse.json({ ok: true, role: user.role });
     response.cookies.set(COOKIE, token, SESSION_COOKIE_OPTIONS);
+    await rememberAccountSession(req, response, token, user.id);
     return clearNonce(response);
   } catch (error) {
     const detail = errorMessage(error);
