@@ -10,12 +10,34 @@ const ARTWORK_CACHE_UNTIL_HEADER = "x-anipins-artwork-cache-until";
 function cacheKind(request) {
   if (request.method !== "GET") return null;
   const url = new URL(request.url);
-  if (url.protocol !== "https:" || !["anipins.com", "www.anipins.com"].includes(url.hostname) || url.search) return null;
+  if (url.protocol !== "https:" || !["anipins.com", "www.anipins.com"].includes(url.hostname)) return null;
+  const signedThumbnail = /^\/api\/img\/t\/[a-zA-Z0-9._-]+$/.test(url.pathname)
+    && url.searchParams.size === 2 && url.searchParams.has("e") && url.searchParams.has("s");
+  if (url.search && !signedThumbnail) return null;
   if (["range", "if-range", "if-none-match", "if-modified-since"].some(key => request.headers.has(key))) return null;
   if (/no-cache|no-store/i.test(request.headers.get("cache-control") || "")) return null;
   if (/^\/_next\/static\/(?:chunks|css|media)\/.+/.test(url.pathname)) return "static";
   if (/^\/api\/img\/(?:o|t)\/.+/.test(url.pathname)) return "artwork";
   return null;
+}
+
+function base64UrlBytes(value) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(normalized + "=".repeat((4 - normalized.length % 4) % 4));
+  return Uint8Array.from(binary, char => char.charCodeAt(0));
+}
+
+export async function signedThumbnailKey(request, secret) {
+  const url = new URL(request.url);
+  const match = url.pathname.match(/^\/api\/img\/(t\/[a-zA-Z0-9._-]+)$/);
+  const expiresAt = Number(url.searchParams.get("e"));
+  const signature = url.searchParams.get("s") || "";
+  if (!match || !secret || !Number.isSafeInteger(expiresAt) || expiresAt < Math.floor(Date.now() / 1000) || expiresAt > Math.floor(Date.now() / 1000) + 120 || !signature) return null;
+  try {
+    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+    const valid = await crypto.subtle.verify("HMAC", key, base64UrlBytes(signature), new TextEncoder().encode(`thumbnail:${match[1]}:${expiresAt}`));
+    return valid ? match[1] : null;
+  } catch { return null; }
 }
 
 function canStore(response, kind) {

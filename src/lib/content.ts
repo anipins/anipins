@@ -1,5 +1,5 @@
 import { row, rows } from "@/lib/db";
-import { publicMediaUrl } from "@/lib/media";
+import { publicMediaUrl, publicThumbnailUrl } from "@/lib/media";
 import { premiumArtworkFilter } from "@/lib/premium-artwork";
 import { nonWallpaperFilter, wallpaperFilter } from "@/lib/wallpaper-feed-utils";
 
@@ -33,7 +33,7 @@ export async function getArtworkCards(options: {
   if (sort === "featured") order = "views DESC, id DESC";
   if (sort === "random") order = "RANDOM()";
   const items = await rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ?`, ...args, limit);
-  return items.map((item: any) => ({ ...item, thumb_url: publicMediaUrl(item.thumb), orig_url: publicMediaUrl(item.orig) }));
+  return items.map((item: any) => ({ ...item, thumb_url: publicThumbnailUrl(item.thumb), orig_url: publicMediaUrl(item.orig) }));
 }
 
 /** Low-detail cards for the public Premium sales page. The image route returns

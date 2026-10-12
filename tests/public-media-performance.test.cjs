@@ -124,6 +124,14 @@ test("non-artwork API and POST requests pass through uncached", async () => {
   assert.equal(pending.length, 0);
 });
 
+test("the Worker accepts only signed thumbnail queries for its direct R2 path", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../cloudflare/worker.mjs"), "utf8");
+  const cache = fs.readFileSync(path.join(__dirname, "../cloudflare/public-image-cache.mjs"), "utf8");
+  assert.match(source, /signedThumbnailKey\(request, env\.NEXTAUTH_SECRET\)/);
+  assert.match(source, /env\.ARTWORKS_PUBLIC\.get\(thumbnailKey\)/);
+  assert.match(cache, /expiresAt > Math\.floor\(Date\.now\(\) \/ 1000\) \+ 120/);
+});
+
 test("homepage rotating discovery query uses a short-lived 5-second shared server cache", () => {
   const source = fs.readFileSync(path.join(__dirname, "../src/app/page.tsx"), "utf8");
   assert.match(source, /const getHomeDiscovery = unstable_cache\(/);
@@ -134,7 +142,7 @@ test("homepage rotating discovery query uses a short-lived 5-second shared serve
 
 test("production Worker routes eligible requests through the cache before entering the container", () => {
   const source = fs.readFileSync(path.join(__dirname, "../cloudflare/worker.mjs"), "utf8");
-  assert.match(source, /import \{ servePublicImage \} from "\.\/public-image-cache\.mjs"/);
+  assert.match(source, /import \{ servePublicImage(?:, signedThumbnailKey)? \} from "\.\/public-image-cache\.mjs"/);
   assert.match(source, /return servePublicImage\(/);
   assert.match(source, /caches\.default/);
   assert.match(source, /ctx\.waitUntil\(promise\)/);

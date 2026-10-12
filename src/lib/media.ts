@@ -155,6 +155,21 @@ export function publicMediaUrl(rel: string) {
   return `/api/img/${rel}`;
 }
 
+/**
+ * Published, non-Premium feed thumbnails may be read straight from the
+ * Worker-bound public R2 bucket. A short HMAC keeps drafts, Premium media and
+ * guessed object names off that fast path; originals always retain the normal
+ * application access check.
+ */
+export function publicThumbnailUrl(rel: string) {
+  if (!isSafeMediaKey(rel) || !rel.startsWith("t/")) return publicMediaUrl(rel);
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) return publicMediaUrl(rel);
+  const expiresAt = Math.floor(Date.now() / 1000) + 60;
+  const signature = crypto.createHmac("sha256", secret).update(`thumbnail:${rel}:${expiresAt}`).digest("base64url");
+  return `/api/img/${rel}?e=${expiresAt}&s=${signature}`;
+}
+
 export async function saveAvatar(buffer: Buffer, userId: number) {
   const key = `avatars/${userId}-${crypto.randomBytes(8).toString("hex")}.webp`;
   const avatar = await sharp(buffer)

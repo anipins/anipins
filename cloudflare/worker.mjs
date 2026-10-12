@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { forwardToContainer, isAllowedPublicHost } from "./forwarding.mjs";
-import { servePublicImage } from "./public-image-cache.mjs";
+import { servePublicImage, signedThumbnailKey } from "./public-image-cache.mjs";
 
 const PORT = 8080;
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
@@ -123,10 +123,26 @@ export class AniPinsContainer extends DurableObject {
 }
 
 export default {
-  fetch(request, env, ctx) {
+  async fetch(request, env, ctx) {
     // Do not allow an arbitrary Worker/custom-domain hostname to become the
     // forwarded host trusted by the application for same-origin checks.
     if (!isAllowedPublicHost(request)) return new Response("Misdirected request", { status: 421 });
+    const thumbnailKey = await signedThumbnailKey(request, env.NEXTAUTH_SECRET);
+    if (thumbnailKey) {
+      return servePublicImage(
+        request,
+        async () => {
+          const object = await env.ARTWORKS_PUBLIC.get(thumbnailKey);
+          if (!object) return new Response("Not found", { status: 404 });
+          return new Response(object.body, { headers: {
+            "Content-Type": object.httpMetadata?.contentType || "image/webp",
+            "Cache-Control": "public, max-age=31536000, immutable",
+          } });
+        },
+        caches.default,
+        promise => ctx.waitUntil(promise),
+      );
+    }
     const target = env.ANIPINS_CONTAINER.getByName("anipins-web-v2");
     return servePublicImage(
       request,

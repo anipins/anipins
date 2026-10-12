@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rows, USE_PG } from "@/lib/db";
 import { getUser } from "@/lib/auth";
-import { publicMediaUrl } from "@/lib/media";
+import { publicMediaUrl, publicThumbnailUrl } from "@/lib/media";
 import { ensurePremiumArtworkSchema, premiumArtworkFilter } from "@/lib/premium-artwork";
 import { canAccessPremium } from "@/lib/billing";
 import { nonWallpaperFilter, wallpaperFilter } from "@/lib/wallpaper-feed-utils";
@@ -9,7 +9,11 @@ import { decodeArtworkCursor, encodeArtworkCursor } from "@/lib/artwork-cursor";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const clientItems = (items: any[]) => items.map(({ _cursor_created_at, ...item }) => ({ ...item, thumb_url: publicMediaUrl(item.thumb), orig_url: publicMediaUrl(item.orig) }));
+const clientItems = (items: any[], signedPublicThumbnails = false) => items.map(({ _cursor_created_at, ...item }) => ({
+  ...item,
+  thumb_url: signedPublicThumbnails ? publicThumbnailUrl(item.thumb) : publicMediaUrl(item.thumb),
+  orig_url: publicMediaUrl(item.orig),
+}));
 const publicBrowseHeaders = { "Cache-Control": "public, max-age=5, s-maxage=10, stale-while-revalidate=45" };
 
 // A refresh should feel like discovery, while every later page still needs a
@@ -167,7 +171,7 @@ export async function GET(req: NextRequest) {
     ? publicBrowseHeaders
     : { "Cache-Control": "private, no-store" };
   return NextResponse.json(
-    { items: clientItems(pageItems), hasMore, nextCursor },
+    { items: clientItems(pageItems, !premiumOnly), hasMore, nextCursor },
     // Anonymous browsing is shared for just ten seconds. Images remain
     // immutable, while a new upload becomes visible on every feed quickly.
     { headers: responseHeaders },
