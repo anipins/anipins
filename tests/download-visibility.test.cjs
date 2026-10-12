@@ -23,6 +23,16 @@ test("download endpoint applies visibility before retrieving original bytes", ()
   assert.match(source, /canAccessPremium\(user\)/);
 });
 
+test("R2 downloads are authorized before redirecting the large file directly from storage", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../src/app/api/artworks/[id]/download/route.ts"), "utf8");
+  const r2 = fs.readFileSync(path.join(__dirname, "../src/lib/r2.ts"), "utf8");
+  assert.match(source, /mayDownloadArtwork\(art, user\)/);
+  assert.match(source, /r2SignedDownloadUrl\(art\.orig/);
+  assert.match(source, /NextResponse\.redirect\(location/);
+  assert.match(r2, /ResponseContentDisposition/);
+  assert.match(r2, /expiresIn: 300/);
+});
+
 test("public media path rejects staged and unpublished artwork keys", () => {
   assert.equal(mayReadArtworkMedia(null, null), false);
   assert.equal(mayReadArtworkMedia({ published: 0 }, null), false);

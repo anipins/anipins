@@ -47,6 +47,22 @@ export async function r2SignedPutUrl(key: string, contentType: string, premium: 
   return getSignedUrl(r2Client(), new PutObjectCommand({ Bucket, Key: key, ContentType: contentType }), { expiresIn: 300 });
 }
 
+/**
+ * The application authorizes the download before issuing this short-lived
+ * capability. The browser then receives the original directly from R2 rather
+ * than forcing a multi-megabyte file through the app container.
+ */
+export async function r2SignedDownloadUrl(key: string, premium: boolean, filename: string, contentType: string) {
+  const Bucket = premium ? R2_PREMIUM_BUCKET! : R2_PUBLIC_BUCKET!;
+  const safeFilename = filename.replace(/[\r\n"\\]/g, "_");
+  return getSignedUrl(r2Client(), new GetObjectCommand({
+    Bucket,
+    Key: key,
+    ResponseContentDisposition: `attachment; filename="${safeFilename}"`,
+    ResponseContentType: contentType,
+  }), { expiresIn: 300 });
+}
+
 export async function r2Delete(key: string, premium: boolean) {
   const Bucket = premium ? R2_PREMIUM_BUCKET! : R2_PUBLIC_BUCKET!;
   await r2Client().send(new DeleteObjectCommand({ Bucket, Key: key }));
