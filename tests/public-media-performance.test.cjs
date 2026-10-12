@@ -105,7 +105,7 @@ test("homepage rotating discovery query uses a short-lived 5-second shared serve
 
 test("production Worker routes eligible requests through the cache before entering the container", () => {
   const source = fs.readFileSync(path.join(__dirname, "../cloudflare/worker.mjs"), "utf8");
-  assert.match(source, /import \{ servePublicImage \} from "\.\/public-image-cache\.mjs"/);
+  assert.match(source, /async function servePublicImage\(/);
   assert.match(source, /return servePublicImage\(/);
   assert.match(source, /caches\.default/);
   assert.match(source, /ctx\.waitUntil\(promise\)/);

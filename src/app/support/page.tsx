@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import InstagramLink from "@/components/InstagramLink";
 
 export const metadata: Metadata = { title: "Help & Support", description: "Get help with AniPins accounts, downloads, artwork and the Android app.", alternates: { canonical: "/support" } };
 
@@ -19,6 +20,6 @@ export default function SupportPage() {
       <article className="rounded-2xl border border-paper/10 bg-soft p-5"><h2 className="font-display text-lg text-paper">Delete your account</h2><p className="mt-2">Open Profile → Settings &amp; privacy → Delete account, or use the public <Link href="/delete-account" className="text-gold underline">deletion page</Link>. Deletion removes the account and associated profile activity permanently.</p></article>
       <article className="rounded-2xl border border-paper/10 bg-soft p-5"><h2 className="font-display text-lg text-paper">App updates</h2><p className="mt-2">Website features update automatically inside the app. Native Android changes such as launcher icons, permissions or sign-in components require installing the latest signed AniPins update.</p></article>
     </div>
-    <p className="mb-16 mt-8">Still need help? Email <a className="text-gold underline" href="mailto:anipins01@gmail.com">anipins01@gmail.com</a> or message <a className="text-gold underline" href="https://www.instagram.com/anipins.art/" target="_blank" rel="noopener noreferrer">@anipins.art on Instagram</a>. Include the page or artwork URL, your device model and a screenshot when possible. Please allow a reasonable time for a response.</p>
+    <p className="mb-16 mt-8">Still need help? Email <a className="text-gold underline" href="mailto:anipins01@gmail.com">anipins01@gmail.com</a> or message <InstagramLink className="text-gold underline" target="_blank" rel="noopener noreferrer">@anipins.verse on Instagram</InstagramLink>. Include the page or artwork URL, your device model and a screenshot when possible. Please allow a reasonable time for a response.</p>
   </section>;
 }

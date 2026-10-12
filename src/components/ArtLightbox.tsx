@@ -10,6 +10,7 @@ import ZoomableArtwork from "./ZoomableArtwork";
 import DownloadButton from "./DownloadButton";
 import ReportArtwork from "./ReportArtwork";
 import MasonryFeed from "./MasonryFeed";
+import ArtCard from "./ArtCard";
 
 export default function ArtLightbox() {
   const [id, setId] = useState<number | null>(null);
@@ -113,12 +114,13 @@ export default function ArtLightbox() {
             style={{ transformPerspective: 1100 }}
             onClick={e => e.stopPropagation()}
             className="min-h-full w-full max-w-none overflow-hidden bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
-            <div className="grid md:min-h-dvh md:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
-              <div className="relative flex min-h-0 w-full items-center justify-center overflow-hidden bg-black md:h-dvh">
+            <div className={`grid min-w-0 gap-4 p-4 lg:gap-5 lg:p-6 ${data?.related?.length ? "lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]" : "lg:grid-cols-1"}`}>
+              <div className="min-w-0">
+              <div className="relative flex min-h-[50vh] w-full items-center justify-center overflow-hidden rounded-2xl bg-black md:h-[min(78vh,900px)]">
                 {art && fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} className="mx-auto h-auto w-full max-h-none md:max-h-full" />
                   : <div className="skeleton h-[50vh] w-full" />}
               </div>
-              <div className="artwork-detail-panel flex h-auto min-h-0 flex-col justify-start p-6 pb-6 md:min-h-80 md:p-8 md:pb-[max(2rem,env(safe-area-inset-bottom))]">
+              <div className="artwork-detail-panel flex h-auto min-h-0 flex-col justify-start px-2 pt-5 pb-6 md:min-h-80 md:p-5 md:pb-[max(2rem,env(safe-area-inset-bottom))]">
                 {detailError && <div className="mb-4 rounded-xl border border-gold/30 bg-gold/10 p-3 text-sm text-paper">Artwork details are taking longer than usual. <button type="button" onClick={() => setDetailRetry(value => value + 1)} className="ml-2 text-gold underline underline-offset-4">Retry</button></div>}
                 {art && (
                   <>
@@ -178,12 +180,24 @@ export default function ArtLightbox() {
                   </>
                 )}
               </div>
+              </div>
+              {data?.related?.length > 0 && (
+                <aside aria-label="Related artwork" className="hidden min-w-0 lg:block">
+                  <div className="columns-2 gap-3 xl:columns-3 xl:gap-4">
+                    {data.related.slice(0, 6).map((relatedArt: any, index: number) => (
+                      <div key={relatedArt.id} className="mb-4 break-inside-avoid">
+                        <ArtCard art={relatedArt} index={index} />
+                      </div>
+                    ))}
+                  </div>
+                </aside>
+              )}
             </div>
             {data?.related?.length > 0 && (
               <section className="border-t border-paper/10 p-5 md:p-8">
                 <h3 className="font-display text-xl font-semibold">More to explore</h3>
                 <p className="mt-1 text-xs text-fog">Fresh picks from every series—choose any image to continue.</p>
-                <div className="mt-5"><MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize eagerLoad initialItems={data.related} initialHasMore /></div>
+                <div className="mt-5"><MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize eagerLoad initialItems={data.related} desktopHiddenIds={data.related.slice(0, 6).map((item: any) => item.id)} initialHasMore /></div>
               </section>
             )}
           </motion.div>

@@ -89,9 +89,24 @@ async function getMedia(key: string, premium = false) {
   throw new Error("Object storage is not configured");
 }
 
+
+function signedWorkerStorageUrl(action: "upload" | "read", key: string, premium: boolean) {
+  // Short-lived per-object HMAC capabilities. No R2 secret goes to the client.
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) throw new Error("Artwork storage capability signing is unavailable");
+  const expiresAt = Math.floor(Date.now() / 1000) + 240;
+  const premiumFlag = premium ? "1" : "0";
+  const signature = crypto.createHmac("sha256", secret)
+    .update(`${action}:${key}:${premiumFlag}:${expiresAt}`)
+    .digest("base64url");
+  const base = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://anipins.com").replace(/\/$/, "");
+  const url = new URL(`/api/storage-${action}?key=${encodeURIComponent(key)}&p=${premiumFlag}&e=${expiresAt}&s=${signature}`, base);
+  return url.toString();
+}
+
 export async function createSignedArtworkUpload(key: string, premium = false) {
   if (!isSafeMediaKey(key) || !key.startsWith("o/")) return null;
-  if (USE_R2_MEDIA) return { key, uploadUrl: await r2SignedPutUrl(key, MIME[path.extname(key).toLowerCase()] || "application/octet-stream", premium), token: "" };
+  if (USE_R2_MEDIA) return { key, uploadUrl: signedWorkerStorageUrl("upload", key, premium), token: "" };
   if (!USE_SUPABASE_STORAGE) return null;
   const response = await fetch(`${SB_URL}/storage/v1/object/upload/sign/${BUCKET}/${key}`, {
     method: "POST",
@@ -108,6 +123,18 @@ export async function createSignedArtworkUpload(key: string, premium = false) {
  * duplicate detection and thumbnail generation. */
 export async function readArtworkUpload(key: string, premium = false) {
   if (!isSafeMediaKey(key) || !key.startsWith("o/")) throw new Error("Invalid staged artwork");
+  if (USE_R2_MEDIA) {
+    // Read the exact staged R2 object through the bound Worker, not through
+    // separate container S3 credentials that produced 503 on finalisation.
+    const response = await fetch(signedWorkerStorageUrl("read", key, premium), {
+      cache: "no-store", signal: AbortSignal.timeout(45000),
+    });
+    if (!response.ok) throw new Error(`Staged artwork read failed (${response.status})`);
+    const data = Buffer.from(await response.arrayBuffer());
+    if (!data.length || data.length > 40 * 1024 * 1024)
+      throw new Error("Staged artwork length is invalid");
+    return data;
+  }
   return getMedia(key, premium);
 }
 

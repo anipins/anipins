@@ -20,9 +20,9 @@ test("Cloudflare migration is staging-only and has a container readiness path", 
   assert.match(config, /"dockerfile"\s*:\s*"\.\/Dockerfile"/);
   assert.doesNotMatch(config, /"routes"\s*:/);
 
-  assert.match(worker, /class AniPinsContainer extends DurableObject/);
+  assert.match(worker, /(?:class AniPinsContainer extends DurableObject|var AniPinsContainer = class extends DurableObject)/);
   assert.match(worker, /enableInternet:\s*true/);
-  assert.match(worker, /const PORT = 8080/);
+  assert.match(worker, /(?:const|var) PORT = 8080/);
   assert.match(worker, /getTcpPort\(PORT\)/);
   assert.match(worker, /http:\/\/container\/health/);
   assert.match(worker, /getByName\("anipins-web-v2"\)/);

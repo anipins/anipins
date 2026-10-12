@@ -6,11 +6,12 @@ export async function GET() {
   // It deliberately changes only the known previous AniPins values, never a
   // custom Instagram profile entered by an administrator.
   await run(
-    "UPDATE settings SET value=? WHERE key='instagram_handle' AND value IN (?, ?)",
-    "@anipins.art", "@_anipins_", "@_anipinss_"
+    "UPDATE settings SET value=? WHERE key='instagram_handle' AND value IN (?, ?, ?)",
+    "@anipins.verse", "@anipins.art", "@_anipins_", "@_anipinss_"
   );
   await run(
-    "UPDATE settings SET value=? WHERE key='instagram_url' AND value IN (?, ?)",
+    "UPDATE settings SET value=? WHERE key='instagram_url' AND value IN (?, ?, ?)",
+    "https://www.instagram.com/anipins.verse/",
     "https://www.instagram.com/anipins.art/",
     "https://www.instagram.com/_anipins_?igsi=dzZzem42bnBha3Y=",
     "https://www.instagram.com/_anipinss_/"
