@@ -67,7 +67,10 @@ function canStore(response, kind) {
     : /^image\/(?:jpeg|png|webp|gif|avif)(?:;|$)/i.test(type);
   return validType
     && (kind === "document" || /(?:^|,)\s*public\b/i.test(control))
-    && !/(?:^|,)\s*(?:private|no-store|no-cache)\b/i.test(control)
+    // Next marks dynamic HTML private by default. The only exception is the
+    // explicitly guest-only root document above; everything else keeps the
+    // normal no-store protection.
+    && (kind === "document" || !/(?:^|,)\s*(?:private|no-store|no-cache)\b/i.test(control))
     && (kind !== "static" || /\bimmutable\b/i.test(control))
     && !headers.has("set-cookie")
     && !headers.has("content-range")
