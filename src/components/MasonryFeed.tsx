@@ -117,9 +117,12 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   useEffect(() => {
     // Hydrate an exact server-issued cursor for the SSR cards. This avoids
     // offset drift if artwork is published between the server render and the
-    // visitor's first infinite-scroll request.
-    if (initialItems.length) void requestPage(0, true, false, true);
-  }, [initialItems.length, requestPage]);
+    // visitor's first infinite-scroll request. Random Home cards intentionally
+    // skip this: they are already a complete, cached 36-card server screen,
+    // and replacing them immediately causes needless network work, layout
+    // churn, and visible image placeholders on slower phones.
+    if (initialItems.length && !randomize) void requestPage(0, true, false, true);
+  }, [initialItems.length, randomize, requestPage]);
   useEffect(() => {
     if (!eagerLoad || !initialItems.length) return;
     // Give the first visible thumbnails a short head start, then fetch the
