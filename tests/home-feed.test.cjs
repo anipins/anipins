@@ -8,9 +8,11 @@ test("Home uses a rotating discovery feed instead of pinning visitors to newest 
   assert.deepEqual(HOME_DISCOVERY_QUERY, { sort: "random" });
 });
 
-test("production random feed uses a seeded hash so refreshes vary across the library", () => {
+test("production random feed rotates from a seeded indexed position instead of sorting the whole library", () => {
   const route = fs.readFileSync(path.join(__dirname, "../src/app/api/artworks/route.ts"), "utf8");
-  assert.match(route, /hashtextextended\(CAST\(id AS text\), \?\)/);
+  assert.match(route, /const offset = \(seed % total \+ consumed\) % total/);
+  assert.match(route, /ORDER BY id ASC LIMIT \? OFFSET \?/);
+  assert.doesNotMatch(route, /hashtextextended|ORDER BY RANDOM\(\)/);
 });
 
 test("home starts the next metadata page in the background before the visitor reaches it", () => {

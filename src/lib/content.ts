@@ -6,6 +6,15 @@ import { nonWallpaperFilter, wallpaperFilter } from "@/lib/wallpaper-feed-utils"
 export const ARTWORK_CARD_COLUMNS =
   "id, title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, premium, featured, orig, thumb, width, height, views, downloads, created_at";
 
+function shuffle<T>(items: T[]) {
+  const copy = [...items];
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swap = Math.floor(Math.random() * (index + 1));
+    [copy[index], copy[swap]] = [copy[swap], copy[index]];
+  }
+  return copy;
+}
+
 export async function getArtworkCards(options: {
   limit?: number;
   sort?: "latest" | "trending" | "popular" | "featured" | "random";
@@ -31,8 +40,25 @@ export async function getArtworkCards(options: {
   if (sort === "trending") order = "views DESC, downloads DESC, id DESC";
   if (sort === "popular") order = "downloads DESC, views DESC, id DESC";
   if (sort === "featured") order = "views DESC, id DESC";
-  if (sort === "random") order = "RANDOM()";
-  const items = await rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ?`, ...args, limit);
+  let items: any[];
+  if (sort === "random") {
+    // ORDER BY RANDOM() scans and sorts the entire library before returning a
+    // single card. Start at a random position in the indexed id order and
+    // wrap once instead. The result remains fresh (and is shuffled below),
+    // while the database reads only this screenful of artwork.
+    const total = Number((await row(`SELECT COUNT(*) AS count FROM artworks WHERE ${where}`, ...args))?.count || 0);
+    if (!total) return [];
+    const take = Math.min(limit, total);
+    const offset = Math.floor(Math.random() * total);
+    const firstTake = Math.min(take, total - offset);
+    const first = await rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY id ASC LIMIT ? OFFSET ?`, ...args, firstTake, offset);
+    const second = firstTake < take
+      ? await rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY id ASC LIMIT ?`, ...args, take - firstTake)
+      : [];
+    items = shuffle([...first, ...second]);
+  } else {
+    items = await rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ?`, ...args, limit);
+  }
   return items.map((item: any) => ({ ...item, thumb_url: publicThumbnailUrl(item.thumb), orig_url: publicMediaUrl(item.orig) }));
 }
 

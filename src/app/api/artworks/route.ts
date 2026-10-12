@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { rows, USE_PG } from "@/lib/db";
+import { row, rows, USE_PG } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { publicMediaUrl, publicThumbnailUrl } from "@/lib/media";
 import { ensurePremiumArtworkSchema, premiumArtworkFilter } from "@/lib/premium-artwork";
@@ -15,16 +15,6 @@ const clientItems = (items: any[], signedPublicThumbnails = false) => items.map(
   orig_url: publicMediaUrl(item.orig),
 }));
 const publicBrowseHeaders = { "Cache-Control": "public, max-age=5, s-maxage=10, stale-while-revalidate=45" };
-
-// A refresh should feel like discovery, while every later page still needs a
-// stable order. Postgres's seeded hash distributes the IDs much more evenly
-// than multiplying sequential IDs, which could leave the same card first for
-// several different seeds. Keep a deterministic SQLite fallback for local use.
-function seededArtworkOrder(seed: number) {
-  if (USE_PG) return { sql: "hashtextextended(CAST(id AS text), ?), id", args: [seed] };
-  const multiplier = (seed * 48_271) % 2_147_483_647 || 1;
-  return { sql: "((CAST(id AS BIGINT) * ?) % 2147483647), id", args: [multiplier] };
-}
 
 export async function GET(req: NextRequest) {
   await ensurePremiumArtworkSchema();
@@ -129,19 +119,36 @@ export async function GET(req: NextRequest) {
       }
     }
     // New and signed-out visitors still receive a varied discovery feed.
-    const randomOrder = seededArtworkOrder(seed);
-    const fallback = await rows(`SELECT ${cols} FROM artworks WHERE ${where} ORDER BY ${randomOrder.sql} LIMIT ? OFFSET ?`, ...args, ...randomOrder.args, limit + 1, page * limit);
+    const fallback = await rows(`SELECT ${cols} FROM artworks WHERE ${where} ORDER BY id DESC LIMIT ? OFFSET ?`, ...args, limit + 1, page * limit);
     return NextResponse.json({ items: clientItems(fallback.slice(0, limit)), hasMore: fallback.length > limit, personalized: false }, { headers: { "Cache-Control": "private, no-store" } });
+  }
+
+  if (sort === "random") {
+    // A deterministic rotation is a much faster alternative to a full-table
+    // hash/RANDOM sort. Each seed starts at a different point in the complete
+    // filtered library, then follows indexed id order and wraps once—so every
+    // artwork remains reachable with no duplicates before the final page.
+    const total = Number((await row(`SELECT COUNT(*) AS count FROM artworks WHERE ${where}`, ...args))?.count || 0);
+    const consumed = page * limit;
+    if (!total || consumed >= total) {
+      return NextResponse.json({ items: [], hasMore: false }, { headers: publicBrowseHeaders });
+    }
+    const take = Math.min(limit, total - consumed);
+    const offset = (seed % total + consumed) % total;
+    const firstTake = Math.min(take, total - offset);
+    const first = await rows(`SELECT ${cols} FROM artworks WHERE ${where} ORDER BY id ASC LIMIT ? OFFSET ?`, ...args, firstTake, offset);
+    const second = firstTake < take
+      ? await rows(`SELECT ${cols} FROM artworks WHERE ${where} ORDER BY id ASC LIMIT ?`, ...args, take - firstTake)
+      : [];
+    return NextResponse.json(
+      { items: clientItems([...first, ...second], !premiumOnly), hasMore: consumed + take < total },
+      { headers: publicBrowseHeaders },
+    );
   }
 
   let order = "created_at DESC, id DESC";
   if (sort === "popular") order = "downloads DESC, views DESC";
   if (sort === "trending") order = "views DESC, downloads DESC";
-  if (sort === "random") {
-    const randomOrder = seededArtworkOrder(seed);
-    order = randomOrder.sql;
-    args.push(...randomOrder.args);
-  }
 
   // Offset pages shift whenever a new upload lands above an already-open
   // feed. A keyset cursor pins each later request below the final card from
