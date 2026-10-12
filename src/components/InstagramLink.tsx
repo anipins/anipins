@@ -4,8 +4,8 @@ import type { AnchorHTMLAttributes, MouseEvent, ReactNode } from "react";
 
 // Use the canonical profile URL, rather than a session-specific shared-link token.
 // This remains valid for every visitor and provides a reliable browser fallback.
-export const INSTAGRAM_WEB_URL = "https://www.instagram.com/anipins.art/";
-export const INSTAGRAM_APP_URL = "instagram://user?username=anipins.art";
+export const INSTAGRAM_WEB_URL = "https://www.instagram.com/anipins.verse/";
+export const INSTAGRAM_APP_URL = "instagram://user?username=anipins.verse";
 
 type Props = AnchorHTMLAttributes<HTMLAnchorElement> & {
   children: ReactNode;
