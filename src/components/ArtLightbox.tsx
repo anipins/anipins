@@ -181,34 +181,54 @@ export default function ArtLightbox() {
               {data?.related?.length > 0 && <aside aria-label="More artwork to explore" className="hidden border-l border-paper/10 bg-panel p-3 xl:hidden">
                 <MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize initialItems={data.related} initialHasMore imagePriority={false} maxColumns={3} pageSize={36} />
               </aside>}
-              {data?.related?.length > 0 && art && <section aria-label="Artwork and more to explore" className="hidden bg-[#101010] p-3 xl:col-span-2 xl:row-start-1 xl:block">
-                <MasonryFeed
-                  key={`desktop-${art.id}`}
-                  query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }}
-                  randomize
-                  initialItems={data.related}
-                  initialHasMore
-                  imagePriority={false}
-                  maxColumns={3}
-                  pageSize={36}
-                  leadingHeight={2.6}
-                  leadingFillCount={2}
-                  leadingContent={<article className="overflow-hidden rounded-2xl bg-black shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
-                    {fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} align="start" className="h-auto w-full" /> : <div className="skeleton aspect-[3/4] w-full" />}
-                    <div className="p-5">
-                      <h2 className="font-display text-2xl font-semibold">{art.title || art.character_name}</h2>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <Link href={`/c/${art.character_slug}`} onClick={() => setId(null)} className="chip chip-on">{art.character_name}</Link>
-                        <Link href={`/anime/${art.anime_slug}`} onClick={() => setId(null)} className="chip">{art.anime_name}</Link>
+              {data?.related?.length > 0 && art && <section aria-label="Artwork and more to explore" className="hidden bg-[#101010] p-4 xl:col-span-2 xl:row-start-1 xl:block">
+                {/* Pinterest-style desktop composition: the opened pin spans the
+                    left four tracks, two live masonry tracks sit at its right,
+                    and the continuation grid starts immediately below them. */}
+                <div className="grid grid-cols-6 items-start gap-4">
+                  <article className="col-span-4 grid overflow-hidden rounded-2xl bg-black shadow-[0_20px_50px_rgba(0,0,0,0.35)] 2xl:grid-cols-[minmax(0,1fr)_minmax(360px,1.12fr)]">
+                    <div className="min-w-0 bg-black">
+                      {fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} align="start" className="h-auto w-full" /> : <div className="skeleton aspect-[3/4] w-full" />}
+                    </div>
+                    <div className="flex min-h-full flex-col p-6 2xl:p-8">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h2 className="font-display text-3xl font-semibold">{art.title || art.character_name}</h2>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <Link href={`/c/${art.character_slug}`} onClick={() => setId(null)} className="chip chip-on">{art.character_name}</Link>
+                            <Link href={`/anime/${art.anime_slug}`} onClick={() => setId(null)} className="chip">{art.anime_name}</Link>
+                          </div>
+                        </div>
+                        <button onClick={() => setSave(true)} className="btn-primary shrink-0 !px-5 !py-2.5">Save</button>
                       </div>
-                      <div className="mt-4 flex flex-wrap gap-2">
+                      <div className="mt-6 flex flex-wrap gap-2">
                         <button onClick={like} className={`btn !px-4 !py-2 hairline ${liked ? "border-gold/60 text-gold" : "text-paper/85 hover:border-gold-dim"}`}>{liked ? "♥" : "♡"} {likeCount > 0 ? likeCount : "Like"}</button>
-                        <button onClick={() => setSave(true)} className="btn-primary !px-4 !py-2">Save</button>
                         <DownloadButton artworkId={art.id} className="btn-ghost !px-4 !py-2" />
+                        <button onClick={() => setShare(true)} className="btn-ghost !px-4 !py-2">Share</button>
+                      </div>
+                      {(art.creator_name || art.source_url) && <div className="mt-6 rounded-xl bg-soft p-3 text-xs text-fog"><span>Artwork credit: </span>{art.source_url ? <a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold underline underline-offset-4">{art.creator_name || "Original source"}</a> : art.creator_name}</div>}
+                      <div className="mt-auto flex items-center justify-between gap-4 pt-10 text-sm text-fog">
+                        <span>{art.views} views · {art.downloads} downloads</span>
+                        <Link href={`/a/${art.id}`} onClick={() => setId(null)} className="text-gold hover:text-gold-bright">Open full page →</Link>
                       </div>
                     </div>
-                  </article>}
-                />
+                  </article>
+                  <aside aria-label="More artwork to explore" className="col-span-2 min-w-0">
+                    <MasonryFeed key={`desktop-rail-${art.id}`} initialItems={data.related.slice(0, 8)} initialHasMore={false} imagePriority={false} maxColumns={2} />
+                  </aside>
+                </div>
+                <div className="mt-4">
+                  <MasonryFeed
+                    key={`desktop-more-${art.id}`}
+                    query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }}
+                    randomize
+                    initialItems={data.related.slice(8)}
+                    initialHasMore
+                    imagePriority={false}
+                    maxColumns={6}
+                    pageSize={36}
+                  />
+                </div>
               </section>}
               {data?.related?.length > 0 && (
                 <section className="border-t border-paper/10 p-5 md:col-span-2 md:p-8 xl:hidden">
