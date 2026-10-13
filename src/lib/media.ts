@@ -70,6 +70,19 @@ export function newArtworkUploadKey(origName: string) {
 }
 
 async function putMedia(key: string, buf: Buffer, contentType: string, premium = false) {
+  if (USE_R2_MEDIA && (key.startsWith("o/") || key.startsWith("t/"))) {
+    // Originals and generated thumbnails must follow the SAME Cloudflare R2
+    // binding, avoiding the broken cross-region S3 upload path in finalization.
+    const response = await fetch(signedWorkerStorageUrl("upload", key, premium), {
+      method: "PUT",
+      headers: { "Content-Type": contentType },
+      body: new Uint8Array(buf),
+      signal: AbortSignal.timeout(90_000),
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error(`Artwork R2 write failed (${response.status})`);
+    return;
+  }
   if (USE_R2_MEDIA) return r2Put(key, buf, contentType, premium);
   if (USE_SUPABASE_STORAGE) return sbUpload(key, buf, contentType);
   throw new Error("Object storage is not configured");
