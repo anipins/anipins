@@ -12,7 +12,7 @@ import ReportArtwork from "./ReportArtwork";
 import DownloadButton from "./DownloadButton";
 import { getArtworkImageFit } from "@/lib/artwork-layout";
 
-export function openArtwork(id: number, art?: any) {
+export function openArtwork(id: number, art?: any, relatedPreview: any[] = []) {
   if (typeof window !== "undefined") {
     // Start the original image immediately, alongside the detail request.
     // This keeps feed thumbnails fast while avoiding a second wait after tap.
@@ -20,11 +20,11 @@ export function openArtwork(id: number, art?: any) {
       const original = new window.Image();
       original.src = `/api/img/${art.orig}`;
     }
-    window.dispatchEvent(new CustomEvent("anipins:open-art", { detail: { id, art } }));
+    window.dispatchEvent(new CustomEvent("anipins:open-art", { detail: { id, art, relatedPreview } }));
   }
 }
 
-export default function ArtCard({ art, index = 0, priority, desktopHidden = false }: { art: any; index?: number; priority?: boolean; desktopHidden?: boolean }) {
+export default function ArtCard({ art, index = 0, priority, desktopHidden = false, contextArtworks = [] }: { art: any; index?: number; priority?: boolean; desktopHidden?: boolean; contextArtworks?: any[] }) {
   const [save, setSave] = useState(false);
   const [share, setShare] = useState(false);
   const [imageReady, setImageReady] = useState(false);
@@ -64,7 +64,7 @@ export default function ArtCard({ art, index = 0, priority, desktopHidden = fals
               if (suppressOpen.current) window.setTimeout(() => { suppressOpen.current = false; }, 400);
             }}
             onTouchCancel={() => { touchStart.current = null; suppressOpen.current = true; window.setTimeout(() => { suppressOpen.current = false; }, 400); }}
-            onClick={() => { if (!suppressOpen.current) openArtwork(art.id, art); }}
+            onClick={() => { if (!suppressOpen.current) openArtwork(art.id, art, contextArtworks); }}
             className="block w-full touch-pan-y text-left cursor-zoom-in">
             <div style={{ aspectRatio: `1 / ${ratio}`, minHeight: landscape ? "clamp(180px, 44vw, 360px)" : undefined }} className={`relative w-full overflow-hidden bg-ink ${imageReady ? "" : "skeleton"}`}>
               <Image

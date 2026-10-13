@@ -16,11 +16,13 @@ export default function ArtLightbox() {
   const [id, setId] = useState<number | null>(null);
   const [data, setData] = useState<any>(null);
   const [preview, setPreview] = useState<any>(null);
+  const [relatedPreview, setRelatedPreview] = useState<any[]>([]);
   const [save, setSave] = useState(false);
   const [share, setShare] = useState(false);
   const [more, setMore] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [likePending, setLikePending] = useState(false);
   const [detailError, setDetailError] = useState(false);
   const [detailRetry, setDetailRetry] = useState(0);
   const touch = useRef<number | null>(null);
@@ -30,6 +32,7 @@ export default function ArtLightbox() {
     const h = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       setPreview(detail.art || null);
+      setRelatedPreview((Array.isArray(detail.relatedPreview) ? detail.relatedPreview : []).filter((item: any) => item?.id !== detail.id && Number(item?.premium || 0) === Number(detail.art?.premium || 0)).slice(0, 36));
       setId(detail.id);
     };
     window.addEventListener("anipins:open-art", h);
@@ -37,7 +40,7 @@ export default function ArtLightbox() {
   }, []);
 
   useEffect(() => {
-    if (id === null) { setData(null); setPreview(null); return; }
+    if (id === null) { setData(null); setPreview(null); setRelatedPreview([]); return; }
     const controller = new AbortController();
     setData(null);
     setLiked(false);
@@ -78,14 +81,24 @@ export default function ArtLightbox() {
   }, [id, nav]);
 
   const like = async () => {
-    const r = await fetch("/api/likes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artworkId: id }) });
-    if (r.status === 401) { toast("Sign in to like artwork", "err"); return; }
-    const d = await r.json();
-    setLiked(d.liked); setLikeCount(d.count);
-    if (d.liked) toast("Added to likes");
+    if (!id || likePending) return;
+    setLikePending(true);
+    try {
+      const r = await fetch("/api/likes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artworkId: id }) });
+      if (r.status === 401) { toast("Sign in to like artwork", "err"); return; }
+      if (!r.ok) { toast("Could not update Like. Please retry.", "err"); return; }
+      const d = await r.json();
+      setLiked(!!d.liked); setLikeCount(Number(d.count) || 0);
+      if (d.liked) toast("Added to likes");
+    } catch {
+      toast("Network unavailable. Please retry liking.", "err");
+    } finally {
+      setLikePending(false);
+    }
   };
 
   const art = data?.art || preview;
+  const visibleRelated = data?.related?.length ? data.related : relatedPreview;
   const fullImage = data?.art?.orig ? `/api/img/${data.art.orig}` : art?.thumb ? `/api/img/${art.thumb}` : "";
   const previewImage = data?.art?.orig && art?.thumb ? `/api/img/${art.thumb}` : undefined;
   return (
@@ -114,13 +127,13 @@ export default function ArtLightbox() {
             style={{ transformPerspective: 1100 }}
             onClick={e => e.stopPropagation()}
             className="min-h-full w-full max-w-none overflow-hidden bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
-            <div className={`grid min-w-0 gap-4 p-4 lg:gap-5 lg:p-6 ${data?.related?.length ? "lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]" : "lg:grid-cols-1"}`}>
-              <div className="min-w-0">
+            <div className={`grid min-w-0 gap-4 p-4 lg:gap-5 lg:p-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]`}>
+              <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] md:gap-5">
               <div className="relative flex min-h-[50vh] w-full items-center justify-center overflow-hidden rounded-2xl bg-black md:h-[min(78vh,900px)]">
                 {art && fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} className="mx-auto h-auto w-full max-h-none md:max-h-full" />
                   : <div className="skeleton h-[50vh] w-full" />}
               </div>
-              <div className="artwork-detail-panel flex h-auto min-h-0 flex-col justify-start px-2 pt-5 pb-6 md:min-h-80 md:p-5 md:pb-[max(2rem,env(safe-area-inset-bottom))]">
+              <div className="artwork-detail-panel flex h-auto min-h-0 flex-col justify-start px-2 pt-5 pb-6 md:min-h-80 md:pt-1 md:px-2 md:pb-[max(2rem,env(safe-area-inset-bottom))]">
                 {detailError && <div className="mb-4 rounded-xl border border-gold/30 bg-gold/10 p-3 text-sm text-paper">Artwork details are taking longer than usual. <button type="button" onClick={() => setDetailRetry(value => value + 1)} className="ml-2 text-gold underline underline-offset-4">Retry</button></div>}
                 {art && (
                   <>
@@ -139,9 +152,9 @@ export default function ArtLightbox() {
                     {(art.creator_name || art.source_url) && <p className="mt-4 text-xs text-fog">By {art.creator_name || "the original creator"}{art.source_url && <> · <a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold hover:underline">Source ↗</a></>}</p>}
                     </div>
                     <div className="mt-5 hidden flex-wrap gap-2 md:flex">
-                      <button onClick={like} className={`btn !px-5 !py-2.5 hairline ${liked ? "border-gold/60 text-gold" : "text-paper/85 hover:border-gold-dim"}`}>
+                      <button onClick={like} disabled={likePending} aria-busy={likePending} className={`btn !px-5 !py-2.5 hairline ${liked ? "border-gold/60 text-gold" : "text-paper/85 hover:border-gold-dim"}`}>
                         <motion.span animate={liked ? { scale: [1, 1.35, 1] } : {}} transition={{ duration: 0.35 }}>{liked ? "♥" : "♡"}</motion.span>
-                        {likeCount > 0 ? likeCount : "Like"}
+                        {likePending ? "Working…" : likeCount > 0 ? likeCount : "Like"}
                       </button>
                       <button onClick={() => setSave(true)} className="btn-primary !px-5 !py-2.5">Save</button>
                       <DownloadButton artworkId={art.id} className="btn-ghost !px-5 !py-2.5" />
@@ -151,7 +164,7 @@ export default function ArtLightbox() {
                     <div className="mt-5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-2 md:hidden">
                       <button onClick={() => setSave(true)} className="btn-primary !min-w-0 !px-3 !py-2.5">Save</button>
                       <DownloadButton artworkId={art.id} className="btn-ghost !min-w-0 !px-3 !py-2.5" />
-                      <button type="button" onClick={like} aria-label={liked ? "Unlike artwork" : "Like artwork"} className={`grid h-11 w-11 place-items-center rounded-full border transition-colors ${liked ? "border-gold/60 bg-gold/10 text-gold" : "border-paper/15 text-paper hover:border-gold/50"}`}>
+                      <button type="button" onClick={like} disabled={likePending} aria-busy={likePending} aria-label={liked ? "Unlike artwork" : "Like artwork"} className={`grid h-11 w-11 place-items-center rounded-full border transition-colors ${liked ? "border-gold/60 bg-gold/10 text-gold" : "border-paper/15 text-paper hover:border-gold/50"}`}>
                         <motion.span animate={liked ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.35 }} className="text-lg">{liked ? "♥" : "♡"}</motion.span>
                       </button>
                       <button type="button" onClick={() => setMore(value => !value)} aria-expanded={more} aria-label="More artwork actions" className={`grid h-11 w-11 place-items-center rounded-full border text-lg tracking-[0.12em] transition-colors ${more ? "border-gold/60 bg-gold/10 text-gold" : "border-paper/15 text-paper hover:border-gold/50"}`}>•••</button>
@@ -181,23 +194,23 @@ export default function ArtLightbox() {
                 )}
               </div>
               </div>
-              {data?.related?.length > 0 && (
-                <aside aria-label="Related artwork" className="hidden min-w-0 lg:block">
-                  <div className="columns-2 gap-3 xl:columns-3 xl:gap-4">
-                    {data.related.slice(0, 6).map((relatedArt: any, index: number) => (
+              <aside aria-label="Related artwork" className="hidden min-w-0 lg:block">
+                  <div className="columns-2 gap-3 xl:gap-4">
+                    {visibleRelated.length ? visibleRelated.slice(0, 6).map((relatedArt: any, index: number) => (
                       <div key={relatedArt.id} className="mb-4 break-inside-avoid">
-                        <ArtCard art={relatedArt} index={index} />
+                        <ArtCard art={relatedArt} index={index} contextArtworks={visibleRelated} />
                       </div>
+                    )) : Array.from({ length: 6 }, (_, index) => (
+                      <div key={`related-skeleton-${index}`} className="mb-4 break-inside-avoid skeleton rounded-2xl" style={{ height: 185 + (index % 3) * 65 }} />
                     ))}
                   </div>
                 </aside>
-              )}
             </div>
-            {data?.related?.length > 0 && (
+            {visibleRelated.length > 0 && (
               <section className="border-t border-paper/10 p-5 md:p-8">
                 <h3 className="font-display text-xl font-semibold">More to explore</h3>
                 <p className="mt-1 text-xs text-fog">Fresh picks from every series—choose any image to continue.</p>
-                <div className="mt-5"><MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize eagerLoad initialItems={data.related} desktopHiddenIds={data.related.slice(0, 6).map((item: any) => item.id)} initialHasMore /></div>
+                <div className="mt-5">{data?.related?.length ? <MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize eagerLoad initialItems={data.related} desktopHiddenIds={data.related.slice(0, 6).map((item: any) => item.id)} initialHasMore /> : <div className="masonry">{relatedPreview.map((relatedArt: any, index: number) => <ArtCard key={relatedArt.id} art={relatedArt} index={index} desktopHidden={index < 6} contextArtworks={relatedPreview} />)}</div>}</div>
               </section>
             )}
           </motion.div>
