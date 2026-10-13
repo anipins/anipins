@@ -113,12 +113,12 @@ export default function ArtLightbox() {
             style={{ transformPerspective: 1100 }}
             onClick={e => e.stopPropagation()}
             className="min-h-full w-full max-w-none overflow-hidden bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
-            <div className="grid md:min-h-dvh md:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)] xl:grid-cols-[minmax(360px,42vw)_minmax(300px,0.85fr)_minmax(500px,1.25fr)]">
+            <div className="grid md:min-h-dvh md:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)] xl:grid-cols-[minmax(360px,42vw)_minmax(0,1fr)]">
               <div className="relative flex min-h-0 w-full items-center justify-start overflow-hidden bg-black md:h-dvh">
                 {art && fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} align="start" className="h-auto w-auto max-w-full md:h-dvh md:max-h-dvh" />
                   : <div className="skeleton h-[50vh] w-full" />}
               </div>
-              <div className="artwork-detail-panel flex h-auto min-h-0 flex-col justify-start p-6 pb-6 md:min-h-80 md:p-8 md:pb-[max(2rem,env(safe-area-inset-bottom))]">
+              <div className="artwork-detail-panel flex h-auto min-h-0 flex-col justify-start p-6 pb-6 md:min-h-80 md:p-8 md:pb-[max(2rem,env(safe-area-inset-bottom))] xl:col-start-1 xl:row-start-2">
                 {detailError && <div className="mb-4 rounded-xl border border-gold/30 bg-gold/10 p-3 text-sm text-paper">Artwork details are taking longer than usual. <button type="button" onClick={() => setDetailRetry(value => value + 1)} className="ml-2 text-gold underline underline-offset-4">Retry</button></div>}
                 {art && (
                   <>
@@ -178,7 +178,7 @@ export default function ArtLightbox() {
                   </>
                 )}
               </div>
-              {data?.related?.length > 0 && <aside aria-label="More artwork to explore" className="hidden border-l border-paper/10 bg-panel p-3 xl:block">
+              {data?.related?.length > 0 && <aside aria-label="More artwork to explore" className="hidden border-l border-paper/10 bg-panel p-3 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:block">
                 <MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize initialItems={data.related} initialHasMore imagePriority={false} maxColumns={3} pageSize={36} />
               </aside>}
               {data?.related?.length > 0 && (
