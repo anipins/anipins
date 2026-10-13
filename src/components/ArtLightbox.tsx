@@ -16,6 +16,7 @@ export default function ArtLightbox() {
   const [id, setId] = useState<number | null>(null);
   const [data, setData] = useState<any>(null);
   const [preview, setPreview] = useState<any>(null);
+  const [relatedPreview, setRelatedPreview] = useState<any[]>([]);
   const [save, setSave] = useState(false);
   const [share, setShare] = useState(false);
   const [more, setMore] = useState(false);
@@ -31,6 +32,7 @@ export default function ArtLightbox() {
     const h = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       setPreview(detail.art || null);
+      setRelatedPreview((Array.isArray(detail.relatedPreview) ? detail.relatedPreview : []).filter((item: any) => item?.id !== detail.id && Number(item?.premium || 0) === Number(detail.art?.premium || 0)).slice(0, 36));
       setId(detail.id);
     };
     window.addEventListener("anipins:open-art", h);
@@ -38,7 +40,7 @@ export default function ArtLightbox() {
   }, []);
 
   useEffect(() => {
-    if (id === null) { setData(null); setPreview(null); return; }
+    if (id === null) { setData(null); setPreview(null); setRelatedPreview([]); return; }
     const controller = new AbortController();
     setData(null);
     setLiked(false);
@@ -96,6 +98,7 @@ export default function ArtLightbox() {
   };
 
   const art = data?.art || preview;
+  const visibleRelated = data?.related?.length ? data.related : relatedPreview;
   const fullImage = data?.art?.orig ? `/api/img/${data.art.orig}` : art?.thumb ? `/api/img/${art.thumb}` : "";
   const previewImage = data?.art?.orig && art?.thumb ? `/api/img/${art.thumb}` : undefined;
   return (
@@ -193,7 +196,7 @@ export default function ArtLightbox() {
               </div>
               <aside aria-label="Related artwork" className="hidden min-w-0 lg:block">
                   <div className="columns-2 gap-3 xl:gap-4">
-                    {data?.related?.length ? data.related.slice(0, 6).map((relatedArt: any, index: number) => (
+                    {visibleRelated.length ? visibleRelated.slice(0, 6).map((relatedArt: any, index: number) => (
                       <div key={relatedArt.id} className="mb-4 break-inside-avoid">
                         <ArtCard art={relatedArt} index={index} />
                       </div>
@@ -203,11 +206,11 @@ export default function ArtLightbox() {
                   </div>
                 </aside>
             </div>
-            {data?.related?.length > 0 && (
+            {visibleRelated.length > 0 && (
               <section className="border-t border-paper/10 p-5 md:p-8">
                 <h3 className="font-display text-xl font-semibold">More to explore</h3>
                 <p className="mt-1 text-xs text-fog">Fresh picks from every series—choose any image to continue.</p>
-                <div className="mt-5"><MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize eagerLoad initialItems={data.related} desktopHiddenIds={data.related.slice(0, 6).map((item: any) => item.id)} initialHasMore /></div>
+                <div className="mt-5">{data?.related?.length ? <MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize eagerLoad initialItems={data.related} desktopHiddenIds={data.related.slice(0, 6).map((item: any) => item.id)} initialHasMore /> : <div className="masonry">{relatedPreview.map((relatedArt: any, index: number) => <ArtCard key={relatedArt.id} art={relatedArt} index={index} desktopHidden={index < 6} />)}</div>}</div>
               </section>
             )}
           </motion.div>
