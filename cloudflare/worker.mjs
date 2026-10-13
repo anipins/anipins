@@ -218,7 +218,7 @@ async function signedArtworkRead(request, secret) {
   const premium = url.searchParams.get("p") === "1";
   const expiresAt = Number(url.searchParams.get("e"));
   const signature = url.searchParams.get("s") || "";
-  if (!/^(?:o\/[a-f0-9]{32}\.(?:jpg|jpeg|png|webp)|t\/[a-zA-Z0-9._-]+\.(?:jpg|jpeg|png|webp))$/.test(key) || !secret || !Number.isSafeInteger(expiresAt) || expiresAt < Math.floor(Date.now() / 1e3) || expiresAt > Math.floor(Date.now() / 1e3) + 300 || !signature) return { error: "invalid" };
+  if (!/^(?:o\/[a-f0-9]{16,32}\.(?:jpg|jpeg|png|webp)|t\/[a-zA-Z0-9._-]+\.(?:jpg|jpeg|png|webp))$/.test(key) || !secret || !Number.isSafeInteger(expiresAt) || expiresAt < Math.floor(Date.now() / 1e3) || expiresAt > Math.floor(Date.now() / 1e3) + 300 || !signature) return { error: "invalid" };
   try {
     const cryptoKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
     const valid = await crypto.subtle.verify("HMAC", cryptoKey, base64UrlBytes2(signature), new TextEncoder().encode(`read:${key}:${premium ? "1" : "0"}:${expiresAt}`));
