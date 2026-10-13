@@ -14,3 +14,17 @@ test("staged upload and read use matching per-file signed Worker capabilities in
  assert.match(media,/Staged artwork read failed/);
  assert.doesNotMatch(media,/if \(USE_R2_MEDIA\) return \{ key, uploadUrl: await r2SignedPutUrl/);
 });
+test("both original and WebP thumbnail uploads use native signed Worker/R2 binding",()=>{
+ const worker=read("cloudflare/worker.mjs"),media=read("src/lib/media.ts");
+ assert.match(worker,/t\/\[a-f0-9\]\{32\}/);
+ assert.match(worker,/upload\.key\.startsWith\("t\/"\)/);
+ assert.match(media,/signedWorkerStorageUrl\("upload", key, premium\)/);
+ assert.match(media,/if \(USE_R2_MEDIA && \(key\.startsWith\("o\/"\) \|\| key\.startsWith\("t\/"\)\)\)/);
+ assert.match(media,/await putMedia\(thumbKey, thumbBuf, "image\/webp", premium\)/);
+});
+test("server-side thumbnail upload uses strict content types and short-lived HMAC capabilities",()=>{
+ const worker=read("cloudflare/worker.mjs");
+ assert.match(worker,/upload\.key\.startsWith\("t\/"\) && upload\.contentType !== "image\/webp"/);
+ assert.match(worker,/crypto\.subtle\.verify\("HMAC"/);
+ assert.match(worker,/await bucket\.put\(upload\.key/);
+});
