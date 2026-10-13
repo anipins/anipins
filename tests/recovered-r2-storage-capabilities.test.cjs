@@ -28,3 +28,15 @@ test("server-side thumbnail upload uses strict content types and short-lived HMA
  assert.match(worker,/crypto\.subtle\.verify\("HMAC"/);
  assert.match(worker,/await bucket\.put\(upload\.key/);
 });
+
+test("artwork thumbnails and originals stream via native Worker only after publication and Premium gate",()=>{
+ const worker=read("cloudflare/worker.mjs"),media=read("src/lib/media.ts"),route=read("src/app/api/img/[...p]/route.ts");
+ assert.match(worker,/async function signedArtworkRead/);
+ assert.match(worker,/t.*a-zA-Z0-9.*webp/);
+ assert.match(media,/export async function readArtworkViaWorker/);
+ assert.match(route,/await readArtworkViaWorker\(rel, premium\)/);
+ assert.match(route,/if \(unpublished\)/);
+ assert.match(route,/if \(premium\)/);
+ assert.match(route,/await canAccessPremium\(user\)/);
+ assert.match(route,/const cacheControl = restricted/);
+});
