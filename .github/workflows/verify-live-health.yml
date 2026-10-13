@@ -1,0 +1,29 @@
+name: Verify Live AniPins Health Without Paid Browser
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-live-health.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Read-only public production health check
+        run: |
+          set -eu
+          printf 'Checking https://anipins.com/health on existing infrastructure\n'
+          response="$(curl --silent --show-error --fail --location --max-time 70 --retry 1 https://anipins.com/health)"
+          printf '%s' "$response" | grep -q '"ok":true'
+          echo 'Production /health returned ok=true'
+          echo 'Verifying uncached dynamic gallery routing and response time'
+          curl --silent --show-error --fail --location --max-time 70 \
+            --output /dev/null --write-out 'Live gallery status=%{http_code} total=%{time_total}s\\n' \
+            "https://anipins.com/gallery?probe=20261013"
+
