@@ -1,0 +1,60 @@
+name: Verify AniPins Container Cold Boot
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'src/**'
+      - 'cloudflare/worker.mjs'
+      - 'next.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'wrangler.jsonc'
+      - '.github/workflows/verify-container-lite.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cold-boot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the same Docker image used in production
+        run: docker build --tag anipins:lite-smoke .
+      - name: Prove cold boot on current Lite limits (256 MiB, 1/16 CPU)
+        run: |
+          set -eu
+          docker run -d --name anipins-lite-smoke \
+            --cpus="0.0625" --memory="256m" --memory-swap="256m" \
+            --pids-limit="128" -p 127.0.0.1:18080:8080 \
+            anipins:lite-smoke
+          ready=0
+          for attempt in $(seq 1 120); do
+            if curl -fsS --connect-timeout 1 --max-time 3 http://127.0.0.1:18080/health | grep -q '"ok":true'; then
+              echo "Cold boot healthy on Lite resources after attempt $attempt"
+              ready=1
+              break
+            fi
+            running="$(docker inspect -f '{{.State.Running}}' anipins-lite-smoke)"
+            if [ "$running" != "true" ]; then
+              echo "Container exited before becoming healthy"
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "Cold start failed; exit/oom state:"
+            docker inspect -f '{{json .State}}' anipins-lite-smoke
+            docker logs --tail 80 anipins-lite-smoke || true
+            exit 1
+          fi
+      - name: Inspect resource state
+        if: always()
+        run: |
+          docker inspect -f 'Status={{.State.Status}} OOMKilled={{.State.OOMKilled}} ExitCode={{.State.ExitCode}}' anipins-lite-smoke || true
+          docker rm -f anipins-lite-smoke || true
