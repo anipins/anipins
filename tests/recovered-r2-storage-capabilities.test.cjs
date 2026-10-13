@@ -14,3 +14,15 @@ test("staged upload and read use matching per-file signed Worker capabilities in
  assert.match(media,/Staged artwork read failed/);
  assert.doesNotMatch(media,/if \(USE_R2_MEDIA\) return \{ key, uploadUrl: await r2SignedPutUrl/);
 });
+test("generated WebP thumbnails use the signed native R2 upload route", () => {
+  const worker=read("cloudflare/worker.mjs"),media=read("src/lib/media.ts");
+  assert.match(worker,/upload\.key\.startsWith\("t\/"\) && upload\.contentType !== "image\/webp"/);
+  assert.ok(worker.includes("t\\/[a-f0-9]{32}\\.webp"));
+  assert.match(media,/signedWorkerStorageUrl\("upload", key, premium\)/);
+  assert.match(media,/await putMedia\(thumbKey, thumbBuf, "image\/webp", premium\)/);
+  assert.ok(worker.includes("this.rolling ??= this.restartForConfigurationRollout()"));
+});
+test("uploads serialize finalization under existing Lite 256 MB budget", () => {
+ const page=read("src/app/admin/upload/page.tsx");
+ assert.match(page,/const PARALLEL_UPLOADS = 1/);
+});

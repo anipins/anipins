@@ -18,7 +18,8 @@ const blank = (file: File, index: number, premiumOnly: boolean): UploadItem => (
 const retryableStatus = (status: number) => [408, 425, 429, 500, 502, 503, 504].includes(status);
 // Keep enough transfers in flight to use a normal broadband connection without
 // overwhelming image processing, storage, or the browser with a huge batch.
-const PARALLEL_UPLOADS = 3;
+// Avoid concurrent Sharp processing exhausting the existing 256 MB container.
+const PARALLEL_UPLOADS = 1;
 
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number) {
   const controller = new AbortController();
