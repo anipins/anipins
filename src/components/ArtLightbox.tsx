@@ -198,7 +198,7 @@ export default function ArtLightbox() {
                   <div className="columns-2 gap-3 xl:gap-4">
                     {visibleRelated.length ? visibleRelated.slice(0, 6).map((relatedArt: any, index: number) => (
                       <div key={relatedArt.id} className="mb-4 break-inside-avoid">
-                        <ArtCard art={relatedArt} index={index} />
+                        <ArtCard art={relatedArt} index={index} contextArtworks={visibleRelated} />
                       </div>
                     )) : Array.from({ length: 6 }, (_, index) => (
                       <div key={`related-skeleton-${index}`} className="mb-4 break-inside-avoid skeleton rounded-2xl" style={{ height: 185 + (index % 3) * 65 }} />
@@ -210,7 +210,7 @@ export default function ArtLightbox() {
               <section className="border-t border-paper/10 p-5 md:p-8">
                 <h3 className="font-display text-xl font-semibold">More to explore</h3>
                 <p className="mt-1 text-xs text-fog">Fresh picks from every series—choose any image to continue.</p>
-                <div className="mt-5">{data?.related?.length ? <MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize eagerLoad initialItems={data.related} desktopHiddenIds={data.related.slice(0, 6).map((item: any) => item.id)} initialHasMore /> : <div className="masonry">{relatedPreview.map((relatedArt: any, index: number) => <ArtCard key={relatedArt.id} art={relatedArt} index={index} desktopHidden={index < 6} />)}</div>}</div>
+                <div className="mt-5">{data?.related?.length ? <MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize eagerLoad initialItems={data.related} desktopHiddenIds={data.related.slice(0, 6).map((item: any) => item.id)} initialHasMore /> : <div className="masonry">{relatedPreview.map((relatedArt: any, index: number) => <ArtCard key={relatedArt.id} art={relatedArt} index={index} desktopHidden={index < 6} contextArtworks={relatedPreview} />)}</div>}</div>
               </section>
             )}
           </motion.div>
