@@ -49,7 +49,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ p: strin
       }
       if (!response && !source?.Body) return new NextResponse("Not found", { status: 404 });
       if (rel.startsWith("t/") && !rel.toLowerCase().endsWith(".webp")) {
-        const optimized = await sharp(Buffer.from(response ? await response.arrayBuffer() : await source!.Body!.transformToByteArray()))
+        const bytes = response ? Buffer.from(await response.arrayBuffer()) : Buffer.from(await source!.Body!.transformToByteArray());
+        const optimized = await sharp(bytes)
           .rotate().resize({ width: 480, withoutEnlargement: true, fastShrinkOnLoad: true }).webp({ quality: 66, effort: 3 }).toBuffer();
         return new NextResponse(new Uint8Array(optimized), { headers: { "Content-Type": "image/webp", "Cache-Control": cacheControl, "CDN-Cache-Control": restricted ? "private, no-store" : "public, max-age=31536000, immutable" } });
       }
