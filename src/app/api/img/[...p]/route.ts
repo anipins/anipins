@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
 import { row, UPLOADS_DIR } from "@/lib/db";
-import { USE_R2_MEDIA, USE_SUPABASE_STORAGE, isSafeMediaKey, sbPublicUrl } from "@/lib/media";
+import { USE_R2_MEDIA, USE_SUPABASE_STORAGE, isSafeMediaKey, sbPublicUrl, readArtworkViaWorker } from "@/lib/media";
 import { r2Get } from "@/lib/r2";
 import { getUser } from "@/lib/auth";
 import { canAccessPremium } from "@/lib/billing";
@@ -38,15 +38,29 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ p: strin
     : "public, max-age=31536000, s-maxage=31536000, stale-while-revalidate=86400, immutable";
   if (USE_R2_MEDIA) {
     try {
-      const source = await r2Get(rel, premium);
-      if (!source.Body) return new NextResponse("Not found", { status: 404 });
+      // Publication and entitlement checks above are mandatory BEFORE reading.
+      // Native bound R2 avoids a cross-region S3 request for most media.
+      let native: Response | null = null;
+      if (isArtworkMedia) {
+        try {
+          const fetched = await readArtworkViaWorker(rel, premium);
+          if (fetched.ok && fetched.body) native = fetched;
+          else if (fetched.status === 404) return new NextResponse("Not found", { status: 404 });
+        } catch {
+          // Fall back to the already-authorized S3 path if native R2 is
+          // temporarily unavailable, preserving existing images and Premium.
+        }
+      }
+      const source = native ? null : await r2Get(rel, premium);
+      if (!native?.body && !source?.Body) return new NextResponse("Not found", { status: 404 });
       if (rel.startsWith("t/") && !rel.toLowerCase().endsWith(".webp")) {
-        const optimized = await sharp(Buffer.from(await source.Body.transformToByteArray()))
+        const bytes = native ? Buffer.from(await native.arrayBuffer()) : Buffer.from(await source!.Body!.transformToByteArray());
+        const optimized = await sharp(bytes)
           .rotate().resize({ width: 480, withoutEnlargement: true, fastShrinkOnLoad: true }).webp({ quality: 66, effort: 3 }).toBuffer();
         return new NextResponse(new Uint8Array(optimized), { headers: { "Content-Type": "image/webp", "Cache-Control": cacheControl, "CDN-Cache-Control": restricted ? "private, no-store" : "public, max-age=31536000, immutable" } });
       }
-      return new NextResponse(source.Body.transformToWebStream(), { headers: {
-        "Content-Type": source.ContentType || TYPES[path.extname(rel).toLowerCase()] || "application/octet-stream",
+      return new NextResponse(native?.body || source!.Body!.transformToWebStream(), { headers: {
+        "Content-Type": native?.headers.get("content-type") || source?.ContentType || TYPES[path.extname(rel).toLowerCase()] || "application/octet-stream",
         "Cache-Control": cacheControl,
         "CDN-Cache-Control": restricted ? "private, no-store" : "public, max-age=31536000, immutable",
       } });
