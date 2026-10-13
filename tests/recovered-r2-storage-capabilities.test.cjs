@@ -16,7 +16,7 @@ test("staged upload and read use matching per-file signed Worker capabilities in
 });
 test("both original and WebP thumbnail uploads use native signed Worker/R2 binding",()=>{
  const worker=read("cloudflare/worker.mjs"),media=read("src/lib/media.ts");
- assert.match(worker,/t\/\[a-f0-9\]\{32\}/);
+ assert.ok(worker.includes("t\\/[a-f0-9]{32}\\.webp"));
  assert.match(worker,/upload\.key\.startsWith\("t\/"\)/);
  assert.match(media,/signedWorkerStorageUrl\("upload", key, premium\)/);
  assert.match(media,/if \(USE_R2_MEDIA && \(key\.startsWith\("o\/"\) \|\| key\.startsWith\("t\/"\)\)\)/);
