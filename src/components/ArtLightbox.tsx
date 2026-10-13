@@ -21,6 +21,7 @@ export default function ArtLightbox() {
   const [more, setMore] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [likePending, setLikePending] = useState(false);
   const [detailError, setDetailError] = useState(false);
   const [detailRetry, setDetailRetry] = useState(0);
   const touch = useRef<number | null>(null);
@@ -78,11 +79,20 @@ export default function ArtLightbox() {
   }, [id, nav]);
 
   const like = async () => {
-    const r = await fetch("/api/likes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artworkId: id }) });
-    if (r.status === 401) { toast("Sign in to like artwork", "err"); return; }
-    const d = await r.json();
-    setLiked(d.liked); setLikeCount(d.count);
-    if (d.liked) toast("Added to likes");
+    if (!id || likePending) return;
+    setLikePending(true);
+    try {
+      const r = await fetch("/api/likes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artworkId: id }) });
+      if (r.status === 401) { toast("Sign in to like artwork", "err"); return; }
+      if (!r.ok) { toast("Could not update Like. Please retry.", "err"); return; }
+      const d = await r.json();
+      setLiked(!!d.liked); setLikeCount(Number(d.count) || 0);
+      if (d.liked) toast("Added to likes");
+    } catch {
+      toast("Network unavailable. Please retry liking.", "err");
+    } finally {
+      setLikePending(false);
+    }
   };
 
   const art = data?.art || preview;
@@ -139,9 +149,9 @@ export default function ArtLightbox() {
                     {(art.creator_name || art.source_url) && <p className="mt-4 text-xs text-fog">By {art.creator_name || "the original creator"}{art.source_url && <> · <a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold hover:underline">Source ↗</a></>}</p>}
                     </div>
                     <div className="mt-5 hidden flex-wrap gap-2 md:flex">
-                      <button onClick={like} className={`btn !px-5 !py-2.5 hairline ${liked ? "border-gold/60 text-gold" : "text-paper/85 hover:border-gold-dim"}`}>
+                      <button onClick={like} disabled={likePending} aria-busy={likePending} className={`btn !px-5 !py-2.5 hairline ${liked ? "border-gold/60 text-gold" : "text-paper/85 hover:border-gold-dim"}`}>
                         <motion.span animate={liked ? { scale: [1, 1.35, 1] } : {}} transition={{ duration: 0.35 }}>{liked ? "♥" : "♡"}</motion.span>
-                        {likeCount > 0 ? likeCount : "Like"}
+                        {likePending ? "Working…" : likeCount > 0 ? likeCount : "Like"}
                       </button>
                       <button onClick={() => setSave(true)} className="btn-primary !px-5 !py-2.5">Save</button>
                       <DownloadButton artworkId={art.id} className="btn-ghost !px-5 !py-2.5" />
@@ -151,7 +161,7 @@ export default function ArtLightbox() {
                     <div className="mt-5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-2 md:hidden">
                       <button onClick={() => setSave(true)} className="btn-primary !min-w-0 !px-3 !py-2.5">Save</button>
                       <DownloadButton artworkId={art.id} className="btn-ghost !min-w-0 !px-3 !py-2.5" />
-                      <button type="button" onClick={like} aria-label={liked ? "Unlike artwork" : "Like artwork"} className={`grid h-11 w-11 place-items-center rounded-full border transition-colors ${liked ? "border-gold/60 bg-gold/10 text-gold" : "border-paper/15 text-paper hover:border-gold/50"}`}>
+                      <button type="button" onClick={like} disabled={likePending} aria-busy={likePending} aria-label={liked ? "Unlike artwork" : "Like artwork"} className={`grid h-11 w-11 place-items-center rounded-full border transition-colors ${liked ? "border-gold/60 bg-gold/10 text-gold" : "border-paper/15 text-paper hover:border-gold/50"}`}>
                         <motion.span animate={liked ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.35 }} className="text-lg">{liked ? "♥" : "♡"}</motion.span>
                       </button>
                       <button type="button" onClick={() => setMore(value => !value)} aria-expanded={more} aria-label="More artwork actions" className={`grid h-11 w-11 place-items-center rounded-full border text-lg tracking-[0.12em] transition-colors ${more ? "border-gold/60 bg-gold/10 text-gold" : "border-paper/15 text-paper hover:border-gold/50"}`}>•••</button>
