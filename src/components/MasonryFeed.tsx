@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import ArtCard from "./ArtCard";
 import { shouldLoadFromFeedSignal } from "@/lib/feed-pagination";
 
@@ -15,7 +15,7 @@ const CACHE_TTL = 15_000;
 // attempts made a transient network problem look like an endless feed loader.
 const REQUEST_TIMEOUT = 10_000;
 const MAX_REQUEST_ATTEMPTS = 3;
-type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean; pageSize?: number; emptyMessage?: string; emptyAction?: { href: string; label: string }; imagePriority?: boolean; maxColumns?: number };
+type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean; pageSize?: number; emptyMessage?: string; emptyAction?: { href: string; label: string }; imagePriority?: boolean; maxColumns?: number; leadingContent?: ReactNode; leadingHeight?: number; leadingFillCount?: number };
 
 function columnsForWidth(width: number) {
   if (width >= 2200) return 7;
@@ -26,13 +26,20 @@ function columnsForWidth(width: number) {
   return 2;
 }
 
-function distributeAcrossColumns(items: any[], columnCount: number) {
+function distributeAcrossColumns(items: any[], columnCount: number, leadingHeight = 0, leadingFillCount = 0) {
   const columns = Array.from({ length: columnCount }, () => [] as any[]);
   // Each card already carries its intrinsic dimensions. Assigning the next
   // card to the shortest column gives us Pinterest-style vertical stacks
   // instead of CSS multi-column's visually uneven newspaper flow.
-  const heights = Array.from({ length: columnCount }, () => 0);
-  for (const item of items) {
+  const heights = Array.from({ length: columnCount }, (_, index) => index === 0 ? leadingHeight : 0);
+  for (const [itemIndex, item] of items.entries()) {
+    if (itemIndex < leadingFillCount) {
+      columns[0].push(item);
+      const width = Number(item.width) || 1;
+      const height = Number(item.height) || width * 1.3;
+      heights[0] += height / width;
+      continue;
+    }
     let target = 0;
     for (let index = 1; index < columnCount; index++) {
       if (heights[index] < heights[target]) target = index;
@@ -45,7 +52,7 @@ function distributeAcrossColumns(items: any[], columnCount: number) {
   return columns;
 }
 
-export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, eagerLoad = false, pageSize = 36, emptyMessage = "No artwork found.", emptyAction, imagePriority, maxColumns }: Props) {
+export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, eagerLoad = false, pageSize = 36, emptyMessage = "No artwork found.", emptyAction, imagePriority, maxColumns, leadingContent, leadingHeight, leadingFillCount }: Props) {
   const [items, setItems] = useState<any[]>(initialItems);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
@@ -220,9 +227,10 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
 
   const renderedColumnCount = maxColumns ? Math.min(columnCount, maxColumns) : columnCount;
   const renderGrid = (artwork: any[]) => {
-    const columns = distributeAcrossColumns(artwork, renderedColumnCount);
+    const columns = distributeAcrossColumns(artwork, renderedColumnCount, leadingContent ? leadingHeight || 2.4 : 0, leadingContent ? leadingFillCount || 0 : 0);
     return <div className="masonry-grid" style={{ "--masonry-columns": renderedColumnCount } as React.CSSProperties}>
       {columns.map((column, columnIndex) => <div className="masonry-grid__column" key={columnIndex}>
+        {columnIndex === 0 && leadingContent}
         {column.map((art) => <ArtCard key={art.id} art={art} index={artwork.indexOf(art)} priority={imagePriority} />)}
       </div>)}
     </div>;

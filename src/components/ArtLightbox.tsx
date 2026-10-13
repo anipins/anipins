@@ -114,11 +114,11 @@ export default function ArtLightbox() {
             onClick={e => e.stopPropagation()}
             className="min-h-full w-full max-w-none overflow-hidden bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
             <div className="grid md:min-h-dvh md:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)] xl:grid-cols-[minmax(360px,42vw)_minmax(0,1fr)]">
-              <div className="relative flex min-h-0 w-full items-center justify-start overflow-hidden bg-black md:h-dvh">
+              <div className="relative flex min-h-0 w-full items-center justify-start overflow-hidden bg-black md:h-dvh xl:hidden">
                 {art && fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} align="start" className="h-auto w-auto max-w-full md:h-dvh md:max-h-dvh" />
                   : <div className="skeleton h-[50vh] w-full" />}
               </div>
-              <div className="artwork-detail-panel flex h-auto min-h-0 flex-col justify-start p-6 pb-6 md:min-h-80 md:p-8 md:pb-[max(2rem,env(safe-area-inset-bottom))] xl:col-start-1 xl:row-start-2">
+              <div className="artwork-detail-panel flex h-auto min-h-0 flex-col justify-start p-6 pb-6 md:min-h-80 md:p-8 md:pb-[max(2rem,env(safe-area-inset-bottom))] xl:hidden">
                 {detailError && <div className="mb-4 rounded-xl border border-gold/30 bg-gold/10 p-3 text-sm text-paper">Artwork details are taking longer than usual. <button type="button" onClick={() => setDetailRetry(value => value + 1)} className="ml-2 text-gold underline underline-offset-4">Retry</button></div>}
                 {art && (
                   <>
@@ -178,9 +178,38 @@ export default function ArtLightbox() {
                   </>
                 )}
               </div>
-              {data?.related?.length > 0 && <aside aria-label="More artwork to explore" className="hidden border-l border-paper/10 bg-panel p-3 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:block">
+              {data?.related?.length > 0 && <aside aria-label="More artwork to explore" className="hidden border-l border-paper/10 bg-panel p-3 xl:hidden">
                 <MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize initialItems={data.related} initialHasMore imagePriority={false} maxColumns={3} pageSize={36} />
               </aside>}
+              {data?.related?.length > 0 && art && <section aria-label="Artwork and more to explore" className="hidden bg-[#101010] p-3 xl:col-span-2 xl:row-start-1 xl:block">
+                <MasonryFeed
+                  key={`desktop-${art.id}`}
+                  query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }}
+                  randomize
+                  initialItems={data.related}
+                  initialHasMore
+                  imagePriority={false}
+                  maxColumns={3}
+                  pageSize={36}
+                  leadingHeight={2.6}
+                  leadingFillCount={2}
+                  leadingContent={<article className="overflow-hidden rounded-2xl bg-black shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
+                    {fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} align="start" className="h-auto w-full" /> : <div className="skeleton aspect-[3/4] w-full" />}
+                    <div className="p-5">
+                      <h2 className="font-display text-2xl font-semibold">{art.title || art.character_name}</h2>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Link href={`/c/${art.character_slug}`} onClick={() => setId(null)} className="chip chip-on">{art.character_name}</Link>
+                        <Link href={`/anime/${art.anime_slug}`} onClick={() => setId(null)} className="chip">{art.anime_name}</Link>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button onClick={like} className={`btn !px-4 !py-2 hairline ${liked ? "border-gold/60 text-gold" : "text-paper/85 hover:border-gold-dim"}`}>{liked ? "♥" : "♡"} {likeCount > 0 ? likeCount : "Like"}</button>
+                        <button onClick={() => setSave(true)} className="btn-primary !px-4 !py-2">Save</button>
+                        <DownloadButton artworkId={art.id} className="btn-ghost !px-4 !py-2" />
+                      </div>
+                    </div>
+                  </article>}
+                />
+              </section>}
               {data?.related?.length > 0 && (
                 <section className="border-t border-paper/10 p-5 md:col-span-2 md:p-8 xl:hidden">
                   <div className="xl:hidden"><h3 className="font-display text-xl font-semibold">More to explore</h3><p className="mt-1 text-xs text-fog">Fresh picks from every series—choose any image to continue.</p></div>
