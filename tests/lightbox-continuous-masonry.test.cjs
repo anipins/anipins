@@ -6,7 +6,7 @@ const path = require("node:path");
 test("opened artwork and related cards form one wide desktop canvas", () => {
   const source = fs.readFileSync(path.join(__dirname, "../src/components/ArtLightbox.tsx"), "utf8");
   assert.match(source, /lg:grid-cols-\[minmax\(0,2fr\)_minmax\(0,3fr\)\]/);
-  assert.match(source, /<aside[^>]+aria-label="Related artwork"/);
+  assert.match(source, /<aside[^>]+aria-label="Related artwork"/);\n  assert.match(source, /md:grid-cols-\\[minmax\\(0,0\\.95fr\\)_minmax\\(0,1\\.05fr\\)\\]/);\n  assert.match(source, /className="columns-2 gap-3 xl:gap-4"/);
   assert.match(source, /data\.related\.slice\(0, 6\)\.map/);
   assert.match(source, /<ArtCard[^>]+art=\{relatedArt\}/);
   assert.doesNotMatch(source, /md:grid-cols-\[minmax\(0,1\.35fr\)_minmax\(360px,0\.65fr\)\]/);
