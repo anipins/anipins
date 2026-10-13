@@ -138,7 +138,7 @@ var PORT = 8080;
 var INACTIVITY_TIMEOUT_MS = 5 * 60 * 1e3;
 var HEALTH_ATTEMPTS = 100;
 var HEALTH_INTERVAL_MS = 200;
-var CONTAINER_BOOT_VERSION = "2026-10-12-recovered-layout-instagram-release";
+var CONTAINER_BOOT_VERSION = "2026-10-13-native-r2-thumbs-pinterest-layout";
 var MAX_ARTWORK_UPLOAD_BYTES = 40 * 1024 * 1024;
 var UPLOAD_TYPES = /* @__PURE__ */ new Set(["image/jpeg", "image/png", "image/webp"]);
 var CONTAINER_ENV_KEYS = [
@@ -200,7 +200,7 @@ async function signedArtworkUpload(request, secret) {
   const lengthHeader = request.headers.get("content-length");
   const length = lengthHeader ? Number(lengthHeader) : null;
   const invalidLength = length !== null && (!Number.isFinite(length) || length < 1 || length > MAX_ARTWORK_UPLOAD_BYTES);
-  if (!/^o\/[a-f0-9]{32}\.(?:jpg|jpeg|png|webp)$/.test(key) || !secret || !Number.isSafeInteger(expiresAt) || expiresAt < Math.floor(Date.now() / 1e3) || expiresAt > Math.floor(Date.now() / 1e3) + 300 || !signature || !UPLOAD_TYPES.has(contentType) || invalidLength || !request.body) return { error: "invalid" };
+  if (!/^(?:o\/[a-f0-9]{32}\.(?:jpg|jpeg|png|webp)|t\/[a-f0-9]{32}\.webp)$/.test(key) || !secret || !Number.isSafeInteger(expiresAt) || expiresAt < Math.floor(Date.now() / 1e3) || expiresAt > Math.floor(Date.now() / 1e3) + 300 || !signature || !UPLOAD_TYPES.has(contentType) || invalidLength || !request.body) return { error: "invalid" };
   try {
     const cryptoKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
     const valid = await crypto.subtle.verify("HMAC", cryptoKey, base64UrlBytes2(signature), new TextEncoder().encode(`upload:${key}:${premium ? "1" : "0"}:${expiresAt}`));
@@ -293,9 +293,10 @@ var worker_default = {
     const upload = await signedArtworkUpload(request, env.NEXTAUTH_SECRET);
     if (upload) {
       if (upload.error) return new Response(upload.error === "method" ? "Method not allowed" : "Invalid or expired upload capability", { status: upload.error === "method" ? 405 : 403 });
+      if (upload.key.startsWith("t/") && upload.contentType !== "image/webp") return new Response("Invalid thumbnail type", { status: 403 });
       const bucket = upload.premium ? env.ARTWORKS_PREMIUM : env.ARTWORKS_PUBLIC;
       if (!bucket) return new Response("Artwork storage is temporarily unavailable", { status: 503 });
-      await bucket.put(upload.key, request.body, { httpMetadata: { contentType: upload.contentType } });
+      await bucket.put(upload.key, request.body, { httpMetadata: { contentType: upload.contentType, cacheControl: upload.premium ? "private, no-store" : "public, max-age=31536000, immutable" } });
       return new Response(null, { status: 201, headers: { "Cache-Control": "no-store" } });
     }
     const stagedRead = await signedArtworkRead(request, env.NEXTAUTH_SECRET);
