@@ -1,5 +1,4 @@
 import { after, NextRequest, NextResponse } from "next/server";
-import { unstable_cache } from "next/cache";
 import { cookies } from "next/headers";
 import { row, rows, run } from "@/lib/db";
 import { COOKIE, getUser } from "@/lib/auth";
@@ -8,25 +7,6 @@ import { publicMediaUrl } from "@/lib/media";
 import { ensurePremiumArtworkSchema } from "@/lib/premium-artwork";
 import { canAccessPremium } from "@/lib/billing";
 export const dynamic = "force-dynamic";
-
-/** Cache only public-like artwork metadata (no session or entitlements).
- * Premium related data stays server-side and is returned only after access
- * control for the requested artwork has already succeeded. */
-const cachedRelatedArtworks = unstable_cache(
-  async (premiumFlag: number, artId: number, charSlug: string, animeSlug: string, multiplier: number) => {
-    return rows(
-      `SELECT id, title, character_name, character_slug, anime_name, anime_slug, gender, category, thumb, width, height, COALESCE(premium, 0) AS premium
-       FROM artworks
-       WHERE published=1 AND COALESCE(premium, 0)=? AND id != ?
-       ORDER BY
-         CASE WHEN character_slug = ? THEN 0 WHEN anime_slug = ? THEN 1 ELSE 2 END,
-         ((CAST(id AS BIGINT) * ?) % 2147483647), id
-       LIMIT 36`, premiumFlag, artId, charSlug, animeSlug, multiplier);
-  },
-  ["anipins-detail-related-v2"],
-  { revalidate: 30 },
-);
-
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   await ensurePremiumArtworkSchema();
@@ -49,16 +29,21 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   const premiumOnly = Number(art.premium || 0) === 1;
 
   const discoveryMultiplier = ((id + 1) * 48_271) % 2_147_483_647 || 1;
-  // Fetch adjacent IDs and related cards in parallel; neither contains user
-  // information, and related cards can be reused for repeated opens.
-  const [related, adjacent] = await Promise.all([
-    cachedRelatedArtworks(premiumOnly ? 1 : 0, id, art.character_slug || "", art.anime_slug || "", discoveryMultiplier),
-    row(
-      `SELECT MAX(CASE WHEN id < ? THEN id END) AS prev_id, MIN(CASE WHEN id > ? THEN id END) AS next_id
-       FROM artworks WHERE published=1 AND COALESCE(premium, 0)=?`,
-      id, id, premiumOnly ? 1 : 0,
-    ),
-  ]);
+  const related = await rows(
+      `SELECT id, title, character_name, character_slug, anime_name, anime_slug, gender, category, thumb, width, height, COALESCE(premium, 0) AS premium
+       FROM artworks
+       WHERE published=1 AND COALESCE(premium, 0)=? AND id != ?
+       ORDER BY
+         CASE WHEN character_slug = ? THEN 0 WHEN anime_slug = ? THEN 1 ELSE 2 END,
+         ((CAST(id AS BIGINT) * ?) % 2147483647), id
+       LIMIT 36`,
+      premiumOnly ? 1 : 0, id, art.character_slug || "", art.anime_slug || "", discoveryMultiplier,
+    );
+  const adjacent = await row(
+    `SELECT MAX(CASE WHEN id < ? THEN id END) AS prev_id, MIN(CASE WHEN id > ? THEN id END) AS next_id
+     FROM artworks WHERE published=1 AND COALESCE(premium, 0)=?`,
+    id, id, premiumOnly ? 1 : 0,
+  );
 
   after(async () => {
     await Promise.allSettled([

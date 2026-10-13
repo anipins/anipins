@@ -16,11 +16,9 @@ const blank = (file: File, index: number, premiumOnly: boolean): UploadItem => (
 });
 
 const retryableStatus = (status: number) => [408, 425, 429, 500, 502, 503, 504].includes(status);
-// The production Cloudflare container has limited RAM and CPU. Each upload
-// runs Sharp decoding + fingerprinting + thumbnail generation; concurrent
-// finalization can exhaust memory and return intermittent HTTP 503.
-// Prefer reliable sequential publication until processing moves to a queue.
-const PARALLEL_UPLOADS = 1;
+// Keep enough transfers in flight to use a normal broadband connection without
+// overwhelming image processing, storage, or the browser with a huge batch.
+const PARALLEL_UPLOADS = 3;
 
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number) {
   const controller = new AbortController();
