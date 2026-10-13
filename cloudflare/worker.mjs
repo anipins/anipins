@@ -233,6 +233,7 @@ var AniPinsContainer = class extends DurableObject {
     __name(this, "AniPinsContainer");
   }
   starting;
+  rolling;
   constructor(ctx, env) {
     super(ctx, env);
     const container = ctx.container;
@@ -241,7 +242,12 @@ var AniPinsContainer = class extends DurableObject {
     }
   }
   async fetch(request) {
-    await this.restartForConfigurationRollout();
+    // Multiple requests can arrive during a Worker version rollout. Only one
+    // may destroy and reconfigure the named container; all others await it.
+    this.rolling ??= this.restartForConfigurationRollout().finally(() => {
+      this.rolling = void 0;
+    });
+    await this.rolling;
     this.starting ??= this.startAndWaitForPort().finally(() => {
       this.starting = void 0;
     });
