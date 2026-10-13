@@ -22,3 +22,8 @@ jobs:
           response="$(curl --silent --show-error --fail --location --max-time 70 --retry 1 https://anipins.com/health)"
           printf '%s' "$response" | grep -q '"ok":true'
           echo 'Production /health returned ok=true'
+          echo 'Verifying uncached dynamic gallery routing and response time'
+          curl --silent --show-error --fail --location --max-time 70 \
+            --output /dev/null --write-out 'Live gallery status=%{http_code} total=%{time_total}s\\n' \
+            "https://anipins.com/gallery?probe=20261013"
+
