@@ -14,3 +14,10 @@ test("staged upload and read use matching per-file signed Worker capabilities in
  assert.match(media,/Staged artwork read failed/);
  assert.doesNotMatch(media,/if \(USE_R2_MEDIA\) return \{ key, uploadUrl: await r2SignedPutUrl/);
 });
+test("generated thumbnails use native Cloudflare R2 signed upload in both public and Premium",()=>{
+ const media=read("src/lib/media.ts"),worker=read("cloudflare/worker.mjs");
+ assert.match(media,/signedWorkerStorageUrl\("upload", key, premium\)/);
+ assert.match(media,/await putMedia\(thumbKey, thumbBuf, "image\/webp", premium\)/);
+ assert.ok(worker.includes("t\\/[a-f0-9]{32}\\.webp"));
+ assert.match(worker,/upload\.key\.startsWith\("t\/"\) && upload\.contentType !== "image\/webp"/);
+});
