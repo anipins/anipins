@@ -138,7 +138,7 @@ var PORT = 8080;
 var INACTIVITY_TIMEOUT_MS = 5 * 60 * 1e3;
 var HEALTH_ATTEMPTS = 100;
 var HEALTH_INTERVAL_MS = 200;
-var CONTAINER_BOOT_VERSION = "2026-10-13-native-r2-thumbs-pinterest-layout";
+var CONTAINER_BOOT_VERSION = "2026-10-13-native-r2-media-pinterest-layout";
 var MAX_ARTWORK_UPLOAD_BYTES = 40 * 1024 * 1024;
 var UPLOAD_TYPES = /* @__PURE__ */ new Set(["image/jpeg", "image/png", "image/webp"]);
 var CONTAINER_ENV_KEYS = [
@@ -218,7 +218,7 @@ async function signedArtworkRead(request, secret) {
   const premium = url.searchParams.get("p") === "1";
   const expiresAt = Number(url.searchParams.get("e"));
   const signature = url.searchParams.get("s") || "";
-  if (!/^o\/[a-f0-9]{32}\.(?:jpg|jpeg|png|webp)$/.test(key) || !secret || !Number.isSafeInteger(expiresAt) || expiresAt < Math.floor(Date.now() / 1e3) || expiresAt > Math.floor(Date.now() / 1e3) + 300 || !signature) return { error: "invalid" };
+  if (!/^(?:o\/[a-f0-9]{32}\.(?:jpg|jpeg|png|webp)|t\/[a-zA-Z0-9._-]+\.(?:jpg|jpeg|png|webp))$/.test(key) || !secret || !Number.isSafeInteger(expiresAt) || expiresAt < Math.floor(Date.now() / 1e3) || expiresAt > Math.floor(Date.now() / 1e3) + 300 || !signature) return { error: "invalid" };
   try {
     const cryptoKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
     const valid = await crypto.subtle.verify("HMAC", cryptoKey, base64UrlBytes2(signature), new TextEncoder().encode(`read:${key}:${premium ? "1" : "0"}:${expiresAt}`));
