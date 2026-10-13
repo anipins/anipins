@@ -132,6 +132,19 @@ export async function createSignedArtworkUpload(key: string, premium = false) {
   return { key, uploadUrl: data.url.startsWith("http") ? data.url : `${SB_URL}/storage/v1${data.url}`, token: data.token || "" };
 }
 
+/** Read an already-authorized original/thumbnail through native R2 Worker bindings.
+ * Only server-side route handlers may call this helper after DB publication and
+ * Premium entitlement checks. The signed capability is never sent to clients.
+ */
+export async function readArtworkViaWorker(key: string, premium = false): Promise<Response> {
+  if (!isSafeMediaKey(key) || !(key.startsWith("o/") || key.startsWith("t/")))
+    throw new Error("Invalid artwork storage key");
+  return fetch(signedWorkerStorageUrl("read", key, premium), {
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
+  });
+}
+
 /** Read a direct-to-storage original back on the server for validation,
  * duplicate detection and thumbnail generation. */
 export async function readArtworkUpload(key: string, premium = false) {
