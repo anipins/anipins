@@ -40,3 +40,12 @@ test("artwork thumbnails and originals stream via native Worker only after publi
  assert.match(route,/await canAccessPremium\(user\)/);
  assert.match(route,/const cacheControl = restricted/);
 });
+
+test("native read accepts legacy 16-char originals without relaxing signed upload keys",()=>{
+ const w=read("cloudflare/worker.mjs");
+ const start=w.indexOf("async function signedArtworkRead"),end=w.indexOf("__name(signedArtworkRead",start);
+ const reader=w.slice(start,end);
+ assert.ok(reader.includes("{16,32}"),"legacy 16-character originals remain readable");
+ const signer=w.slice(w.indexOf("async function signedArtworkUpload"),w.indexOf("__name(signedArtworkUpload"));
+ assert.ok(signer.includes("{32}"),"new upload keys stay unguessable");
+});
