@@ -14,3 +14,38 @@ test("staged upload and read use matching per-file signed Worker capabilities in
  assert.match(media,/Staged artwork read failed/);
  assert.doesNotMatch(media,/if \(USE_R2_MEDIA\) return \{ key, uploadUrl: await r2SignedPutUrl/);
 });
+test("both original and WebP thumbnail uploads use native signed Worker/R2 binding",()=>{
+ const worker=read("cloudflare/worker.mjs"),media=read("src/lib/media.ts");
+ assert.ok(worker.includes("t\\/[a-f0-9]{32}\\.webp"));
+ assert.match(worker,/upload\.key\.startsWith\("t\/"\)/);
+ assert.match(media,/signedWorkerStorageUrl\("upload", key, premium\)/);
+ assert.match(media,/if \(USE_R2_MEDIA && \(key\.startsWith\("o\/"\) \|\| key\.startsWith\("t\/"\)\)\)/);
+ assert.match(media,/await putMedia\(thumbKey, thumbBuf, "image\/webp", premium\)/);
+});
+test("server-side thumbnail upload uses strict content types and short-lived HMAC capabilities",()=>{
+ const worker=read("cloudflare/worker.mjs");
+ assert.match(worker,/upload\.key\.startsWith\("t\/"\) && upload\.contentType !== "image\/webp"/);
+ assert.match(worker,/crypto\.subtle\.verify\("HMAC"/);
+ assert.match(worker,/await bucket\.put\(upload\.key/);
+});
+
+test("artwork thumbnails and originals stream via native Worker only after publication and Premium gate",()=>{
+ const worker=read("cloudflare/worker.mjs"),media=read("src/lib/media.ts"),route=read("src/app/api/img/[...p]/route.ts");
+ assert.match(worker,/async function signedArtworkRead/);
+ assert.match(worker,/t.*a-zA-Z0-9.*webp/);
+ assert.match(media,/export async function readArtworkViaWorker/);
+ assert.match(route,/await readArtworkViaWorker\(rel, premium\)/);
+ assert.match(route,/if \(unpublished\)/);
+ assert.match(route,/if \(premium\)/);
+ assert.match(route,/await canAccessPremium\(user\)/);
+ assert.match(route,/const cacheControl = restricted/);
+});
+
+test("native read accepts legacy 16-char originals without relaxing signed upload keys",()=>{
+ const w=read("cloudflare/worker.mjs");
+ const start=w.indexOf("async function signedArtworkRead"),end=w.indexOf("__name(signedArtworkRead",start);
+ const reader=w.slice(start,end);
+ assert.ok(reader.includes("{16,32}"),"legacy 16-character originals remain readable");
+ const signer=w.slice(w.indexOf("async function signedArtworkUpload"),w.indexOf("__name(signedArtworkUpload"));
+ assert.ok(signer.includes("{32}"),"new upload keys stay unguessable");
+});

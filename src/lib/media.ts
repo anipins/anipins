@@ -70,6 +70,19 @@ export function newArtworkUploadKey(origName: string) {
 }
 
 async function putMedia(key: string, buf: Buffer, contentType: string, premium = false) {
+  if (USE_R2_MEDIA && (key.startsWith("o/") || key.startsWith("t/"))) {
+    // Originals and generated thumbnails must follow the SAME Cloudflare R2
+    // binding, avoiding the broken cross-region S3 upload path in finalization.
+    const response = await fetch(signedWorkerStorageUrl("upload", key, premium), {
+      method: "PUT",
+      headers: { "Content-Type": contentType },
+      body: new Uint8Array(buf),
+      signal: AbortSignal.timeout(90_000),
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error(`Artwork R2 write failed (${response.status})`);
+    return;
+  }
   if (USE_R2_MEDIA) return r2Put(key, buf, contentType, premium);
   if (USE_SUPABASE_STORAGE) return sbUpload(key, buf, contentType);
   throw new Error("Object storage is not configured");
@@ -119,6 +132,17 @@ export async function createSignedArtworkUpload(key: string, premium = false) {
   return { key, uploadUrl: data.url.startsWith("http") ? data.url : `${SB_URL}/storage/v1${data.url}`, token: data.token || "" };
 }
 
+/** Only server routes may call this, after checking publication and Premium
+ * entitlements. The signed capability is never returned to the browser. */
+export async function readArtworkViaWorker(key: string, premium = false): Promise<Response> {
+  if (!isSafeMediaKey(key) || !(key.startsWith("o/") || key.startsWith("t/")))
+    throw new Error("Invalid artwork storage key");
+  return fetch(signedWorkerStorageUrl("read", key, premium), {
+    cache: "no-store",
+    signal: AbortSignal.timeout(45_000),
+  });
+}
+
 /** Read a direct-to-storage original back on the server for validation,
  * duplicate detection and thumbnail generation. */
 export async function readArtworkUpload(key: string, premium = false) {
@@ -126,9 +150,7 @@ export async function readArtworkUpload(key: string, premium = false) {
   if (USE_R2_MEDIA) {
     // Read the exact staged R2 object through the bound Worker, not through
     // separate container S3 credentials that produced 503 on finalisation.
-    const response = await fetch(signedWorkerStorageUrl("read", key, premium), {
-      cache: "no-store", signal: AbortSignal.timeout(45000),
-    });
+    const response = await readArtworkViaWorker(key, premium);
     if (!response.ok) throw new Error(`Staged artwork read failed (${response.status})`);
     const data = Buffer.from(await response.arrayBuffer());
     if (!data.length || data.length > 40 * 1024 * 1024)
