@@ -139,3 +139,104 @@ main section:has(.masonry) { width: 100% !important; max-width: none !important;
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+
+/* AniPins cinematic first-visit ident. All effects are high-resolution CSS,
+   not a blocking video download or a WebGL scene. */
+.intro-cinematic {
+  color: #f7f0df;
+  background: #040404;
+  min-height: 100dvh;
+  font-family: var(--font-grotesk), sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.intro-cinematic-vignette,
+.intro-cinematic-atmosphere,
+.intro-cinematic-grain { position: absolute; inset: 0; pointer-events: none; }
+.intro-cinematic-vignette {
+  background: radial-gradient(ellipse 40% 47% at 50% 47%, #232017 0%, #10100e 39%, #050505 76%, #000 100%);
+}
+.intro-cinematic-atmosphere {
+  opacity: .8;
+  background: radial-gradient(ellipse 19rem 22rem at 50% 40%, rgba(197,143,54,.12), transparent 71%),
+    linear-gradient(104deg, transparent 32%, rgba(238,185,94,.035) 49%, transparent 66%);
+  animation: intro-atmosphere-drift 3.1s ease-out both;
+}
+.intro-cinematic-grain {
+  opacity: .23;
+  background-image: repeating-linear-gradient(0deg, transparent 0px, rgba(255,255,255,.027) 1px, transparent 2px, transparent 4px);
+  mask-image: radial-gradient(ellipse, black 6%, transparent 80%);
+}
+.intro-cinematic-crosshair { position: absolute; top: 50%; width: min(13vw, 180px); height: 1px; background: linear-gradient(90deg, transparent, rgba(214,177,108,.2), transparent); }
+.intro-cinematic-crosshair--left { left: 0; }
+.intro-cinematic-crosshair--right { right: 0; }
+.intro-cinematic-content { width: 100%; padding: 4rem 1.25rem; transform: translateY(-1.15rem); }
+.intro-cinematic-eyebrow { color: #b9a483; font-size: 10px; font-weight: 500; white-space: nowrap; }
+.intro-cinematic-logo-stage { width: min(57vw, 300px); height: min(57vw, 300px); min-width: 200px; min-height: 200px; }
+.intro-cinematic-halo {
+  width: 94%; height: 94%;
+  background: radial-gradient(circle, rgba(218,165,80,.18), rgba(198,161,91,.04) 45%, transparent 70%);
+  filter: blur(14px);
+}
+.intro-cinematic-orbit { position: absolute; border-radius: 50%; box-shadow: 0 0 36px rgba(222,175,100,.05); }
+.intro-cinematic-orbit--outer { inset: 3%; border: 1px solid rgba(224,174,93,.48); border-left-color: transparent; border-bottom-color: rgba(224,174,93,.1); }
+.intro-cinematic-orbit--inner { inset: 15%; border: 1px dashed rgba(222,185,117,.28); border-right-color: transparent; }
+.intro-emblem-perspective { width: 56%; height: 56%; perspective: 850px; }
+.intro-emblem-volume { width: 100%; height: 100%; transform-style: preserve-3d; will-change: transform, opacity; }
+.intro-emblem-image, .intro-emblem-edge { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; user-select: none; }
+.intro-emblem-edge--deep { transform: translate3d(7px, 9px, -20px); filter: brightness(.23) sepia(1) drop-shadow(0 22px 16px rgba(0,0,0,.85)); }
+.intro-emblem-edge--near { transform: translate3d(3px, 4px, -7px); filter: brightness(.48) sepia(.5); }
+.intro-emblem-fragment { transform: translateZ(2px); }
+.intro-emblem-face { transform: translateZ(5px); filter: drop-shadow(0 0 18px rgba(218,176,91,.3)); }
+.intro-cinematic-light-sweep {
+  transform: translateZ(7px);
+  width: 38%;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,243,210,.09) 35%, rgba(255,244,206,.53) 51%, transparent 100%);
+  filter: blur(13px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.intro-cinematic-wordmark {
+  font-size: clamp(2.85rem, 7.7vw, 5rem);
+  line-height: 1.1;
+  font-weight: 650;
+  letter-spacing: -.055em;
+  color: #f4efe5;
+  text-shadow: 0 12px 36px rgba(0,0,0,.7);
+  perspective: 400px;
+}
+.intro-cinematic-wordmark-gold { color: #d7b578; }
+.intro-cinematic-rule { margin-top: 1.2rem; width: 11.25rem; height: 1px; transform-origin: center; background: linear-gradient(90deg, transparent, #caa46e 48%, transparent); }
+.intro-cinematic-tagline { margin-top: .95rem; color: #ae9b83; font-size: 10px; font-weight: 500; letter-spacing: .31em; text-transform: uppercase; }
+.intro-cinematic-skip {
+  position: absolute; z-index: 20; right: max(1.5rem, env(safe-area-inset-right)); top: max(1.5rem, env(safe-area-inset-top));
+  display: inline-flex; align-items: center; gap: .8rem;
+  border: 1px solid rgba(211,179,120,.25); border-radius: 999px;
+  padding: .62rem 1rem; color: #d1c2a4; background: rgba(20,18,14,.52);
+  text-transform: uppercase; font-size: 10px; letter-spacing: .16em;
+  transition: background .2s, color .2s, border-color .2s;
+}
+.intro-cinematic-skip:hover { background: rgba(195,145,69,.16); border-color: #bf955b; color: #fff; }
+.intro-cinematic-skip:focus-visible { outline: 2px solid #d2aa69; outline-offset: 4px; }
+.intro-cinematic-bottom {
+  position: absolute; bottom: max(2rem, env(safe-area-inset-bottom)); left: max(2rem, env(safe-area-inset-left)); right: max(2rem, env(safe-area-inset-right));
+  display: flex; align-items: center; justify-content: space-between; gap: 2rem;
+  font-size: 9px; letter-spacing: .16em; color: rgba(200,182,149,.43);
+}
+.intro-cinematic-progress { width: min(22vw, 200px); height: 1px; overflow: hidden; background: rgba(214,178,122,.18); }
+.intro-cinematic-progress > span { display: block; width: 100%; height: 100%; transform-origin: left; background: #d6b17c; animation: intro-progress 2.55s linear forwards; }
+@keyframes intro-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes intro-atmosphere-drift { from { opacity: 0; transform: scale(1.35); } to { opacity: .8; transform: scale(1); } }
+@media (max-width: 640px) {
+  .intro-cinematic-logo-stage { width: min(77vw, 280px); height: min(77vw, 280px); }
+  .intro-cinematic-content { transform: translateY(-.45rem); }
+  .intro-cinematic-eyebrow { font-size: 8px; }
+  .intro-cinematic-tagline { letter-spacing: .2em; }
+  .intro-cinematic-bottom { left: 1.5rem; right: 1.5rem; bottom: 1.8rem; justify-content: center; }
+  .intro-cinematic-bottom > span { display: none; }
+  .intro-cinematic-progress { width: 7rem; }
+  .intro-cinematic-skip { right: 1.2rem; top: max(1.2rem, env(safe-area-inset-top)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-cinematic-atmosphere, .intro-cinematic-progress > span { animation: none; }
+}
