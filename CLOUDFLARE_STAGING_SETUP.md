@@ -1,57 +1,30 @@
-# Cloudflare staging setup
+# Cloudflare staging status
 
-This configuration deploys only to the temporary Worker URL:
+The old staging instructions are retired: they described `wrangler.jsonc` as staging-only and recommended copying production Supabase, payment, and R2 credentials. That is not safe or accurate.
 
-`https://anipins-staging.<account-subdomain>.workers.dev`
+## What currently exists
 
-It does not create a route or change `anipins.com`.
+- `wrangler.jsonc` is associated with the production-routed AniPins Worker and binds the live `anipins-public-media` and `anipins-premium-media` buckets. Do not deploy it to test the migration.
+- `wrangler.better-auth-staging.jsonc` deploys only the standalone auth Worker and binds the test D1 database. It does not serve the AniPins website or connect a Container/R2.
+- Staging D1 migrations 0001–0004 and the separate auth Worker are in place. The app identity bridge is currently local code only.
+- There is no separate staging R2 bucket or isolated app Container configuration in the account. Do not copy images or deploy a new Container until cost and resource use are explicitly approved.
 
-## Before the first deployment
+## Safe checks
 
-1. Authenticate Wrangler with the AniPins Cloudflare account:
+From the repository root:
 
-   ```powershell
-   npx wrangler login
-   ```
+```powershell
+npx wrangler whoami
+npx wrangler d1 migrations list anipins-staging-db --remote --config wrangler.better-auth-staging.jsonc
+npx wrangler deploy --dry-run --config wrangler.better-auth-staging.jsonc
+```
 
-2. Add the same runtime configuration used by production as Cloudflare Worker
-   secrets. Never commit, paste into chat, or place these values in
-   `wrangler.jsonc`:
+The dry run must show only `env.DB (anipins-staging-db)`. The standalone auth Worker may be deployed with:
 
-   ```powershell
-   npx wrangler secret put DATABASE_URL
-   npx wrangler secret put SUPABASE_URL
-   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
-   npx wrangler secret put ADMIN_PASSWORD
-   npx wrangler secret put GOOGLE_CLIENT_ID
-   npx wrangler secret put RAZORPAY_KEY_ID
-   npx wrangler secret put RAZORPAY_KEY_SECRET
-   npx wrangler secret put RAZORPAY_WEBHOOK_SECRET
-   npx wrangler secret put RESEND_API_KEY
-   npx wrangler secret put R2_ACCESS_KEY_ID
-   npx wrangler secret put R2_SECRET_ACCESS_KEY
-   ```
+```powershell
+npx wrangler deploy --config wrangler.better-auth-staging.jsonc
+```
 
-   Also transfer any optional production variables listed in
-   `cloudflare/worker.mjs` that are enabled for AniPins (Firebase, premium plan,
-   R2 bucket names, etc.). For staging, `NEXT_PUBLIC_SITE_URL` and
-   `NEXTAUTH_URL` must use the temporary `workers.dev` URL.
+That deploy does not complete the app migration. Do not deploy the website/Container until a separate staging app configuration uses staging-only secrets, D1, and media storage. See [DEPLOY.md](DEPLOY.md) for the full release gate, exact secret names, smoke-test checklist, and rollback plan.
 
-3. Because Docker is not installed on this PC, use **Workers Builds** connected
-   to the GitHub repository, or deploy from a computer with Docker running.
-   Configure its production branch for this *staging Worker* only with:
-
-   ```text
-   npx wrangler deploy
-   ```
-
-## Verify before moving the domain
-
-- Open `/health` and confirm `{ "ok": true }`.
-- Test normal artwork browsing, Google login, admin access, upload, image view,
-  download, Premium checkout and the Razorpay webhook on the staging URL.
-- Confirm R2 media loads and no new objects are written to an unexpected bucket.
-- Review Worker and Container logs for startup and request errors.
-
-Only after all checks pass should `anipins.com` be attached to a separate
-production Worker configuration. Do not add it to this staging Worker.
+Production routes, production Supabase data, payment settings, and existing R2 objects must remain unchanged until staging parity and rollback are verified and the owner supplies the required production approval.

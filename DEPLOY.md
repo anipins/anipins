@@ -1,69 +1,71 @@
-# AniPins release and deployment runbook
+# AniPins deployment and Better Auth/D1 migration
 
-## Verified topology (2026-10-17)
+## Current verified topology
 
-- Website and API: Next.js app in the Docker image, served by the Cloudflare Worker Container configured in `wrangler.jsonc` (`cloudflare/worker.mjs`).
-- Production edge target: Worker script `anipins-staging`; Cloudflare routes `anipins.com/*` and `www.anipins.com/*` to it. Despite its name, deploying this config changes production.
-- Media: Cloudflare R2 bindings `ARTWORKS_PUBLIC` and `ARTWORKS_PREMIUM` use `anipins-public-media` and `anipins-premium-media`.
-- Database: Supabase PostgreSQL. Production project ref `synqmyiwjyvvrbrhcetw`; separate project `keqdwpsjygigdsatzjdb` exists for staging. Production schema inspection found `billing_subscriptions.provider_event_at` and `media_cleanup_queue` are not present yet.
-- Android: native WebView project in `mobile/`; build a signed AAB locally. Never upload from this process to Play.
+- Website/API: Next.js in a Cloudflare Container, fronted by `cloudflare/worker.mjs`.
+- `wrangler.jsonc` names the Worker `anipins-staging`, but the deployed Worker is production-routed (including `anipins.com` / `www.anipins.com`) and binds the existing production R2 buckets `anipins-public-media` and `anipins-premium-media`. Do not deploy this config as staging.
+- Production structured data and current website authentication still use Supabase PostgreSQL/custom sessions. The migration target is Better Auth + Cloudflare D1 + existing Cloudflare R2 + Workers.
+- Isolated Better Auth staging Worker: `anipins-better-auth-staging`, at `https://anipins-better-auth-staging.anipins01.workers.dev`; it binds only staging D1. It is not the website Worker and does not by itself switch app login/data.
+- Staging D1: `anipins-staging-db` (`47006a2e-45b1-42e4-9f89-5ce8329a44bf`). Migrations `0001`–`0004` are applied. Public artwork metadata was copied; image bytes were not copied.
+- Android: native WebView project under `mobile/`. Build a signed AAB locally; do not upload it to Google Play.
 
-## Release commands and checks
+## Release gate and required environment names
 
-Use Node 22. From the repo root:
+Use Node 22 (the project supports Node >=20 and <23). Run from repository root:
 
 ```powershell
 npm ci
-npx tsc --noEmit --incremental false
-npx --yes --package=node@22 node --test
-npx --yes --package=node@22 node node_modules/next/dist/bin/next build
-./mobile/build-play-release.ps1
+npm run build
+node --test tests/*.test.cjs
+npx wrangler deploy --dry-run --config wrangler.better-auth-staging.jsonc
 ```
 
-There is no standalone `lint` npm script. The Next production build performs lint and type validation. The Android script builds and verifies the signed AAB (and a local APK); neither artifact is committed.
+The full test suite must pass before a release. At the time of this update, Node 22 reports 183/184 passing; the remaining test fails because `public/downloads/AniPins-2.5.21.apk` is missing. Do not claim the Android download passes until the artifact/metadata mismatch is resolved. On this machine the local runtime is Node 24, which is outside the supported range; use the Node 22 Docker validation image or a Node 22 installation.
 
-## Environment variable names
+Required secret/variable names (values belong only in Cloudflare secrets or the private Container environment; never commit values):
 
-Set values only in the relevant provider secret store; never commit or print secret values.
+- Better Auth on the app's isolated staging Worker: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`.
+- Worker-to-Container D1 bridge: `D1_RPC_URL`, `D1_RPC_SECRET` (same secret at Worker and Container). The secret must be at least 32 characters.
+- Google staging OAuth if Google sign-in is part of the smoke test: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+- App staging URL/cookie configuration: `NEXTAUTH_URL`, `NEXT_PUBLIC_SITE_URL`.
+- Existing production environment still includes Supabase/Postgres and payment/media credentials. Do not copy production values into staging; staging payments must be disabled or use test-only credentials.
 
-| Variables | Use |
-|---|---|
-| `DATABASE_URL`, `DATABASE_CA_CERT` | PostgreSQL connection and optional CA trust |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase admin API integration |
-| `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_SITE_URL` | Session and canonical site configuration |
-| `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID` | Google sign-in |
-| `ADMIN_PASSWORD`, `ADMIN_2FA_ENCRYPTION_KEY`, `SETUP_SECRET`, `SETUP_TOKEN` | Admin access and protected setup |
-| `MEDIA_PROVIDER`, `R2_ACCOUNT_ID`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PUBLIC_BUCKET`, `R2_PREMIUM_BUCKET` | R2 configuration where direct S3-compatible access is used |
-| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_PREMIUM_PLAN_ID_199`, `RAZORPAY_WEBHOOK_SECRET` | Billing; staging must use test credentials only |
-| `RESEND_API_KEY`, `EMAIL_FROM`, `FIREBASE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SITE_VERIFICATION`, `ANDROID_APP_LINKS_SHA256` | Optional email, Firebase, search verification, and Android links |
-| `ANIPINS_KEYSTORE_PATH`, `ANIPINS_KEYSTORE_PASSWORD`, `ANIPINS_KEY_ALIAS`, `ANIPINS_KEY_PASSWORD` | Local Android release signing only |
+## Staging deployment prerequisites
 
-Cloudflare Worker also requires its configured `ARTWORKS_PUBLIC` and `ARTWORKS_PREMIUM` R2 bindings. Confirm environment-specific bindings before publishing.
+A safe app staging environment is not provisioned yet. The existing production-routed app Worker config binds production R2, and the Cloudflare account currently has no separate staging media bucket. Do not deploy the main app Worker until there is a separate app Worker/Container environment with a non-production media bucket and staging-only secrets. Container provisioning or additional R2 use may incur charges; obtain separate owner approval before enabling paid capacity or copying media.
 
-## Database migration order and backup
+After that isolated environment is prepared, follow this order:
 
-1. Before any production DDL, create and verify a recoverable Supabase backup/snapshot and record its restore point. A schema listing or SQL copy is not a backup.
-2. Apply numbered SQL files in `scripts/migrations/` in ascending filename order. The schema changes accompanying this release are additive/idempotent: create `media_cleanup_queue`, add `billing_subscriptions.provider_event_at`, and restrict direct `anon`/`authenticated` access to server-only tables. Do not run the application setup endpoint as a substitute for a reviewed migration.
-3. Confirm the expected columns/table and RLS/grants after migration, then deploy code. Roll back application code first if smoke tests fail; additive schema may remain in place. Do not drop the added table/column as part of rollback.
+1. Build and test using the release gate above.
+2. Confirm the target Worker config lists only the staging D1, staging R2, and staging Container bindings. Never use the production-routed `wrangler.jsonc` as the target.
+3. Configure the staging secret names listed above using `npx wrangler secret put <NAME> --config <STAGING_CONFIG>` interactively; never place values in command arguments or source files.
+4. Check `npx wrangler d1 migrations list anipins-staging-db --remote --config <STAGING_CONFIG>`. If migrations are pending, apply `migrations/d1/0001_initial_anipins_schema.sql` through `0004_better_auth_business_user_link.sql` in ascending order using Wrangler D1 migrations. Take a D1 export before future schema changes.
+5. Run `npx wrangler deploy --dry-run --config <STAGING_CONFIG>`, inspect bindings, then deploy only the isolated staging config after confirming it has no production routes, R2, secrets, or payment keys.
+6. Smoke test using staging-only accounts: email sign-up/sign-in, Google if configured, session lookup, user/admin role checks, sign-out, home/feed/pagination, open artwork/image, like/save/download, Premium entitlement (no payment), and a test-admin upload.
+7. Record the exact commit, Worker version, migration list, tests, smoke results, and rollback target. Stop before production.
 
-## Deployment procedure
+The separate auth Worker can be redeployed independently with `npx wrangler deploy --config wrangler.better-auth-staging.jsonc`; it has no Container or R2 binding. Its host-only cookie does not authenticate a different app hostname, so test the final flow on the app's own staging origin.
 
-The current Wrangler config is production-routed. From a clean, pushed commit, inspect the account and preview the bundle before deployment:
+## Production deployment gate
 
-```powershell
-npx wrangler whoami
-npx wrangler deploy --dry-run
-npx wrangler deploy
-```
+Do not deploy to production, change DNS/routes, enable paid services, change payment/subscription settings, delete data/storage, or upload to Google Play without the relevant separate explicit approval. Production cutover requires all of the following first:
 
-Use only the authorized commit. Do not change DNS, rotate secrets, alter billing settings, delete data/storage, enable paid services, or upload an Android artifact to Google Play without separate approval. If backup verification, provider access, or test-account credentials are unavailable, stop before the affected production action and report the exact blocker.
+- Staging smoke tests pass for the full auth/data/media paths.
+- All source tables, IDs, foreign keys, user/session mappings, subscription history, security records, and row-count/checksum parity are reconciled.
+- A recoverable production database export/backup and a tested restore/rollback procedure exist. If Supabase cannot provide a backup, produce and verify an independent export before switching.
+- Review the source finding that `public.billing_subscriptions` has RLS disabled; do not change RLS until service policies are reviewed.
+- Keep existing authentication/data available for rollback until cutover verification completes; revoke legacy sessions only at the approved cutover.
+- User gives the required exact approval: `APPROVED: deploy <commit hash> to production`.
 
-## Smoke tests and rollback
+Production deployment must target only that approved commit. Apply only reviewed additive/reversible migrations after confirming backup availability, then smoke test with a test account and no real payments. On failure, roll back the Worker to the recorded prior version; do not delete data or objects.
 
-Using a test account only and no real payments, verify: home page; browse/paginate/refresh; open artwork and image loading; sign-in and sign-out; like/save and download; premium entitlement check; admin upload with a test admin. Check HTTP status, browser console, Worker/container logs, and DB errors. Do not claim sign-in/like/premium passed based on public HTTP checks alone.
+## Component rollback
 
-If a smoke test fails, roll back the Worker to the previously serving Cloudflare version through Cloudflare's version rollback/traffic controls, then retest the known-good version. Keep additive DB schema in place unless a separately reviewed recovery is needed. Never roll back by deleting user data or media.
+- Auth/app Worker: restore the recorded previous Cloudflare Worker version. Keep old auth enabled until cutover is verified.
+- D1: migrations are additive; do not drop schema to roll back app code. Restore from a verified D1 export only under an approved recovery procedure.
+- R2: leave all production object keys and objects untouched; no bulk copy/delete in a rollback.
+- Android: keep the signed AAB local and unchanged; upload only through the owner's Play Console process.
 
-## Release artifact status
+## Current status
 
-The signed Android AAB is a local artifact at `mobile/app/build/outputs/bundle/release/app-release.aab`. Keep the keystore/password out of source control. The AAB is not uploaded to Google Play by this deployment.
+Build: PASS. Focused auth/migration tests: PASS. Node 22 full suite: 183/184 (missing Android APK artifact). Wrangler dry runs: PASS. Isolated Better Auth staging Worker: deployed and smoke-tested. App identity bridge: implemented and locally tested, not deployed or remotely tested. Production app, database, auth, storage, DNS, and billing: unchanged.

@@ -1,7 +1,8 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { row, run } from "./db";
+import { readAuthAssertion } from "../../cloudflare/auth-assertion.mjs";
 
 export const ADMIN_EMAIL = "anipins01@gmail.com";
 export const COOKIE = "anipins_session";
@@ -52,6 +53,15 @@ export type SessionUser = { id: number; email: string; name: string; nickname: s
 
 export async function getUser(): Promise<SessionUser | null> {
   try {
+    const assertion = await readAuthAssertion(await headers(), process.env.D1_RPC_SECRET || "");
+    if (assertion) {
+      const assertedUser = await row(
+        "SELECT id, email, name, nickname, avatar, cover, bio, is_public, notify_following, notify_updates, role FROM users WHERE id = ? LIMIT 1",
+        assertion.userId,
+      );
+      // Authorization attributes, including role, always come from the business profile database.
+      return (assertedUser as SessionUser) || null;
+    }
     const token = (await cookies()).get(COOKIE)?.value;
     if (!token) return null;
     const u = await row(

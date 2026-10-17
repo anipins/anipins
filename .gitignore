@@ -7,4 +7,5 @@ uploads/
 .env.r2-migration
 *.log
 .vercel/
+.wrangler/
 artifacts/

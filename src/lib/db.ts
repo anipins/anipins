@@ -1,8 +1,14 @@
 import path from "path";
 import fs from "fs";
+import { callD1Rpc } from "../../cloudflare/d1-rpc-client.mjs";
 
 export const UPLOADS_DIR = path.join(process.cwd(), "uploads");
-export const USE_PG = !!process.env.DATABASE_URL;
+export const USE_D1 = !!process.env.D1_RPC_URL;
+export const USE_PG = !!process.env.DATABASE_URL && !USE_D1;
+
+if (USE_D1 && process.env.DATABASE_URL) {
+  throw new Error("Configure either D1_RPC_URL or DATABASE_URL, not both.");
+}
 
 declare global {
   // eslint-disable-next-line no-var
@@ -86,6 +92,14 @@ function toPg(sql: string) {
 
 /** SELECT (or INSERT..RETURNING) — returns all rows */
 export async function rows(sql: string, ...args: any[]): Promise<any[]> {
+  if (USE_D1) {
+    const result = await callD1Rpc({
+      url: process.env.D1_RPC_URL!, secret: process.env.D1_RPC_SECRET || "",
+      operation: "all", sql, params: args,
+    }) as { results?: any[] };
+    if (!result || !Array.isArray(result.results)) throw new Error("D1 database returned an invalid row set.");
+    return result.results;
+  }
   if (USE_PG) return (await pool().query(toPg(sql), args)).rows;
   return sqlite().prepare(sql).all(...args);
 }
@@ -98,6 +112,14 @@ export async function row(sql: string, ...args: any[]): Promise<any | null> {
 
 /** Statement with no result set */
 export async function run(sql: string, ...args: any[]): Promise<void> {
+  if (USE_D1) {
+    const result = await callD1Rpc({
+      url: process.env.D1_RPC_URL!, secret: process.env.D1_RPC_SECRET || "",
+      operation: "run", sql, params: args,
+    }) as { success?: boolean };
+    if (!result?.success) throw new Error("D1 database statement did not complete.");
+    return;
+  }
   if (USE_PG) { await pool().query(toPg(sql), args); return; }
   sqlite().prepare(sql).run(...args);
 }

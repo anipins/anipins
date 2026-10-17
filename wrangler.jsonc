@@ -36,6 +36,14 @@
       "bucket_name": "anipins-premium-media"
     }
   ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "anipins-staging-db",
+      "database_id": "47006a2e-45b1-42e4-9f89-5ce8329a44bf",
+      "migrations_dir": "migrations/d1"
+    }
+  ],
   "exports": {
     "AniPinsContainer": {
       "type": "durable-object",

@@ -1,6 +1,10 @@
 import { DurableObject } from "cloudflare:workers";
 import { canonicalHostRedirect, forwardToContainer, isAllowedPublicHost } from "./forwarding.mjs";
 import { servePublicImage, signedPublicMediaKey } from "./public-image-cache.mjs";
+import { handleD1RpcRequest } from "./d1-rpc.mjs";
+import { createStagingBetterAuth, isStagingBetterAuthHost, isStagingBetterAuthRequest } from "./better-auth-staging.mjs";
+import { createD1BusinessIdentityStore, ensureBusinessIdentityLink } from "./business-identity-link.mjs";
+import { prepareContainerAuthRequest } from "./auth-request-bridge.mjs";
 
 const PORT = 8080;
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
@@ -19,6 +23,8 @@ const SIGNED_STORAGE_WORKER_HOST = "anipins-staging.anipins01.workers.dev";
 // explicit. Values are configured as Worker secrets and are never committed.
 const CONTAINER_ENV_KEYS = [
   "DATABASE_URL",
+  "D1_RPC_URL",
+  "D1_RPC_SECRET",
   "SUPABASE_URL",
   "SUPABASE_SERVICE_ROLE_KEY",
   "ADMIN_PASSWORD",
@@ -228,12 +234,29 @@ export default {
     const canonicalRedirect = canonicalHostRedirect(request);
     if (canonicalRedirect) return canonicalRedirect;
 
+    // Isolated staging-only auth endpoint. It deliberately does not intercept
+    // the live /api/auth routes used by the existing AniPins login flow.
+    if (isStagingBetterAuthRequest(request)) {
+      if (!isStagingBetterAuthHost(request)) return new Response("Not found", { status: 404 });
+      try {
+        return await createStagingBetterAuth(env, request).handler(request);
+      } catch {
+        return new Response("Staging authentication is not configured", {
+          status: 503,
+          headers: { "Cache-Control": "no-store" },
+        });
+      }
+    }
+
     // Do not allow an arbitrary Worker/custom-domain hostname to become the
     // forwarded host trusted by the application for same-origin checks.
     const requestUrl = new URL(request.url);
     const signedStorageRequest = requestUrl.hostname === SIGNED_STORAGE_WORKER_HOST
       && SIGNED_STORAGE_PATHS.has(requestUrl.pathname);
     if (!isAllowedPublicHost(request) && !signedStorageRequest) return new Response("Misdirected request", { status: 421 });
+    if (requestUrl.pathname === "/__internal/d1") {
+      return handleD1RpcRequest(request, env);
+    }
     const upload = await signedArtworkUpload(request, env.NEXTAUTH_SECRET);
     if (upload) {
       if (upload.error) return new Response(upload.error === "method" ? "Method not allowed" : "Invalid or expired upload capability", { status: upload.error === "method" ? 405 : 403 });
@@ -284,9 +307,23 @@ export default {
       );
     }
     const target = env.ANIPINS_CONTAINER.getByName("anipins-web-v2");
+    const containerAuth = await prepareContainerAuthRequest(request, {
+      secret: env.D1_RPC_SECRET,
+      resolveIdentity: isStagingBetterAuthHost(request) && env.DB && env.BETTER_AUTH_SECRET
+        ? async (cookie) => {
+          const auth = createStagingBetterAuth(env, request);
+          const session = await auth.api.getSession({
+            headers: new Headers({ cookie: `anipins_staging_better_auth=${cookie}` }),
+          });
+          if (!session?.user) return null;
+          const linked = await ensureBusinessIdentityLink(createD1BusinessIdentityStore(env.DB), session.user);
+          return linked.ok ? { userId: linked.user.id } : null;
+        }
+        : undefined,
+    });
     return servePublicImage(
       request,
-      () => target.fetch(request),
+      () => target.fetch(containerAuth.request),
       caches.default,
       promise => ctx.waitUntil(promise),
     );
