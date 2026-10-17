@@ -22,7 +22,7 @@ export async function handleStagingIdentityRequest(request, env, dependencies = 
     session.user,
   );
   if (!linked.ok) {
-    const status = linked.reason === "email_verification_required" ? 403 : 409;
+    const status = ["email_verification_required", "admin_second_factor_requires_legacy_login"].includes(linked.reason) ? 403 : 409;
     return json({ error: linked.reason }, status);
   }
   return json({ user: linked.user }, 200);

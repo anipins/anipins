@@ -9,6 +9,7 @@ import NotificationBell from "./NotificationBell";
 import InstagramLink from "./InstagramLink";
 import { toast } from "./Toaster";
 import AccountMenu from "./AccountMenu";
+import { signOutFromApp } from "@/lib/better-auth-client";
 
 const APP_URL = "/downloads/AniPins-2.5.21.apk";
 const APP_DOWNLOAD_KEY = "anipins-app-download-requested-v1";
@@ -225,7 +226,7 @@ export default function Navbar() {
                   <span className="hidden min-[1450px]:inline">AniPins </span>Admin <span className="badge-gold !hidden !px-2 !py-0.5 min-[1800px]:!inline-flex">Owner</span>
                 </Link>
               )}
-              <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }}
+              <button onClick={async () => { try { await signOutFromApp(); location.reload(); } catch {} }}
                 className="rounded-full hairline px-4 py-2 text-sm text-fog hover:text-paper hover:border-gold-dim transition-colors">Sign out</button>
             </>
           ) : (
@@ -271,7 +272,7 @@ export default function Navbar() {
                   <Link href="/offline" className="py-2.5 text-[15px] text-fog hover:text-paper">Offline library</Link>
                   <Link href="/settings" className="py-2.5 text-[15px] text-fog hover:text-paper">Settings</Link>
                   {user.role === "ADMIN" && <Link href="/admin" prefetch className="py-2.5 text-[15px] text-gold">AniPins Admin — Dashboard</Link>}
-                  <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }} className="py-2.5 text-left text-[15px] text-fog hover:text-paper">Sign out</button>
+                  <button onClick={async () => { try { await signOutFromApp(); location.reload(); } catch {} }} className="py-2.5 text-left text-[15px] text-fog hover:text-paper">Sign out</button>
                 </>
               ) : (
                 <Link href="/login" className="py-2.5 text-[15px] font-medium text-gold">Sign in</Link>

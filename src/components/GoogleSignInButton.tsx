@@ -2,6 +2,7 @@
 
 import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { betterAuthClient, isBetterAuthMode } from "@/lib/better-auth-client";
 
 type CredentialResponse = { credential?: string };
 type GoogleAccounts = {
@@ -41,6 +42,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [nativeGoogle, setNativeGoogle] = useState(false);
+  const googleNonce = useRef("");
 
   useEffect(() => {
     if (clientId) return;
@@ -68,6 +70,21 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
     setBusy(true);
     setError("");
     try {
+      if (isBetterAuthMode) {
+        const result = await betterAuthClient.signIn.social({
+          provider: "google",
+          idToken: { token: credential, ...(googleNonce.current ? { nonce: googleNonce.current } : {}) },
+        });
+        if (result.error) throw new Error(result.error.message || "Google sign-in failed.");
+        const response = await fetch("/api/auth/me", { credentials: "same-origin", cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok || !data.user) {
+          await betterAuthClient.signOut({});
+          throw new Error(data.error || "Your AniPins profile could not be loaded. This login may require the existing administrator security check.");
+        }
+        onSuccess(String(data.user.role || "USER"));
+        return;
+      }
       const response = await fetch("/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,6 +134,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
     setError("");
     try {
       const nonce = await requestNonce();
+      googleNonce.current = nonce;
       window.google.accounts.id.initialize({
         client_id: clientId,
         nonce,

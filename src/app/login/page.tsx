@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
+import { betterAuthClient, isBetterAuthMode } from "@/lib/better-auth-client";
 
 export default function Login() {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -21,7 +22,7 @@ export default function Login() {
   }, []);
 
   const finishSignIn = useCallback(async (role: string) => {
-    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mobile") === "1") {
+    if (!isBetterAuthMode && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mobile") === "1") {
       try {
         const ticketResponse = await fetch("/api/auth/mobile-ticket", {
           method: "POST",
@@ -52,6 +53,29 @@ export default function Login() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(""); setBusy(true);
+    if (isBetterAuthMode) {
+      try {
+        const result = mode === "login"
+          ? await betterAuthClient.signIn.email({ email: email.trim().toLowerCase(), password })
+          : await betterAuthClient.signUp.email({ email: email.trim().toLowerCase(), password, name: name.trim() });
+        if (result.error) throw new Error(result.error.message || "Sign-in failed.");
+
+        // The app Worker validates the Better Auth session, links its identity
+        // to the D1 business profile, then signs the short-lived container claim.
+        const response = await fetch("/api/auth/me", { credentials: "same-origin", cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok || !data.user) {
+          await betterAuthClient.signOut({});
+          throw new Error(data.error || "Your AniPins profile could not be loaded. This login may require the existing administrator security check.");
+        }
+        finishSignIn(String(data.user.role || "USER"));
+      } catch (authError) {
+        setErr(authError instanceof Error ? authError.message : "Sign-in failed.");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     const r = await fetch(`/api/auth/${mode}`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(challenge ? { challenge, code } : { email, password, name }),

@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { isBetterAuthMode } from "@/lib/better-auth-client";
 
 type Account = { id: number; name: string; email: string; avatar: string; role: string; active: boolean };
 
@@ -21,6 +22,7 @@ export default function AccountMenu({ user }: { user: any }) {
     if (response.ok) location.reload();
   };
   const avatar = (account: Partial<Account>) => account.avatar ? <img src={`/api/img/${account.avatar}`} alt="" className="h-full w-full object-cover" /> : (account.name || account.email || "A").slice(0, 1).toUpperCase();
+  if (isBetterAuthMode) return <Link href="/profile" aria-label="Open profile" className="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-fog transition-colors hover:bg-paper/5 hover:text-paper"><span className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-soft text-xs font-semibold text-gold hairline">{avatar(user)}</span><span className="hidden max-w-24 truncate min-[1800px]:block">{user.nickname || user.name || "Profile"}</span></Link>;
   return <div ref={menu} className="relative">
     <button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} aria-label="Open account menu" className="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-fog transition-colors hover:bg-paper/5 hover:text-paper">
       <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-soft text-xs font-semibold text-gold hairline">{avatar(user)}</span>

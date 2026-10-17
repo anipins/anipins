@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getAdminJson, prefetchAdminRoute } from "@/lib/admin-prefetch";
+import { signOutFromApp } from "@/lib/better-auth-client";
 
 const NAV = [
   { href: "/admin", label: "Overview", d: "M3.5 12.5 12 4l8.5 8.5M6 10.5V20h12v-9.5" },
@@ -56,7 +57,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           </Link>;
         })}</nav>
         {mini && <div className="mx-3 mt-8 rounded-2xl border border-line bg-panel/60 p-4"><p className="text-[10px] uppercase tracking-[0.25em] text-gold/70">Quick stats</p><div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm"><div><p className="font-display font-semibold">{mini.artworks}</p><p className="text-[10px] text-fog">Artworks</p></div><div><p className="font-display font-semibold">{mini.views}</p><p className="text-[10px] text-fog">Views</p></div><div><p className="font-display font-semibold">{mini.downloads}</p><p className="text-[10px] text-fog">Downloads</p></div><div><p className="font-display font-semibold">{mini.characters}</p><p className="text-[10px] text-fog">Characters</p></div></div></div>}
-        <div className="mt-auto px-3 pt-6"><Link href="/" className="mb-2 flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm text-fog transition-colors hover:bg-paper/[0.04] hover:text-paper"><svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>Back to website</Link><button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); location.href = "/"; }} className="w-full rounded-xl border border-line px-4 py-2.5 text-sm text-fog transition-colors hover:border-gold/40 hover:text-paper">Sign out</button></div>
+        <div className="mt-auto px-3 pt-6"><Link href="/" className="mb-2 flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm text-fog transition-colors hover:bg-paper/[0.04] hover:text-paper"><svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>Back to website</Link><button onClick={async () => { try { await signOutFromApp(); location.href = "/"; } catch {} }} className="w-full rounded-xl border border-line px-4 py-2.5 text-sm text-fog transition-colors hover:border-gold/40 hover:text-paper">Sign out</button></div>
       </aside>
       <div className="min-w-0 flex-1 px-4 py-8 md:px-10"><div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto md:hidden">{NAV.map(item => <Link key={item.href} href={item.href} prefetch={true} onMouseEnter={() => prefetchAdminRoute(item.href)} onFocus={() => prefetchAdminRoute(item.href)} className={`chip ${path === item.href ? "chip-on" : ""}`}>{item.label}</Link>)}</div>{children}</div>
     </div>

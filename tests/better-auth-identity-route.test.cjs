@@ -76,6 +76,21 @@ test("identity endpoint refuses unverified email collision with an existing acco
   assert.equal(state.links.size, 0);
 });
 
+test("identity endpoint blocks an admin with legacy 2FA until its challenge is ported", async () => {
+  const { state, dependencies } = setup({
+    sessionUser: { id: "ba-admin", email: "owner@example.com", emailVerified: true },
+    existingBusinessUser: { id: 19, email: "owner@example.com", name: "Owner", role: "ADMIN", two_factor_enabled: 1 },
+  });
+  const response = await handleStagingIdentityRequest(
+    new Request("https://anipins-better-auth-staging.anipins01.workers.dev/__staging/identity"),
+    { DB: {} }, dependencies,
+  );
+
+  assert.equal(response.status, 403);
+  assert.deepEqual(await response.json(), { error: "admin_second_factor_requires_legacy_login" });
+  assert.equal(state.links.size, 0);
+});
+
 test("identity endpoint is GET-only", async () => {
   const { dependencies } = setup();
   const response = await handleStagingIdentityRequest(

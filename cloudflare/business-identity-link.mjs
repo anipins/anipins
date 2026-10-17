@@ -8,6 +8,13 @@ function publicBusinessUser(user) {
   };
 }
 
+function legacyAdminSecondFactorRequired(user) {
+  // The legacy admin flow verifies encrypted TOTP/recovery codes before it
+  // creates a session. Until that challenge is ported, Better Auth must not
+  // turn a password or Google login into an admin session without that check.
+  return String(user?.role || "").toUpperCase() === "ADMIN" && Number(user?.two_factor_enabled) === 1;
+}
+
 /**
  * Resolve a Better Auth account to the numeric AniPins business identity.
  * Existing account ownership is only inferred from a verified email; new,
@@ -21,7 +28,12 @@ export async function ensureBusinessIdentityLink(store, authIdentity) {
   }
 
   const linked = await store.findLink(authUserId);
-  if (linked) return { ok: true, user: publicBusinessUser(linked) };
+  if (linked) {
+    if (legacyAdminSecondFactorRequired(linked)) {
+      return { ok: false, reason: "admin_second_factor_requires_legacy_login" };
+    }
+    return { ok: true, user: publicBusinessUser(linked) };
+  }
 
   let businessUser = await store.findBusinessUser(email);
   if (businessUser && authIdentity.emailVerified !== true) {
@@ -40,10 +52,17 @@ export async function ensureBusinessIdentityLink(store, authIdentity) {
     }
   }
 
+  if (legacyAdminSecondFactorRequired(businessUser)) {
+    return { ok: false, reason: "admin_second_factor_requires_legacy_login" };
+  }
+
   await store.createLink(authUserId, Number(businessUser.id));
   const finalLink = await store.findLink(authUserId);
   if (!finalLink || Number(finalLink.id) !== Number(businessUser.id)) {
     return { ok: false, reason: "identity_link_conflict" };
+  }
+  if (legacyAdminSecondFactorRequired(finalLink)) {
+    return { ok: false, reason: "admin_second_factor_requires_legacy_login" };
   }
   return { ok: true, user: publicBusinessUser(finalLink) };
 }
@@ -54,23 +73,23 @@ export function createD1BusinessIdentityStore(db) {
 
   return {
     findLink(authUserId) {
-      return db.prepare(`SELECT u.id, lower(u.email) AS email, u.role
+      return db.prepare(`SELECT u.id, lower(u.email) AS email, u.role, u.two_factor_enabled
         FROM better_auth_user_link l JOIN users u ON u.id=l.anipins_user_id
         WHERE l.auth_user_id=? LIMIT 1`).bind(authUserId).first();
     },
     findBusinessUser(email) {
-      return db.prepare("SELECT id, lower(email) AS email, role FROM users WHERE lower(email)=? LIMIT 1")
+      return db.prepare("SELECT id, lower(email) AS email, role, two_factor_enabled FROM users WHERE lower(email)=? LIMIT 1")
         .bind(email).first();
     },
     async createBusinessUser({ email, name }) {
       const result = await db.prepare(`INSERT INTO users (email, password_hash, name, role)
         VALUES (?, 'BETTER_AUTH_MANAGED', ?, 'USER')
         ON CONFLICT(email) DO NOTHING
-        RETURNING id, lower(email) AS email, role`)
+        RETURNING id, lower(email) AS email, role, two_factor_enabled`)
         .bind(email, name)
         .first();
       if (result) return { created: true, user: result };
-      const raced = await db.prepare("SELECT id, lower(email) AS email, role FROM users WHERE lower(email)=? LIMIT 1")
+      const raced = await db.prepare("SELECT id, lower(email) AS email, role, two_factor_enabled FROM users WHERE lower(email)=? LIMIT 1")
         .bind(email).first();
       return { created: false, user: raced || null };
     },
