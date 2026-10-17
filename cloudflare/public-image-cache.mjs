@@ -119,7 +119,7 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
       // after an administrator changes its visibility.
       const until = Number(cached.headers.get(ARTWORK_CACHE_UNTIL_HEADER));
       if (kind !== "artwork" || (Number.isFinite(until) && until > Date.now())) {
-        return withCacheStatus(cached, "HIT", kind === "artwork" ? "private, max-age=60, stale-while-revalidate=60" : undefined);
+        return withCacheStatus(cached, "HIT", kind === "artwork" ? "private, no-store" : undefined);
       }
       await cache.delete(key);
     }
@@ -131,14 +131,12 @@ export async function servePublicImage(request, upstream, cache, waitUntil) {
   // artwork response must never get a longer browser lifetime than the edge
   // authorization boundary. Private/Premium responses retain their upstream
   // `private, no-store` policy untouched.
-  const browserCacheControl = kind === "artwork" && publicResponse
-    // Keep the cache private to the Worker. Cloudflare's Cache API is fast,
-    // whereas a second shared CDN/browser cache would hide a later change to
-    // Premium or unpublished state.
-    // Keep the browser copy private, but allow it to reuse a thumbnail for the
-    // same one-minute authorization window. This prevents flicker and duplicate
-    // downloads while a user scrolls away and back through the feed.
-    ? "private, max-age=60, stale-while-revalidate=60"
+  const browserCacheControl = kind === "artwork"
+    // Keep the cache private to the Worker. Browser caches outlive a change to
+    // Premium or unpublished state, so an image response must never be reused
+    // after its signed URL/visibility check, even when the underlying R2 object
+    // was eligible for the short-lived Worker cache.
+    ? "private, no-store"
     : undefined;
   // Public feed queries never use the session, so a signed-in visitor can
   // safely warm the same short-lived entry as a guest. This avoids every

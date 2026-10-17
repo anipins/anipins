@@ -76,6 +76,12 @@ CREATE INDEX IF NOT EXISTS idx_art_orig ON artworks(orig);
 CREATE INDEX IF NOT EXISTS idx_art_thumb ON artworks(thumb);
 CREATE INDEX IF NOT EXISTS idx_art_content_hash ON artworks(content_hash);
 CREATE INDEX IF NOT EXISTS idx_art_perceptual_hash ON artworks(perceptual_hash);
+CREATE TABLE IF NOT EXISTS media_cleanup_queue (
+  object_key TEXT NOT NULL,
+  premium INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (object_key, premium)
+);
 CREATE TABLE IF NOT EXISTS collections (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
@@ -174,7 +180,7 @@ CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS billing_subscriptions (
   subscription_id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'created',
   payment_id TEXT DEFAULT '', current_end BIGINT DEFAULT 0, cancel_at_cycle_end INTEGER DEFAULT 0,
-  created_at BIGINT NOT NULL, updated_at BIGINT NOT NULL
+  created_at BIGINT NOT NULL, updated_at BIGINT NOT NULL, provider_event_at BIGINT NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_billing_subscriptions_user ON billing_subscriptions(user_id, updated_at);
 INSERT OR IGNORE INTO settings (key, value) VALUES

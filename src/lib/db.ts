@@ -67,7 +67,12 @@ function pool() {
     types.setTypeParser(20, (v: string) => parseInt(v, 10)); // bigint -> number
     global.__anipins_pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
+      // Use Node's trusted CA roots unless a deployment supplies a private CA.
+      // Never allow an unverified certificate on a database connection.
+      ssl: {
+        rejectUnauthorized: true,
+        ...(process.env.DATABASE_CA_CERT ? { ca: process.env.DATABASE_CA_CERT } : {}),
+      },
       max: 3,
     });
   }

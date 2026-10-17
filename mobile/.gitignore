@@ -11,3 +11,4 @@ app/build/
 *.jks
 *.keystore
 signing/KEEP_PRIVATE.txt
+signing/*.dpapi

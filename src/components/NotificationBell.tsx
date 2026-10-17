@@ -27,7 +27,7 @@ export default function NotificationBell() {
   return <div className="relative">
     <button type="button" onClick={() => setOpen(v => !v)} className="relative rounded-full p-2.5 text-fog hover:bg-paper/5 hover:text-gold" aria-label={`${data.unread} unread notifications`}>
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
-      {data.unread > 0 && <span className="absolute right-0 top-0 grid h-5 min-w-5 place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-ink">{Math.min(99, data.unread)}</span>}
+      {data.unread > 0 && <span className="absolute right-0 top-0 grid h-5 min-w-5 place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-white">{Math.min(99, data.unread)}</span>}
     </button>
     {open && <div className="absolute right-0 top-full mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl glass hairline shadow-2xl">
       <div className="flex items-center justify-between border-b border-paper/10 px-4 py-3"><strong className="text-sm">Notifications</strong>{data.unread > 0 && <button onClick={markAll} className="text-xs text-gold">Mark all read</button>}</div>

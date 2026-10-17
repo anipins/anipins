@@ -8,4 +8,9 @@ function nonWallpaperFilter() {
   return `(NOT ${WALLPAPER_PREDICATE})`;
 }
 
-module.exports = { wallpaperFilter, nonWallpaperFilter };
+function isWallpaperArtwork(art) {
+  return String(art?.category || "").toLowerCase() === "wallpapers"
+    || String(art?.tags || "").toLowerCase().includes("wallpaper");
+}
+
+module.exports = { wallpaperFilter, nonWallpaperFilter, isWallpaperArtwork };

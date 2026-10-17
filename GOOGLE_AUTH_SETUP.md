@@ -14,7 +14,8 @@ AniPins uses Google Identity Services (GIS) to obtain an ID token in the browser
    - `http://localhost:3000` for local development
 6. Create an **Android application OAuth client in the same Google Cloud project** used by the Web client. Use:
    - Package name: `com.anipins.app`
-   - Release APK SHA-1: `3D:46:9A:90:11:AE:FF:72:6C:25:7A:2B:04:22:C9:30:FA:19:DC:A4`
+   - AniPins 2.5.21 release APK SHA-1 (verified from `public/downloads/AniPins-2.5.21.apk`): `B2:94:62:FB:C6:31:20:BD:FD:C4:98:3D:5A:9B:F6:FE:55:31:54:B7`
+   - Keep any other Android OAuth clients needed for previously signed installs; each signing certificate must be registered separately for `com.anipins.app`.
    
    The Android client is required for Credential Manager to recognize the signed Android app. The Android implementation still uses the Web client ID as the `serverClientId`.
 

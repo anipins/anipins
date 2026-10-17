@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { Lexend, Space_Grotesk } from "next/font/google";
+import { Lexend, Lora, Space_Grotesk } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Intro from "@/components/Intro";
@@ -18,20 +18,21 @@ import { absoluteUrl, getSiteUrl, SITE_NAME } from "@/lib/site";
 
 const lexend = Lexend({ subsets: ["latin"], variable: "--font-lexend", display: "swap" });
 const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-grotesk" });
+const lora = Lora({ subsets: ["latin"], variable: "--font-lora", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: { default: "AniPins — Discover, Save and Download Anime Artwork", template: "%s | AniPins" },
   description: "Anime artwork references for sketching, character study and creative inspiration. Discover, save, share and download high-quality anime character art.",
   applicationName: SITE_NAME,
+  manifest: "/manifest.webmanifest",
   verification: process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : undefined,
   icons: {
     icon: [
-      { url: "/favicon.png", type: "image/png", sizes: "512x512" },
-      { url: "/brand/ap-symbol-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/favicon.png?v=gold-20261016", type: "image/png", sizes: "512x512" },
     ],
-    shortcut: "/favicon.png",
-    apple: [{ url: "/brand/ap-symbol-192.png", sizes: "192x192", type: "image/png" }],
+    shortcut: "/favicon.png?v=gold-20261016",
+    apple: [{ url: "/brand/ap-symbol-192.png?v=gold-20261016", sizes: "192x192", type: "image/png" }],
   },
   openGraph: {
     title: "AniPins — Discover, Save and Download Anime Artwork",
@@ -54,9 +55,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${lexend.variable} ${grotesk.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${lexend.variable} ${grotesk.variable} ${lora.variable}`} suppressHydrationWarning>
       <head>
         <meta name="p:domain_verify" content="81812c5729786ec6e9853a47f64afced" />
+        <link rel="preload" as="image" href="/brand/ap-symbol-intro.png?v=gold-20261016" fetchPriority="high" />
         <link rel="preconnect" href="https://synqmyiwjyvvrbrhcetw.supabase.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://synqmyiwjyvvrbrhcetw.supabase.co" />
         <script
@@ -83,7 +85,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               name: SITE_NAME,
               alternateName: "Ani Pins",
               url: getSiteUrl(),
-              logo: absoluteUrl("/brand/ap-symbol-192.png"),
+              logo: absoluteUrl("/brand/ap-symbol-192.png?v=gold-20261016"),
             },
           ],
         }} />

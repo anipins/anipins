@@ -1,4 +1,4 @@
-import { row, run } from "@/lib/db";
+import { row, rows, run, USE_PG } from "@/lib/db";
 import { isPremiumSubscriptionStatus } from "@/lib/billing-utils";
 
 const PLAN_AMOUNT = 19900; // paise
@@ -41,21 +41,33 @@ export async function ensureBillingSchema() {
       await run(`CREATE TABLE IF NOT EXISTS billing_subscriptions (
         subscription_id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'created',
         payment_id TEXT DEFAULT '', current_end BIGINT DEFAULT 0, cancel_at_cycle_end INTEGER DEFAULT 0,
-        created_at BIGINT NOT NULL, updated_at BIGINT NOT NULL
+        created_at BIGINT NOT NULL, updated_at BIGINT NOT NULL, provider_event_at BIGINT NOT NULL DEFAULT 0
       )`);
+      if (USE_PG) {
+        await run("ALTER TABLE billing_subscriptions ADD COLUMN IF NOT EXISTS provider_event_at BIGINT NOT NULL DEFAULT 0");
+      } else {
+        const columns = await rows("PRAGMA table_info(billing_subscriptions)");
+        if (!columns.some((column: any) => column.name === "provider_event_at")) {
+          await run("ALTER TABLE billing_subscriptions ADD COLUMN provider_event_at BIGINT NOT NULL DEFAULT 0");
+        }
+      }
       await run("CREATE INDEX IF NOT EXISTS idx_billing_subscriptions_user ON billing_subscriptions(user_id, updated_at)");
     })();
   }
   return schemaReady;
 }
 
-export async function storeSubscription(subscription: Partial<BillingSubscription> & { subscription_id: string; user_id: number; status: string }) {
+export async function storeSubscription(subscription: Partial<BillingSubscription> & { subscription_id: string; user_id: number; status: string; eventCreatedAt?: number | null }) {
   await ensureBillingSchema();
   const now = Date.now();
   await run(
-    `INSERT INTO billing_subscriptions (subscription_id,user_id,status,payment_id,current_end,cancel_at_cycle_end,created_at,updated_at)
-     VALUES (?,?,?,?,?,?,?,?)
-     ON CONFLICT (subscription_id) DO UPDATE SET status=excluded.status,payment_id=excluded.payment_id,current_end=excluded.current_end,cancel_at_cycle_end=excluded.cancel_at_cycle_end,updated_at=excluded.updated_at`,
+    `INSERT INTO billing_subscriptions (subscription_id,user_id,status,payment_id,current_end,cancel_at_cycle_end,created_at,updated_at,provider_event_at)
+     VALUES (?,?,?,?,?,?,?,?,?)
+     ON CONFLICT (subscription_id) DO UPDATE SET
+       status=excluded.status,payment_id=excluded.payment_id,current_end=excluded.current_end,
+       cancel_at_cycle_end=excluded.cancel_at_cycle_end,updated_at=excluded.updated_at,
+       provider_event_at=CASE WHEN ? IS NULL THEN billing_subscriptions.provider_event_at ELSE excluded.provider_event_at END
+     WHERE ? IS NULL OR excluded.provider_event_at >= billing_subscriptions.provider_event_at`,
     subscription.subscription_id,
     subscription.user_id,
     subscription.status,
@@ -64,6 +76,9 @@ export async function storeSubscription(subscription: Partial<BillingSubscriptio
     subscription.cancel_at_cycle_end ? 1 : 0,
     now,
     now,
+    subscription.eventCreatedAt ?? 0,
+    subscription.eventCreatedAt ?? null,
+    subscription.eventCreatedAt ?? null,
   );
 }
 
@@ -74,7 +89,7 @@ export async function getUserSubscription(userId: number): Promise<BillingSubscr
 
 export async function userHasPremium(userId: number) {
   const subscription = await getUserSubscription(userId);
-  return !!subscription && isPremiumSubscriptionStatus(subscription.status) && (!subscription.current_end || subscription.current_end * 1000 > Date.now());
+  return !!subscription && isPremiumSubscriptionStatus(subscription.status) && Number(subscription.current_end) > 0 && subscription.current_end * 1000 > Date.now();
 }
 
 export async function canAccessPremium(user: { id: number; role?: string }) {
@@ -140,10 +155,18 @@ export async function refreshSubscriptionForUser(userId: number, subscriptionId:
 export async function cancelUserSubscription(userId: number) {
   const current = await getUserSubscription(userId);
   if (!current || !["active", "authenticated"].includes(current.status)) throw new Error("SUBSCRIPTION_NOT_FOUND");
+  if (Number(current.cancel_at_cycle_end)) return current;
   const subscription = await razorpay(`subscriptions/${encodeURIComponent(current.subscription_id)}/cancel`, {
     method: "POST",
     body: JSON.stringify({ cancel_at_cycle_end: 1 }),
   });
   await storeSubscription({ subscription_id: current.subscription_id, user_id: userId, status: subscription.status || current.status, current_end: subscription.current_end || current.current_end, cancel_at_cycle_end: 1 });
   return getUserSubscription(userId);
+}
+
+export async function cancelSubscriptionForAccountDeletion(userId: number) {
+  const current = await getUserSubscription(userId);
+  if (!current || !["active", "authenticated"].includes(current.status)) return current;
+  if (Number(current.cancel_at_cycle_end)) return current;
+  return cancelUserSubscription(userId);
 }

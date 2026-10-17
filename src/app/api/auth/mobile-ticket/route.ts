@@ -14,6 +14,10 @@ async function ensureTicketSchema() {
     created_at BIGINT NOT NULL
   )`);
   await run("CREATE INDEX IF NOT EXISTS idx_mobile_auth_tickets_expiry ON mobile_auth_tickets(expires_at)");
+  if (process.env.DATABASE_URL) {
+    await run("ALTER TABLE public.mobile_auth_tickets ENABLE ROW LEVEL SECURITY");
+    await run("REVOKE ALL ON TABLE public.mobile_auth_tickets FROM anon, authenticated");
+  }
 }
 
 export async function POST(req: NextRequest) {

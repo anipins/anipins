@@ -28,9 +28,11 @@ declare global {
 type Props = {
   onSuccess: (role: string) => void;
   onTwoFactor: (challenge: string) => void;
+  credentialOnly?: boolean;
+  onCredential?: (credential: string) => void;
 };
 
-export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
+export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialOnly = false, onCredential }: Props) {
   const [clientId, setClientId] = useState(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "");
   const [configLoaded, setConfigLoaded] = useState(Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID));
   const buttonRef = useRef<HTMLDivElement>(null);
@@ -58,6 +60,11 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
   }, [clientId]);
 
   const completeSignIn = useCallback(async (credential: string) => {
+    if (credentialOnly) {
+      setBusy(false);
+      onCredential?.(credential);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -76,7 +83,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
     } finally {
       setBusy(false);
     }
-  }, [onSuccess, onTwoFactor]);
+  }, [credentialOnly, onCredential, onSuccess, onTwoFactor]);
 
   const requestNonce = useCallback(async () => {
     const response = await fetch("/api/auth/google/nonce", {
@@ -127,7 +134,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
       // Offer Chrome's secure Google account chooser on the normal web login
       // page. `auto_select` stays disabled, so the visitor always chooses an
       // account and the prompt is never shown inside the native app.
-      const shouldPrompt = loginParams.get("mobile") !== "1";
+      const shouldPrompt = !credentialOnly && loginParams.get("mobile") !== "1";
       if (shouldPrompt) {
         window.setTimeout(() => {
           try { window.google?.accounts.id.prompt(); } catch {}
@@ -138,7 +145,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor }: Props) {
     } finally {
       initializing.current = false;
     }
-  }, [clientId, completeSignIn, nativeGoogle, renderButton, requestNonce]);
+  }, [clientId, completeSignIn, credentialOnly, nativeGoogle, renderButton, requestNonce]);
 
   const beginNativeGoogle = useCallback(async () => {
     setBusy(true);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rows, run } from "@/lib/db";
 import { getUser, isAdmin } from "@/lib/auth";
-import { deleteFiles } from "@/lib/media";
+import { enqueueMediaCleanup, processMediaCleanupQueue } from "@/lib/media";
 import { audit, requestInfo } from "@/lib/admin-security";
 
 export async function POST(req: NextRequest) {
@@ -12,10 +12,18 @@ export async function POST(req: NextRequest) {
   const list = ids.map(() => "?").join(",");
   if (action === "delete") {
     const arts = await rows(`SELECT * FROM artworks WHERE id IN (${list})`, ...ids);
-    for (const a of arts) await deleteFiles(a.orig, a.thumb, Number(a.premium || 0) === 1);
+    await enqueueMediaCleanup(arts.flatMap(a => [
+      { key: String(a.orig), premium: Number(a.premium || 0) === 1 },
+      { key: String(a.thumb), premium: Number(a.premium || 0) === 1 },
+    ]));
     await run(`DELETE FROM saves WHERE artwork_id IN (${list})`, ...ids);
     await run(`DELETE FROM likes WHERE artwork_id IN (${list})`, ...ids);
     await run(`DELETE FROM artworks WHERE id IN (${list})`, ...ids);
+    const cleanup = await processMediaCleanupQueue();
+    if (cleanup.pending) {
+      await audit(u!.id, "BULK_DELETE", "artwork", ids.join(","), `${ids.length} artwork(s); media cleanup queued`, requestInfo(req).ip);
+      return NextResponse.json({ ok: true, mediaCleanupPending: true }, { status: 202 });
+    }
   } else if (action === "publish") await run(`UPDATE artworks SET published=1 WHERE id IN (${list})`, ...ids);
   else if (action === "unpublish") await run(`UPDATE artworks SET published=0 WHERE id IN (${list})`, ...ids);
   else if (action === "feature") await run(`UPDATE artworks SET featured=1 WHERE id IN (${list})`, ...ids);

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { row, rows } from "@/lib/db";
 import { publicMediaUrl, publicOriginalUrl, publicThumbnailUrl } from "@/lib/media";
 import { premiumArtworkFilter } from "@/lib/premium-artwork";
@@ -5,6 +6,9 @@ import { nonWallpaperFilter, wallpaperFilter } from "@/lib/wallpaper-feed-utils"
 
 export const ARTWORK_CARD_COLUMNS =
   "id, title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, premium, featured, orig, thumb, width, height, views, downloads, created_at";
+const ARTWORK_COMPACT_CARD_COLUMNS =
+  "id, title, character_name, character_slug, anime_name, anime_slug, tags, gender, category, premium, orig, thumb, width, height, views, downloads";
+export const ARTWORK_DETAIL_PRELOAD_COUNT = 14;
 
 function shuffle<T>(items: T[]) {
   const copy = [...items];
@@ -17,6 +21,8 @@ function shuffle<T>(items: T[]) {
 
 export async function getArtworkCards(options: {
   limit?: number;
+  /** Shared random rotation used to continue an SSR discovery page client-side. */
+  seed?: number;
   sort?: "latest" | "trending" | "popular" | "featured" | "random";
   character?: string;
   anime?: string;
@@ -25,8 +31,11 @@ export async function getArtworkCards(options: {
   premium?: boolean;
   /** Wallpapers belong to their own dedicated feed. */
   wallpaper?: boolean;
+  /** Smaller serialization for the detail rail and first continuation row. */
+  compact?: boolean;
 } = {}) {
-  const { limit = 20, sort = "latest", character, anime, excludeId, premium = false, wallpaper = false } = options;
+  const { limit = 20, seed, sort = "latest", character, anime, excludeId, premium = false, wallpaper = false, compact = false } = options;
+  const columns = compact ? ARTWORK_COMPACT_CARD_COLUMNS : ARTWORK_CARD_COLUMNS;
   // Server-rendered public pages must use the same separation as the feed API:
   // premium-only artwork is visible only through the member library.
   let where = `published=1 AND ${premiumArtworkFilter(premium)} AND ${wallpaper ? wallpaperFilter() : nonWallpaperFilter()}`;
@@ -49,15 +58,16 @@ export async function getArtworkCards(options: {
     const total = Number((await row(`SELECT COUNT(*) AS count FROM artworks WHERE ${where}`, ...args))?.count || 0);
     if (!total) return [];
     const take = Math.min(limit, total);
-    const offset = Math.floor(Math.random() * total);
+    const normalizedSeed = Number.isSafeInteger(seed) && Number(seed) > 0 ? Number(seed) % 2_147_483_647 : null;
+    const offset = normalizedSeed === null ? Math.floor(Math.random() * total) : normalizedSeed % total;
     const firstTake = Math.min(take, total - offset);
-    const first = await rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY id ASC LIMIT ? OFFSET ?`, ...args, firstTake, offset);
+    const first = await rows(`SELECT ${columns} FROM artworks WHERE ${where} ORDER BY id ASC LIMIT ? OFFSET ?`, ...args, firstTake, offset);
     const second = firstTake < take
-      ? await rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY id ASC LIMIT ?`, ...args, take - firstTake)
+      ? await rows(`SELECT ${columns} FROM artworks WHERE ${where} ORDER BY id ASC LIMIT ?`, ...args, take - firstTake)
       : [];
     items = shuffle([...first, ...second]);
   } else {
-    items = await rows(`SELECT ${ARTWORK_CARD_COLUMNS} FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ?`, ...args, limit);
+    items = await rows(`SELECT ${columns} FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ?`, ...args, limit);
   }
   return items.map((item: any) => ({
     ...item,
@@ -128,8 +138,12 @@ export async function getCharactersForAnime(animeSlug: string) {
   );
 }
 
-export async function getArtwork(id: number) {
-  return row("SELECT * FROM artworks WHERE id=? AND published=1 AND COALESCE(premium, 0)=0", id);
+const getArtworkForRender = cache(async (id: number) =>
+  row("SELECT * FROM artworks WHERE id=? AND published=1 AND COALESCE(premium, 0)=0", id),
+);
+
+export function getArtwork(id: number) {
+  return getArtworkForRender(id);
 }
 
 export async function getArtworkSitemapRows() {

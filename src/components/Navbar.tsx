@@ -10,7 +10,7 @@ import InstagramLink from "./InstagramLink";
 import { toast } from "./Toaster";
 import AccountMenu from "./AccountMenu";
 
-const APP_URL = "/downloads/AniPins-2.5.20.apk";
+const APP_URL = "/downloads/AniPins-2.5.21.apk";
 const APP_DOWNLOAD_KEY = "anipins-app-download-requested-v1";
 const LINKS = [
   { href: "/", label: "Home" },
@@ -167,12 +167,12 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div ref={boxRef} className="relative ml-auto min-w-0 flex-1 lg:min-w-[260px] lg:max-w-sm">
+        <div ref={boxRef} data-search-active={focus} className={`relative ml-auto min-w-0 flex-1 transition-[max-width] duration-300 ease-out motion-reduce:transition-none lg:min-w-[260px] ${focus ? "lg:max-w-[390px]" : "lg:max-w-[300px]"}`}>
           <form onSubmit={go}>
             <input value={q} onChange={e => setQ(e.target.value)} onFocus={() => setFocus(true)}
               placeholder="Search characters, anime, tags…"
-              className="min-h-11 w-full rounded-full bg-soft/80 hairline px-11 py-2.5 pl-9 text-sm text-paper placeholder:text-fog/60 outline-none focus:border-gold-dim transition-colors" />
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-fog" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" strokeLinecap="round"/></svg>
+              className="min-h-11 w-full rounded-full bg-soft/80 hairline px-11 py-2.5 pl-9 text-sm text-paper placeholder:text-fog/60 outline-none transition-[background-color,border-color,box-shadow] duration-300 focus:border-gold-dim focus:bg-soft focus:shadow-[0_0_0_3px_rgba(198,161,91,0.12)] motion-reduce:transition-none" />
+            <svg className={`search-motion-icon absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fog ${focus ? "search-motion-icon--active" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" strokeLinecap="round"/></svg>
             <input ref={visualInput} type="file" accept="image/*" className="sr-only" onChange={e=>visualSearch(e.target.files?.[0])}/>
             <button type="button" onClick={()=>visualInput.current?.click()} disabled={visualLoading} aria-label="Search using an image" title="Search using an image" className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-fog transition-colors hover:bg-paper/5 hover:text-gold disabled:animate-pulse">
               <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7.5h3l1.5-2h7l1.5 2h3v11H4z"/><circle cx="12" cy="13" r="3.25"/></svg>
@@ -209,7 +209,7 @@ export default function Navbar() {
 </a>}
           <ThemeToggle />
           <NotificationBell />
-          <InstagramLink title="Instagram — @anipins.art"
+          <InstagramLink title="Instagram — @anipins.verse"
             className="rounded-full p-2.5 text-fog hover:text-gold hover:bg-paper/5 transition-colors">
             <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>
           </InstagramLink>
@@ -221,7 +221,7 @@ export default function Navbar() {
                 <SettingsMark />
               </Link>
               {user.role === "ADMIN" && (
-                <Link href="/admin" className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors">
+                <Link href="/admin" prefetch className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors">
                   <span className="hidden min-[1450px]:inline">AniPins </span>Admin <span className="badge-gold !hidden !px-2 !py-0.5 min-[1800px]:!inline-flex">Owner</span>
                 </Link>
               )}
@@ -229,10 +229,7 @@ export default function Navbar() {
                 className="rounded-full hairline px-4 py-2 text-sm text-fog hover:text-paper hover:border-gold-dim transition-colors">Sign out</button>
             </>
           ) : (
-            <>
-              <Link href="/login" className="rounded-full px-3 py-2 text-sm text-fog hover:bg-paper/5 hover:text-paper transition-colors">Sign in</Link>
-              <Link href="/login" className="rounded-full bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold-bright transition-colors">Admin Login</Link>
-            </>
+            <Link href="/login" className="rounded-full bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold-bright transition-colors">Sign in</Link>
           )}
         </div>
 
@@ -261,7 +258,7 @@ export default function Navbar() {
 </a>}
               <ThemeToggle mobile />
               <div className="py-1"><NotificationBell /></div>
-              <InstagramLink className="py-2.5 text-[15px] text-fog hover:text-gold">Instagram — @anipins.art</InstagramLink>
+              <InstagramLink className="py-2.5 text-[15px] text-fog hover:text-gold">Instagram — @anipins.verse</InstagramLink>
               {user ? (
                 <>
                   <Link href="/profile" className="flex items-center gap-3 py-2.5 text-[15px] text-fog hover:text-paper">
@@ -273,14 +270,11 @@ export default function Navbar() {
                   <Link href="/saves" className="py-2.5 text-[15px] text-fog hover:text-paper">Saves</Link>
                   <Link href="/offline" className="py-2.5 text-[15px] text-fog hover:text-paper">Offline library</Link>
                   <Link href="/settings" className="py-2.5 text-[15px] text-fog hover:text-paper">Settings</Link>
-                  {user.role === "ADMIN" && <Link href="/admin" className="py-2.5 text-[15px] text-gold">AniPins Admin — Dashboard</Link>}
+                  {user.role === "ADMIN" && <Link href="/admin" prefetch className="py-2.5 text-[15px] text-gold">AniPins Admin — Dashboard</Link>}
                   <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }} className="py-2.5 text-left text-[15px] text-fog hover:text-paper">Sign out</button>
                 </>
               ) : (
-                <>
-                  <Link href="/login" className="py-2.5 text-[15px] text-fog hover:text-paper">User sign in</Link>
-                  <Link href="/login" className="py-2.5 text-[15px] font-medium text-gold">Admin Login</Link>
-                </>
+                <Link href="/login" className="py-2.5 text-[15px] font-medium text-gold">Sign in</Link>
               )}
             </div>
           </motion.div>

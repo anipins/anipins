@@ -10,7 +10,7 @@ This is the native Android client for AniPins. The consumer interface uses Andro
 - Native likes, saves, synchronized collection browsing, Download Manager and share sheet
 - Native sign-in/registration with an Android-Keystore-encrypted session
 - Profile/legal/deletion controls, owner admin entry, offline/error/retry states and verified-link-ready App Links
-- Package `com.anipins.app`, min SDK 24, compile/target SDK 36
+- Package `com.anipins.app`, min SDK 24, compile SDK 36 / target SDK 36
 
 ## Build
 
@@ -22,5 +22,7 @@ Use JDK 17 and Android SDK/build-tools 36:
 ```
 
 Release signing uses only the four environment variables described in `../ANDROID_SIGNING_SETUP.md`. Do not add signing files or passwords to this directory.
+
+For this Windows checkout, run `.\build-play-release.ps1` from this directory to build a signed AAB and APK and verify their signatures. The AAB is written to `app/build/outputs/bundle/release/app-release.aab`; only upload the AAB to Google Play. The upload-key password is protected for the current Windows user using DPAPI. Back up the ignored `signing/anipins-upload-key.jks` securely and keep access to this Windows account; never commit either signing file.
 
 The production API base URL is the non-secret `BuildConfig.API_BASE_URL` in `app/build.gradle`. If the canonical AniPins domain changes, update it and the App Link host together.

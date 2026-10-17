@@ -25,7 +25,12 @@ test("Cloudflare migration is staging-only and has a container readiness path", 
   assert.match(worker, /const PORT = 8080/);
   assert.match(worker, /getTcpPort\(PORT\)/);
   assert.match(worker, /http:\/\/container\/health/);
+  assert.match(worker, /this\.starting \?\?= this\.ensureReady\(\)/);
+  assert.match(worker, /async ensureReady\(\) \{\s*await this\.restartForConfigurationRollout\(\);\s*await this\.startAndWaitForPort\(\);/);
   assert.match(worker, /getByName\("anipins-web-v2"\)/);
+  assert.match(worker, /const containerInfo = await container\.inspect\(\)/);
+  assert.match(worker, /containerInfo\?\.image && containerInfo\.image !== container\.images\.base/);
+  assert.match(worker, /await container\.destroy\("Configuration rollout"\)/);
 
   assert.match(dockerfile, /"\.\/node_modules\/\.bin\/next", "start", "-H", "0\.0\.0\.0", "-p", "8080"/);
   assert.match(dockerfile, /EXPOSE 8080/);

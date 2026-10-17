@@ -586,12 +586,12 @@ public class MainActivity extends Activity {
 
     private void openInstagramFromNative() {
         try {
-            Intent instagram = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/anipins.art/"));
+            Intent instagram = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/anipins.verse/"));
             instagram.setPackage("com.instagram.android");
             startActivity(instagram);
         } catch (ActivityNotFoundException e) {
             try {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/anipins.art/")));
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/anipins.verse/")));
             } catch (ActivityNotFoundException ignored) {
                 Toast.makeText(this, "Instagram could not be opened.", Toast.LENGTH_LONG).show();
             }

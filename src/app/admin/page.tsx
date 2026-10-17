@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { getAdminJson, prefetchAdminRoute } from "@/lib/admin-prefetch";
 
 function Counter({ value }: { value: number }) {
   const [n, setN] = useState(0);
@@ -47,7 +48,7 @@ export default function AdminOverview() {
   const [data, setData] = useState<any>(null);
   const [now, setNow] = useState("");
   useEffect(() => {
-    fetch("/api/admin/stats").then(r => r.json()).then(setData);
+    getAdminJson("/api/admin/stats").then(setData).catch(() => setData({ error: true }));
     setNow(new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
   }, []);
   if (!data || data.error) return (
@@ -70,16 +71,16 @@ export default function AdminOverview() {
       <div className="relative overflow-hidden rounded-3xl border border-line bg-gradient-to-br from-panel via-panel to-[#161310] p-7 md:p-9">
         <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-gold/[0.07] blur-3xl" />
         <div className="pointer-events-none absolute right-8 top-1/2 hidden -translate-y-1/2 md:block opacity-[0.16]">
-          <img src="/brand/ap-symbol-transparent.png" alt="" className="block h-36 w-36 object-contain object-center" />
+          <img src="/brand/ap-symbol-512.png?v=gold-20261016" alt="" className="block h-36 w-36 rounded-3xl object-contain object-center" />
         </div>
         <p className="text-[11px] uppercase tracking-[0.3em] text-gold/80">Dashboard</p>
         <h1 className="mt-2 font-display text-3xl font-semibold md:text-4xl">Welcome back<span className="text-gold">.</span></h1>
         <p className="mt-2 text-sm text-fog">{now} — here's how AniPins is doing.</p>
         <div className="mt-6 flex flex-wrap gap-3">
-          <Link href="/admin/upload" className="btn-primary !py-2.5">+ Upload artwork</Link>
-          <Link href="/admin/premium-upload" className="btn-ghost !border-gold/40 !text-gold !py-2.5">Premium upload</Link>
-          <Link href="/admin/manage" className="btn-ghost !py-2.5">Manage artwork</Link>
-          <Link href="/admin/premium-manage" className="btn-ghost !border-gold/40 !text-gold !py-2.5">Manage Premium</Link>
+          <Link href="/admin/upload" prefetch={true} className="btn-primary !py-2.5">+ Upload artwork</Link>
+          <Link href="/admin/premium-upload" prefetch={true} className="btn-ghost !border-gold/40 !text-gold !py-2.5">Premium upload</Link>
+          <Link href="/admin/manage" prefetch={true} onMouseEnter={() => prefetchAdminRoute("/admin/manage")} onFocus={() => prefetchAdminRoute("/admin/manage")} className="btn-ghost !py-2.5">Manage artwork</Link>
+          <Link href="/admin/premium-manage" prefetch={true} onMouseEnter={() => prefetchAdminRoute("/admin/premium-manage")} onFocus={() => prefetchAdminRoute("/admin/premium-manage")} className="btn-ghost !border-gold/40 !text-gold !py-2.5">Manage Premium</Link>
         </div>
       </div>
 

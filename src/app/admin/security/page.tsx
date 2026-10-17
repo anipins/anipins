@@ -2,19 +2,20 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { toast } from "@/components/Toaster";
+import { getAdminJson, invalidateAdminData } from "@/lib/admin-prefetch";
 
 const deviceName=(ua:string)=>/Android/i.test(ua)?"Android device":/iPhone|iPad/i.test(ua)?"Apple device":/Windows/i.test(ua)?"Windows computer":/Macintosh/i.test(ua)?"Mac computer":"Unknown device";
 const date=(value:any)=>value?new Date(value).toLocaleString():"Not available";
 
 export default function AdminSecurity(){
   const [data,setData]=useState<any>(null);const [setup,setSetup]=useState<any>(null);const [recovery,setRecovery]=useState<string[]>([]);const [busy,setBusy]=useState(false);
-  const load=useCallback(()=>fetch("/api/admin/security",{cache:"no-store"}).then(r=>r.json()).then(setData),[]);useEffect(()=>{load()},[load]);
-  const post=async(body:any)=>{setBusy(true);const r=await fetch("/api/admin/security",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const result=await r.json();setBusy(false);if(!r.ok)toast(result.error||"Security action failed","err");return r.ok?result:null};
+  const load=useCallback(()=>getAdminJson("/api/admin/security",{cache:"no-store"}).then(setData),[]);useEffect(()=>{load()},[load]);
+  const post=async(body:any)=>{setBusy(true);const r=await fetch("/api/admin/security",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const result=await r.json();setBusy(false);invalidateAdminData("/api/admin/security");if(!r.ok)toast(result.error||"Security action failed","err");return r.ok?result:null};
   const begin=async()=>{const password=prompt("Confirm your AniPins administrator password");if(!password)return;const result=await post({action:"begin",password});if(result)setSetup(result)};
   const confirmSetup=async()=>{const code=(document.getElementById("totp-confirm") as HTMLInputElement)?.value;const result=await post({action:"confirm",code});if(result){setRecovery(result.recoveryCodes);setSetup(null);await load();toast("Two-factor authentication enabled")}};
   const disable=async()=>{const password=prompt("Enter your administrator password");if(!password)return;const code=prompt("Enter the current 6-digit authenticator code");if(!code)return;const result=await post({action:"disable",password,code});if(result){await load();toast("Two-factor authentication disabled")}};
   const regenerate=async()=>{const code=prompt("Enter the current 6-digit authenticator code");if(!code)return;const result=await post({action:"recovery",code});if(result){setRecovery(result.recoveryCodes);toast("New recovery codes created")}};
-  const revoke=async(id:string,current:boolean)=>{if(!confirm(current?"Sign out this device now?":"Revoke this session?"))return;const r=await fetch("/api/admin/security",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({sessionId:id})});const result=await r.json();if(!r.ok){toast(result.error||"Could not revoke session","err");return}if(result.current)location.href="/login";else{toast("Session revoked");load()}};
+  const revoke=async(id:string,current:boolean)=>{if(!confirm(current?"Sign out this device now?":"Revoke this session?"))return;const r=await fetch("/api/admin/security",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({sessionId:id})});const result=await r.json();invalidateAdminData("/api/admin/security");if(!r.ok){toast(result.error||"Could not revoke session","err");return}if(result.current)location.href="/login";else{toast("Session revoked");load()}};
   if(!data)return <p className="text-fog">Loading security center…</p>;
   return <div className="max-w-4xl space-y-8"><div><p className="text-xs uppercase tracking-[.25em] text-gold">Admin protection</p><h1 className="mt-2 font-display text-3xl font-semibold">Security center</h1><p className="mt-1 text-sm text-fog">Protect administrator access and review sensitive activity.</p></div>
     <section className="rounded-2xl border border-line bg-panel p-6"><div className="flex flex-wrap items-center justify-between gap-4"><div><h2 className="font-display text-xl text-paper">Two-factor authentication</h2><p className="mt-1 text-sm text-fog">{data.twoFactorEnabled?"Protected with an authenticator app.":"Require a rotating code after the administrator password."}</p></div><span className={`rounded-full px-3 py-1 text-xs ${data.twoFactorEnabled?"bg-emerald-500/15 text-emerald-300":"bg-amber-500/15 text-amber-200"}`}>{data.twoFactorEnabled?"Enabled":"Action recommended"}</span></div>

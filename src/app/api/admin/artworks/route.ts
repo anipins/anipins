@@ -11,6 +11,8 @@ export async function GET(req: NextRequest) {
   const sort = sp.get("sort") || "latest";
   const filter = sp.get("filter") || "all";
   const scope = sp.get("scope") || "all";
+  const page = Math.max(0, parseInt(sp.get("page") || "0", 10) || 0);
+  const limit = Math.min(40, Math.max(1, parseInt(sp.get("limit") || "40", 10) || 40));
   let where = "1=1";
   const args: any[] = [];
   // The two admin libraries are intentionally distinct. UI filtering is not
@@ -31,7 +33,7 @@ export async function GET(req: NextRequest) {
   if (sort === "downloads") order = "downloads DESC";
   if (sort === "oldest") order = "id ASC";
   const items = await rows(
-    `SELECT id,title,character_name,anime_name,category,tags,premium,featured,published,thumb,views,downloads,created_at FROM artworks WHERE ${where} ORDER BY ${order} LIMIT 200`,
-    ...args);
-  return NextResponse.json({ items });
+    `SELECT id,title,character_name,anime_name,category,tags,premium,featured,published,thumb,views,downloads,created_at FROM artworks WHERE ${where} ORDER BY ${order} LIMIT ? OFFSET ?`,
+    ...args, limit + 1, page * limit);
+  return NextResponse.json({ items: items.slice(0, limit), hasMore: items.length > limit });
 }

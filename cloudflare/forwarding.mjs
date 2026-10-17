@@ -1,5 +1,16 @@
 const PUBLIC_HOSTS = new Set(["anipins.com", "www.anipins.com"]);
 
+export function canonicalHostRedirect(request) {
+  const url = new URL(request.url);
+  if (!PUBLIC_HOSTS.has(url.hostname)) return null;
+  if (url.protocol !== "http:" && url.hostname !== "www.anipins.com") return null;
+
+  url.protocol = "https:";
+  url.hostname = "anipins.com";
+  url.port = "";
+  return Response.redirect(url, 308);
+}
+
 export function isAllowedPublicHost(request) {
   return PUBLIC_HOSTS.has(new URL(request.url).hostname);
 }

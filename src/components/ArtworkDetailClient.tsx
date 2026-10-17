@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -10,9 +10,9 @@ import { toast } from "@/components/Toaster";
 import FollowButton from "@/components/FollowButton";
 import ZoomableArtwork from "@/components/ZoomableArtwork";
 import DownloadButton from "@/components/DownloadButton";
+import InstagramLink from "@/components/InstagramLink";
 import ReportArtwork from "@/components/ReportArtwork";
-
-const IG_URL = "https://www.instagram.com/anipins.art/";
+import { isWallpaperArtwork } from "@/lib/wallpaper-feed-utils";
 
 export default function ArtworkDetailClient({ initialData }: { initialData: any }) {
   const [data, setData] = useState<any>(initialData);
@@ -21,7 +21,6 @@ export default function ArtworkDetailClient({ initialData }: { initialData: any 
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const router = useRouter();
-  const touch = useRef<number | null>(null);
 
   const nav = useCallback((dir: "prev" | "next") => {
     const id = dir === "prev" ? data?.prevId : data?.nextId;
@@ -39,15 +38,9 @@ export default function ArtworkDetailClient({ initialData }: { initialData: any 
 
 
   const art = data?.art;
+  const relatedQuery = { sort: "random", ...(art?.premium ? { premium: "1" } : {}), ...(isWallpaperArtwork(art) ? { wallpaper: "1" } : {}) };
   return (
-    <section className="w-full px-3 pt-24 sm:px-4 md:px-6 md:pt-28 xl:px-8"
-      onTouchStart={e => (touch.current = e.touches[0].clientX)}
-      onTouchEnd={e => {
-        if (touch.current === null) return;
-        const dx = e.changedTouches[0].clientX - touch.current;
-        if (Math.abs(dx) > 70) nav(dx > 0 ? "prev" : "next");
-        touch.current = null;
-      }}>
+    <section className="w-full px-3 pt-24 sm:px-4 md:px-6 md:pt-28 xl:px-8">
       {!art ? (
         <div className="grid gap-8 md:grid-cols-[1.2fr,1fr]"><div className="skeleton h-[70vh] rounded-3xl" /><div className="space-y-4"><div className="skeleton h-10 w-2/3 rounded-lg" /><div className="skeleton h-6 w-1/3 rounded-lg" /><div className="skeleton h-24 rounded-lg" /></div></div>
       ) : (
@@ -96,7 +89,7 @@ export default function ArtworkDetailClient({ initialData }: { initialData: any 
                 <button onClick={() => setSave(true)} className="btn-primary">Save</button>
                 <DownloadButton artworkId={art.id} />
                 <button onClick={() => setShare(true)} className="btn-ghost">Share</button>
-                <a href={IG_URL} target="_blank" rel="noopener noreferrer" className="btn-ghost" title="@anipins.art">Instagram</a>
+                <InstagramLink target="_blank" rel="noopener noreferrer" className="btn-ghost" title="@anipins.verse">Instagram</InstagramLink>
               </div>
               <div className="mt-6 flex gap-5 text-xs text-fog">
                 <span>{art.views} views</span><span>{art.downloads} downloads</span>
@@ -109,11 +102,11 @@ export default function ArtworkDetailClient({ initialData }: { initialData: any 
         </AnimatePresence>
       )}
 
-      {data?.related?.length > 0 && (
+      {art && (
         <div className="mt-20">
           <h2 className="font-display text-2xl font-semibold">More to explore</h2>
           <p className="mt-1 text-sm text-fog">Fresh discoveries from every series across AniPins.</p>
-          <div className="mt-6"><MasonryFeed key={art?.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize initialItems={data.related} initialHasMore /></div>
+          <div className="mt-6"><MasonryFeed key={art.id} query={relatedQuery} randomize initialItems={data?.related ?? []} initialHasMore /></div>
         </div>
       )}
 

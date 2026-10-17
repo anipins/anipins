@@ -17,6 +17,15 @@ export async function POST(req: NextRequest) {
   if (!subscription?.id) return NextResponse.json({ ok: true, ignored: true });
   const existing = await row("SELECT user_id FROM billing_subscriptions WHERE subscription_id=?", String(subscription.id));
   if (!existing?.user_id) return NextResponse.json({ ok: true, ignored: true });
-  await storeSubscription({ subscription_id: String(subscription.id), user_id: Number(existing.user_id), status: String(subscription.status || "created"), payment_id: String(subscription.payment_id || ""), current_end: Number(subscription.current_end || 0), cancel_at_cycle_end: Number(!!subscription.cancel_at_cycle_end) });
+  const eventCreatedAt = Number(event?.created_at);
+  await storeSubscription({
+    subscription_id: String(subscription.id),
+    user_id: Number(existing.user_id),
+    status: String(subscription.status || "created"),
+    payment_id: String(subscription.payment_id || ""),
+    current_end: Number(subscription.current_end || 0),
+    cancel_at_cycle_end: Number(!!subscription.cancel_at_cycle_end),
+    eventCreatedAt: Number.isFinite(eventCreatedAt) && eventCreatedAt > 0 ? eventCreatedAt : null,
+  });
   return NextResponse.json({ ok: true });
 }

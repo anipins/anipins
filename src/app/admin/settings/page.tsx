@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { toast } from "@/components/Toaster";
+import { getAdminJson, invalidateAdminData } from "@/lib/admin-prefetch";
 
 export default function AdminSettings() {
   const [s, setS] = useState<any>(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { fetch("/api/settings").then(r => r.json()).then(d => setS(d.settings)); }, []);
+  useEffect(() => { getAdminJson("/api/settings").then(d => setS(d.settings)).catch(() => setS(null)); }, []);
 
   const saveSocial = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); setBusy(true);
@@ -18,6 +19,7 @@ export default function AdminSettings() {
         instagram_handle: fd.get("instagram_handle"), instagram_url: fd.get("instagram_url"),
       }),
     });
+    if (r.ok) invalidateAdminData("/api/settings");
     setBusy(false);
     r.ok ? toast("Changes saved") : toast("Unable to save settings", "err");
   };
@@ -47,7 +49,7 @@ export default function AdminSettings() {
         <p className="text-[11px] uppercase tracking-widest text-gold/80">Branding assets</p>
         <p className="mt-2 text-sm text-fog">All AniPins brand files live in <code className="text-paper">/public/brand/</code> and are used across the site automatically.</p>
         <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-5">
-          {["ap-symbol-transparent.png", "logo-horizontal-dark.png", "instagram-profile-256.png", "og-image.png", "watermark-gold.png"].map(f => (
+          {["logo-horizontal-dark.png", "logo-horizontal-light.png", "ap-symbol-512.png", "instagram-profile-1080.png", "og-image.png"].map(f => (
             <a key={f} href={`/brand/${f}`} target="_blank" className="group rounded-xl border border-line p-2 hover:border-gold-dim transition-colors">
               <img src={`/brand/${f}`} alt={f} className="h-16 w-full object-contain" />
               <p className="mt-1.5 truncate text-center text-[10px] text-fog group-hover:text-paper">{f}</p>

@@ -10,6 +10,8 @@ import ZoomableArtwork from "./ZoomableArtwork";
 import DownloadButton from "./DownloadButton";
 import ReportArtwork from "./ReportArtwork";
 import MasonryFeed from "./MasonryFeed";
+import { isWallpaperArtwork } from "@/lib/wallpaper-feed-utils";
+import { preserveArtworkPreview } from "@/lib/artwork-preview";
 
 export default function ArtLightbox() {
   const [id, setId] = useState<number | null>(null);
@@ -22,7 +24,6 @@ export default function ArtLightbox() {
   const [likeCount, setLikeCount] = useState(0);
   const [detailError, setDetailError] = useState(false);
   const [detailRetry, setDetailRetry] = useState(0);
-  const touch = useRef<number | null>(null);
   const panel = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -84,38 +85,36 @@ export default function ArtLightbox() {
     if (d.liked) toast("Added to likes");
   };
 
-  const art = data?.art || preview;
-  const fullImage = data?.art?.original_url || art?.orig_url || (data?.art?.orig ? `/api/img/${data.art.orig}` : art?.thumb ? `/api/img/${art.thumb}` : "");
-  const previewImage = data?.art?.orig && art?.thumb ? (data.art.thumb_url || art.thumb_url || `/api/img/${art.thumb}`) : undefined;
+  // Never let a stale response from the previous pin replace the preview for
+  // the newly clicked pin. The feed thumbnail is available immediately while
+  // the detail API resolves in parallel.
+  const art = data?.art?.id === id ? preserveArtworkPreview(data.art, preview?.id === id ? preview : null) : preview;
+  const wallpaperOnly = isWallpaperArtwork(art);
+  const relatedQuery = { sort: "random", ...(art?.premium ? { premium: "1" } : {}), ...(wallpaperOnly ? { wallpaper: "1" } : {}) };
+  const detailArt = data?.art?.id === id ? data.art : null;
+  const fullImage = detailArt?.original_url || detailArt?.orig_url || (detailArt?.orig ? `/api/img/${detailArt.orig}` : art?.orig_url || "");
+  const previewImage = art?.thumb_url || (art?.thumb ? `/api/img/${art.thumb}` : undefined);
   return (
     <AnimatePresence>
       {id !== null && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
-          className="fixed inset-0 z-[80] overflow-y-auto bg-black/90 p-0 backdrop-blur-md"
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}
+          className="fixed inset-0 z-[80] overflow-y-auto bg-black/90 p-0"
           onClick={() => setId(null)}
-          onTouchStart={e => (touch.current = e.touches[0].clientX)}
-          onTouchEnd={e => {
-            if (touch.current === null) return;
-            const dx = e.changedTouches[0].clientX - touch.current;
-            if (Math.abs(dx) > 70) nav(dx > 0 ? "prev" : "next");
-            touch.current = null;
-          }}>
-          <button onClick={() => setId(null)} className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-20 flex h-11 items-center gap-2 rounded-full bg-black/70 px-4 text-sm font-medium text-white backdrop-blur hover:bg-gold hover:text-ink transition-colors" aria-label="Go back"><span className="text-lg">←</span><span>Back</span></button>
-          <button onClick={() => setId(null)} className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20 grid h-11 w-11 place-items-center rounded-full bg-black/70 text-xl text-white backdrop-blur hover:bg-gold hover:text-ink transition-colors" aria-label="Close">×</button>
-          {data?.prevId && <button onClick={e => { e.stopPropagation(); nav("prev"); }} className="absolute left-3 top-1/2 z-10 hidden md:grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-gold hover:text-ink transition-colors">←</button>}
-          {data?.nextId && <button onClick={e => { e.stopPropagation(); nav("next"); }} className="absolute right-3 top-1/2 z-10 hidden md:grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-gold hover:text-ink transition-colors">→</button>}
+          >
+          <button onClick={() => setId(null)} className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-20 flex h-11 items-center gap-2 rounded-full bg-black/70 px-4 text-sm font-medium text-white backdrop-blur hover:bg-gold hover:text-white transition-colors" aria-label="Go back"><span className="text-lg">←</span><span>Back</span></button>
+          <button onClick={() => setId(null)} className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20 grid h-11 w-11 place-items-center rounded-full bg-black/70 text-xl text-white backdrop-blur hover:bg-gold hover:text-white transition-colors" aria-label="Close">×</button>
+          {data?.prevId && <button onClick={e => { e.stopPropagation(); nav("prev"); }} className="absolute left-3 top-1/2 z-10 hidden md:grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-gold hover:text-white transition-colors">←</button>}
+          {data?.nextId && <button onClick={e => { e.stopPropagation(); nav("next"); }} className="absolute right-3 top-1/2 z-10 hidden md:grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-gold hover:text-white transition-colors">→</button>}
 
-          <motion.div ref={panel} key={id}
-            initial={{ scale: 0.9, y: 24, opacity: 0, rotateX: 4 }}
-            animate={{ scale: 1, y: 0, opacity: 1, rotateX: 0 }}
-            exit={{ scale: 0.94, y: 14, opacity: 0 }}
-            transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
-            style={{ transformPerspective: 1100 }}
+          <motion.div ref={panel}
+            initial={false}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.12 }}
             onClick={e => e.stopPropagation()}
             className="min-h-full w-full max-w-none overflow-hidden bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
             <div className="grid md:min-h-dvh md:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)] xl:grid-cols-[minmax(360px,42vw)_minmax(0,1fr)]">
               <div className="relative flex min-h-0 w-full items-center justify-start overflow-hidden bg-black md:h-dvh xl:hidden">
-                {art && fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} align="start" className="h-auto w-auto max-w-full md:h-dvh md:max-h-dvh" />
+                {art && (fullImage || previewImage) ? <ZoomableArtwork src={fullImage || previewImage!} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} align="start" className="h-auto w-auto max-w-full md:h-dvh md:max-h-dvh" />
                   : <div className="skeleton h-[50vh] w-full" />}
               </div>
               <div className="artwork-detail-panel flex h-auto min-h-0 flex-col justify-start p-6 pb-6 md:min-h-80 md:p-8 md:pb-[max(2rem,env(safe-area-inset-bottom))] xl:hidden">
@@ -178,62 +177,58 @@ export default function ArtLightbox() {
                   </>
                 )}
               </div>
-              {data?.related?.length > 0 && <aside aria-label="More artwork to explore" className="hidden border-l border-paper/10 bg-panel p-3 xl:hidden">
-                <MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize initialItems={data.related} initialHasMore imagePriority={false} maxColumns={3} pageSize={36} />
-              </aside>}
-              {data?.related?.length > 0 && art && <section aria-label="Artwork and more to explore" className="hidden bg-[#101010] p-4 xl:col-span-2 xl:row-start-1 xl:block">
-                {/* Pinterest-style desktop composition: the opened pin spans the
-                    left four tracks, two live masonry tracks sit at its right,
-                    and the continuation grid starts immediately below them. */}
-                <div className="grid grid-cols-6 items-start gap-4">
-                  <article className="col-span-4 grid overflow-hidden rounded-2xl bg-black shadow-[0_20px_50px_rgba(0,0,0,0.35)] 2xl:grid-cols-[minmax(0,1fr)_minmax(360px,1.12fr)]">
-                    <div className="min-w-0 bg-black">
-                      {fullImage ? <ZoomableArtwork src={fullImage} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} align="start" className="h-auto w-full" /> : <div className="skeleton aspect-[3/4] w-full" />}
-                    </div>
-                    <div className="flex min-h-full flex-col p-6 2xl:p-8">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h2 className="font-display text-3xl font-semibold">{art.title || art.character_name}</h2>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <Link href={`/c/${art.character_slug}`} onClick={() => setId(null)} className="chip chip-on">{art.character_name}</Link>
-                            <Link href={`/anime/${art.anime_slug}`} onClick={() => setId(null)} className="chip">{art.anime_name}</Link>
+              {art && <section aria-label="Artwork and more to explore" className="hidden bg-[#101010] p-4 xl:col-span-2 xl:row-start-1 xl:block">
+                <MasonryFeed
+                  key={`desktop-pinterest-${art.id}`}
+                  query={relatedQuery}
+                  randomize
+                  // Start the fast, cacheable feed request as soon as the card
+                  // preview opens; do not wait for the slower detail endpoint.
+                  initialItems={data?.art?.id === id ? data.related ?? [] : []}
+                  initialHasMore
+                  imagePriority={false}
+                  maxColumns={6}
+                  pageSize={36}
+                  layout="desktop"
+                  pinterestLayout={{
+                    leadingContent: <article className="grid overflow-hidden rounded-2xl bg-black shadow-[0_20px_50px_rgba(0,0,0,0.35)] 2xl:grid-cols-[minmax(0,1fr)_minmax(360px,1.12fr)]">
+                      <div className="min-w-0 bg-black">
+                        {fullImage || previewImage ? <ZoomableArtwork src={fullImage || previewImage!} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} align="start" className="h-auto w-full" /> : <div className="skeleton aspect-[3/4] w-full" />}
+                      </div>
+                      <div className="flex min-h-full flex-col p-6 2xl:p-8">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h2 className="font-display text-3xl font-semibold">{art.title || art.character_name}</h2>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <Link href={`/c/${art.character_slug}`} onClick={() => setId(null)} className="chip chip-on">{art.character_name}</Link>
+                              <Link href={`/anime/${art.anime_slug}`} onClick={() => setId(null)} className="chip">{art.anime_name}</Link>
+                            </div>
                           </div>
+                          <button onClick={() => setSave(true)} className="btn-primary shrink-0 !px-5 !py-2.5">Save</button>
                         </div>
-                        <button onClick={() => setSave(true)} className="btn-primary shrink-0 !px-5 !py-2.5">Save</button>
+                        <div className="mt-6 flex flex-wrap gap-2">
+                          <button onClick={like} className={`btn !px-4 !py-2 hairline ${liked ? "border-gold/60 text-gold" : "text-paper/85 hover:border-gold-dim"}`}>{liked ? "♥" : "♡"} {likeCount > 0 ? likeCount : "Like"}</button>
+                          <DownloadButton artworkId={art.id} className="btn-ghost !px-4 !py-2" />
+                          <button onClick={() => setShare(true)} className="btn-ghost !px-4 !py-2">Share</button>
+                        </div>
+                        {(art.creator_name || art.source_url) && <div className="mt-6 rounded-xl bg-soft p-3 text-xs text-fog"><span>Artwork credit: </span>{art.source_url ? <a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold underline">{art.creator_name || "Original source"}</a> : art.creator_name}</div>}
+                        <div className="mt-auto flex items-center justify-between gap-4 pt-10 text-sm text-fog">
+                          <span>{art.views} views · {art.downloads} downloads</span>
+                          <Link href={`/a/${art.id}`} onClick={() => setId(null)} className="text-gold hover:text-gold-bright">Open full page →</Link>
+                        </div>
                       </div>
-                      <div className="mt-6 flex flex-wrap gap-2">
-                        <button onClick={like} className={`btn !px-4 !py-2 hairline ${liked ? "border-gold/60 text-gold" : "text-paper/85 hover:border-gold-dim"}`}>{liked ? "♥" : "♡"} {likeCount > 0 ? likeCount : "Like"}</button>
-                        <DownloadButton artworkId={art.id} className="btn-ghost !px-4 !py-2" />
-                        <button onClick={() => setShare(true)} className="btn-ghost !px-4 !py-2">Share</button>
-                      </div>
-                      {(art.creator_name || art.source_url) && <div className="mt-6 rounded-xl bg-soft p-3 text-xs text-fog"><span>Artwork credit: </span>{art.source_url ? <a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold underline underline-offset-4">{art.creator_name || "Original source"}</a> : art.creator_name}</div>}
-                      <div className="mt-auto flex items-center justify-between gap-4 pt-10 text-sm text-fog">
-                        <span>{art.views} views · {art.downloads} downloads</span>
-                        <Link href={`/a/${art.id}`} onClick={() => setId(null)} className="text-gold hover:text-gold-bright">Open full page →</Link>
-                      </div>
-                    </div>
-                  </article>
-                  <aside aria-label="More artwork to explore" className="col-span-2 min-w-0">
-                    <MasonryFeed key={`desktop-rail-${art.id}`} initialItems={data.related.slice(0, 8)} initialHasMore={false} imagePriority={false} maxColumns={2} />
-                  </aside>
-                </div>
-                <div className="mt-4">
-                  <MasonryFeed
-                    key={`desktop-more-${art.id}`}
-                    query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }}
-                    randomize
-                    initialItems={data.related.slice(8)}
-                    initialHasMore
-                    imagePriority={false}
-                    maxColumns={6}
-                    pageSize={36}
-                  />
-                </div>
+                    </article>,
+                    mainColumnCount: 4,
+                    sideItemCount: 8,
+                    initialMainItemCount: 6,
+                    leadingHeight: 2.6,
+                  }}
+                />
               </section>}
-              {data?.related?.length > 0 && (
+              {art && (
                 <section className="border-t border-paper/10 p-5 md:col-span-2 md:p-8 xl:hidden">
                   <div className="xl:hidden"><h3 className="font-display text-xl font-semibold">More to explore</h3><p className="mt-1 text-xs text-fog">Fresh picks from every series—choose any image to continue.</p></div>
-                  <div className="mt-5"><MasonryFeed key={art.id} query={art?.premium ? { sort: "random", premium: "1" } : { sort: "random" }} randomize initialItems={data.related} initialHasMore imagePriority={false} /></div>
+                  <div className="mt-5"><MasonryFeed key={`mobile-pinterest-${art.id}`} query={relatedQuery} randomize initialItems={data?.art?.id === id ? data.related ?? [] : []} initialHasMore imagePriority={false} layout="mobile" /></div>
                 </section>
               )}
             </div>

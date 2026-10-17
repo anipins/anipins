@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { row, rows, run } from "@/lib/db";
-import { deleteFile, saveAvatar, saveCover } from "@/lib/media";
+import { enqueueMediaCleanup, processMediaCleanupQueue, saveAvatar, saveCover } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -46,6 +46,7 @@ export async function PATCH(req: NextRequest) {
   if (bio.length > 240) return NextResponse.json({ error: "Bio must be 240 characters or fewer." }, { status: 400 });
 
   let avatar = user.avatar || "";
+  const cleanup: { key: string; premium: boolean }[] = [];
   const file = form.get("avatar");
   if (file instanceof File && file.size > 0) {
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
@@ -57,7 +58,8 @@ export async function PATCH(req: NextRequest) {
     const nextAvatar = await saveAvatar(Buffer.from(await file.arrayBuffer()), user.id);
     const previousAvatar = avatar;
     avatar = nextAvatar;
-    if (previousAvatar) await deleteFile(previousAvatar);
+    cleanup.push({ key: nextAvatar, premium: false });
+    if (previousAvatar) cleanup.push({ key: previousAvatar, premium: false });
   }
 
   let cover = user.cover || "";
@@ -69,9 +71,15 @@ export async function PATCH(req: NextRequest) {
     const nextCover = await saveCover(Buffer.from(await coverFile.arrayBuffer()), user.id);
     const previousCover = cover;
     cover = nextCover;
-    if (previousCover) await deleteFile(previousCover);
+    cleanup.push({ key: nextCover, premium: false });
+    if (previousCover) cleanup.push({ key: previousCover, premium: false });
   }
 
-  await run("UPDATE users SET nickname=?, avatar=?, cover=?, bio=?, is_public=? WHERE id=?", nickname, avatar, cover, bio, isPublic, user.id);
+  if (cleanup.length) await enqueueMediaCleanup(cleanup);
+  try {
+    await run("UPDATE users SET nickname=?, avatar=?, cover=?, bio=?, is_public=? WHERE id=?", nickname, avatar, cover, bio, isPublic, user.id);
+  } finally {
+    if (cleanup.length) await processMediaCleanupQueue();
+  }
   return NextResponse.json({ ok: true, user: { ...user, nickname, avatar, cover, bio, is_public: isPublic } });
 }

@@ -28,7 +28,7 @@ test("desktop pointer intent warms one full-size artwork without preloading the 
 
 test("the visible masonry viewport receives priority before lower cards", () => {
   const card = source("src/components/ArtCard.tsx");
-  assert.match(card, /const criticalImage = priority \?\? index < 10/);
+  assert.match(card, /const criticalImage = priority \?\? index < 4/);
   assert.match(card, /priority=\{criticalImage\}/);
   assert.match(card, /loading=\{criticalImage \? "eager" : "lazy"\}/);
 });

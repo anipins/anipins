@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ArtworkDetailClient from "@/components/ArtworkDetailClient";
 import JsonLd from "@/components/JsonLd";
-import { getArtwork, getArtworkCards } from "@/lib/content";
+import { getArtwork } from "@/lib/content";
 import { row } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { canAccessPremium } from "@/lib/billing";
 import { absoluteUrl, artworkAlt } from "@/lib/site";
 import { publicMediaUrl, publicOriginalUrl, publicThumbnailUrl } from "@/lib/media";
+import { isWallpaperArtwork, nonWallpaperFilter, wallpaperFilter } from "@/lib/wallpaper-feed-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -44,17 +45,17 @@ export default async function ArtworkPage(props: { params: Promise<{ id: string 
   }
   if (!art) notFound();
   const premiumOnly = Number(art.premium || 0) === 1;
-  const [related, adjacent] = await Promise.all([
-    getArtworkCards({ limit: 36, sort: "trending", excludeId: id, premium: premiumOnly }),
-    row(`SELECT MAX(CASE WHEN id < ? THEN id END) AS prev_id, MIN(CASE WHEN id > ? THEN id END) AS next_id FROM artworks WHERE published=1 AND COALESCE(premium, 0)=?`, id, id, premiumOnly ? 1 : 0),
-  ]);
+  const wallpaperOnly = isWallpaperArtwork(art);
+  const collectionFilter = wallpaperOnly ? wallpaperFilter() : nonWallpaperFilter();
+  const adjacent = await row(`SELECT MAX(CASE WHEN id < ? THEN id END) AS prev_id, MIN(CASE WHEN id > ? THEN id END) AS next_id FROM artworks WHERE published=1 AND COALESCE(premium, 0)=? AND ${collectionFilter}`, id, id, premiumOnly ? 1 : 0);
   const initialData = {
     art: {
       ...art,
       thumb_url: premiumOnly ? publicMediaUrl(art.thumb) : publicThumbnailUrl(art.thumb),
       original_url: premiumOnly ? publicMediaUrl(art.orig) : publicOriginalUrl(art.orig),
     },
-    related,
+    // Recommendations load through MasonryFeed after the main artwork paints.
+    related: [],
     prevId: adjacent?.prev_id ?? null,
     nextId: adjacent?.next_id ?? null,
     likeCount: 0,

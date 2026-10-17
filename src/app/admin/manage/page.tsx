@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "@/components/Toaster";
+import { getAdminJson, invalidateAdminData } from "@/lib/admin-prefetch";
 
 export default function AdminManage({ premiumOnly = false }: { premiumOnly?: boolean }) {
   const [items, setItems] = useState<any[]>([]);
@@ -13,15 +14,27 @@ export default function AdminManage({ premiumOnly = false }: { premiumOnly?: boo
   const [edit, setEdit] = useState<any>(null);
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadSequence = useRef(0);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (page = 0, append = false) => {
+    const sequence = ++loadSequence.current;
     const scope = premiumOnly ? "premium" : "public";
-    const r = await fetch(`/api/admin/artworks?q=${encodeURIComponent(q)}&sort=${sort}&filter=${filter}&scope=${scope}`);
-    const d = await r.json();
-    setItems(d.items || []); setLoaded(true);
+    if (append) setLoadingMore(true);
+    try {
+      const d = await getAdminJson(`/api/admin/artworks?q=${encodeURIComponent(q)}&sort=${sort}&filter=${filter}&scope=${scope}&page=${page}&limit=40`);
+      if (sequence !== loadSequence.current) return;
+      setItems(previous => append ? [...previous, ...(d.items || [])] : (d.items || []));
+      setHasMore(!!d.hasMore);
+    } catch {
+      if (sequence === loadSequence.current) toast("Artwork list could not load. Please retry.", "err");
+    } finally {
+      if (sequence === loadSequence.current) { setLoaded(true); setLoadingMore(false); }
+    }
   }, [q, sort, filter, premiumOnly]);
 
-  useEffect(() => { const t = setTimeout(load, 200); return () => clearTimeout(t); }, [load]);
+  useEffect(() => { const t = setTimeout(() => { void load(); }, q ? 160 : 0); return () => clearTimeout(t); }, [load, q]);
 
   const toggle = (id: number) => setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const allSelected = items.length > 0 && sel.size === items.length;
@@ -31,17 +44,20 @@ export default function AdminManage({ premiumOnly = false }: { premiumOnly?: boo
     if (action === "delete" && !confirm(`Delete ${sel.size} artwork(s)? This cannot be undone.`)) return;
     setBusy(true);
     await fetch("/api/admin/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ids: [...sel] }) });
+    invalidateAdminData("/api/admin/artworks");
     setSel(new Set()); setBusy(false); load();
     toast(action === "delete" ? "Artwork permanently deleted" : "Changes saved");
   };
 
   const one = async (id: number, body: any) => {
     await fetch(`/api/admin/artworks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    invalidateAdminData("/api/admin/artworks");
     load();
   };
   const delOne = async (id: number) => {
     if (!confirm("Delete this artwork permanently?")) return;
     await fetch(`/api/admin/artworks/${id}`, { method: "DELETE" });
+    invalidateAdminData("/api/admin/artworks");
     toast("Artwork permanently deleted");
     load();
   };
@@ -60,7 +76,7 @@ export default function AdminManage({ premiumOnly = false }: { premiumOnly?: boo
         </select>
         <label className="ml-auto flex items-center gap-2 text-sm text-fog">
           <input type="checkbox" checked={allSelected} onChange={() => setSel(allSelected ? new Set() : new Set(items.map(i => i.id)))} className="h-4 w-4 accent-white" />
-          Select all
+          Select all on this page
         </label>
       </div>
 
@@ -106,7 +122,9 @@ export default function AdminManage({ premiumOnly = false }: { premiumOnly?: boo
           ))}
       </div>
 
-      <AnimatePresence>{edit && <EditModal art={edit} premiumOnly={premiumOnly} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); }} />}</AnimatePresence>
+      {loaded && hasMore && <div className="mt-6 flex justify-center"><button type="button" disabled={loadingMore} onClick={() => void load(Math.floor(items.length / 40), true)} className="btn-ghost min-w-40 disabled:opacity-50">{loadingMore ? "Loading…" : "Load more artwork"}</button></div>}
+
+      <AnimatePresence>{edit && <EditModal art={edit} premiumOnly={premiumOnly} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); void load(); }} />}</AnimatePresence>
     </div>
   );
 }

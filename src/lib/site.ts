@@ -1,9 +1,10 @@
+import { normalizeSiteUrl } from "./site-url.mjs";
+
 export const SITE_NAME = "AniPins";
 export const DEFAULT_SITE_URL = "https://anipins.com";
 
 export function getSiteUrl() {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  return (configured || DEFAULT_SITE_URL).replace(/\/$/, "");
+  return normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL, DEFAULT_SITE_URL);
 }
 
 export function absoluteUrl(path = "/") {

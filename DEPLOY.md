@@ -1,69 +1,69 @@
-# AniPins — Free Hosting Guide (Vercel + Supabase)
+# AniPins release and deployment runbook
 
-Total cost: Rs 0. Time: ~20 minutes. No coding needed.
+## Verified topology (2026-10-17)
 
-## Part 1 — Supabase (your free database + image storage)
+- Website and API: Next.js app in the Docker image, served by the Cloudflare Worker Container configured in `wrangler.jsonc` (`cloudflare/worker.mjs`).
+- Production edge target: Worker script `anipins-staging`; Cloudflare routes `anipins.com/*` and `www.anipins.com/*` to it. Despite its name, deploying this config changes production.
+- Media: Cloudflare R2 bindings `ARTWORKS_PUBLIC` and `ARTWORKS_PREMIUM` use `anipins-public-media` and `anipins-premium-media`.
+- Database: Supabase PostgreSQL. Production project ref `synqmyiwjyvvrbrhcetw`; separate project `keqdwpsjygigdsatzjdb` exists for staging. Production schema inspection found `billing_subscriptions.provider_event_at` and `media_cleanup_queue` are not present yet.
+- Android: native WebView project in `mobile/`; build a signed AAB locally. Never upload from this process to Play.
 
-1. Go to https://supabase.com  ->  Start your project  ->  sign up with Google/GitHub.
-2. Click "New project".
-   - Name: anipins
-   - Database password: create a strong one AND SAVE IT somewhere.
-   - Region: Mumbai (closest to you).
-   - Click "Create new project" and wait ~2 minutes.
-3. Collect 3 values:
-   a) DATABASE_URL:
-      Click the "Connect" button (top bar) -> tab "ORMs" or "Connection string"
-      -> choose "Transaction pooler" (port 6543) -> copy the URI.
-      Replace [YOUR-PASSWORD] in it with the database password you saved.
-   b) SUPABASE_URL:
-      Project Settings (gear icon) -> API -> "Project URL" (looks like https://xxxx.supabase.co)
-   c) SUPABASE_SERVICE_ROLE_KEY:
-      Same API page -> "service_role" secret key -> reveal & copy.
-      NEVER share this key or put it in Instagram bio etc.
+## Release commands and checks
 
-## Part 2 — GitHub (where your code lives)
+Use Node 22. From the repo root:
 
-1. Go to https://github.com -> sign up (free).
-2. Click "+" -> "New repository" -> name: anipins -> Private -> Create.
-3. On the new repo page click "uploading an existing file".
-4. Unzip anipins-website.zip on your computer, open the "anipins" folder,
-   select ALL files/folders inside it and drag them into the GitHub upload box.
-   (Skip node_modules/.next/data/uploads if present - they're not in the zip anyway.)
-5. Click "Commit changes" and wait for upload to finish.
+```powershell
+npm ci
+npx tsc --noEmit --incremental false
+npx --yes --package=node@22 node --test
+npx --yes --package=node@22 node node_modules/next/dist/bin/next build
+./mobile/build-play-release.ps1
+```
 
-## Part 3 — Vercel (your free hosting + permanent URL)
+There is no standalone `lint` npm script. The Next production build performs lint and type validation. The Android script builds and verifies the signed AAB (and a local APK); neither artifact is committed.
 
-1. Go to https://vercel.com -> sign up WITH GITHUB (important).
-2. Click "Add New..." -> "Project" -> Import your "anipins" repository.
-3. Before clicking Deploy, open "Environment Variables" and add these 4:
-   | Name                      | Value                                  |
-   |---------------------------|----------------------------------------|
-   | DATABASE_URL              | (from Part 1a)                         |
-   | SUPABASE_URL              | (from Part 1b)                         |
-   | SUPABASE_SERVICE_ROLE_KEY | (from Part 1c)                         |
-   | ADMIN_PASSWORD            | your chosen admin password             |
-4. Click "Deploy". Wait 2-3 minutes.
-5. You get your PERMANENT URL: https://anipins-xxxx.vercel.app
+## Environment variable names
 
-## Part 4 — One-time setup (30 seconds)
+Set values only in the relevant provider secret store; never commit or print secret values.
 
-1. Open:  https://YOUR-URL.vercel.app/api/setup
-   This automatically creates the database tables, the storage bucket,
-   your admin account (anipins01@gmail.com + the ADMIN_PASSWORD you set),
-   and uploads the 10 starter artworks to Supabase Storage.
-   You should see: {"ok":true, ...}
-   (Safe to open twice - it skips anything already done.)
-2. Open your site -> /login -> sign in with anipins01@gmail.com -> Admin panel works.
-3. Done. Everything you upload now lives in Supabase and survives forever.
+| Variables | Use |
+|---|---|
+| `DATABASE_URL`, `DATABASE_CA_CERT` | PostgreSQL connection and optional CA trust |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase admin API integration |
+| `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_SITE_URL` | Session and canonical site configuration |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID` | Google sign-in |
+| `ADMIN_PASSWORD`, `ADMIN_2FA_ENCRYPTION_KEY`, `SETUP_SECRET`, `SETUP_TOKEN` | Admin access and protected setup |
+| `MEDIA_PROVIDER`, `R2_ACCOUNT_ID`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PUBLIC_BUCKET`, `R2_PREMIUM_BUCKET` | R2 configuration where direct S3-compatible access is used |
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_PREMIUM_PLAN_ID_199`, `RAZORPAY_WEBHOOK_SECRET` | Billing; staging must use test credentials only |
+| `RESEND_API_KEY`, `EMAIL_FROM`, `FIREBASE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SITE_VERIFICATION`, `ANDROID_APP_LINKS_SHA256` | Optional email, Firebase, search verification, and Android links |
+| `ANIPINS_KEYSTORE_PATH`, `ANIPINS_KEYSTORE_PASSWORD`, `ANIPINS_KEY_ALIAS`, `ANIPINS_KEY_PASSWORD` | Local Android release signing only |
 
-## Custom domain later (optional)
+Cloudflare Worker also requires its configured `ARTWORKS_PUBLIC` and `ARTWORKS_PREMIUM` R2 bindings. Confirm environment-specific bindings before publishing.
 
-Buy a domain (Namecheap/GoDaddy, ~Rs 800-1200/yr) -> Vercel project ->
-Settings -> Domains -> Add -> follow the DNS instructions shown -> HTTPS is automatic.
+## Database migration order and backup
 
-## Free tier limits (plenty to start)
+1. Before any production DDL, create and verify a recoverable Supabase backup/snapshot and record its restore point. A schema listing or SQL copy is not a backup.
+2. Apply numbered SQL files in `scripts/migrations/` in ascending filename order. The schema changes accompanying this release are additive/idempotent: create `media_cleanup_queue`, add `billing_subscriptions.provider_event_at`, and restrict direct `anon`/`authenticated` access to server-only tables. Do not run the application setup endpoint as a substitute for a reviewed migration.
+3. Confirm the expected columns/table and RLS/grants after migration, then deploy code. Roll back application code first if smoke tests fail; additive schema may remain in place. Do not drop the added table/column as part of rollback.
 
-- Supabase: 500 MB database + 1 GB image storage + 5 GB bandwidth/month
-- Vercel: 100 GB bandwidth/month
-If Supabase project is unused for 7 days it pauses - just click "Restore" in the
-dashboard, or simply keep using the site and it never pauses.
+## Deployment procedure
+
+The current Wrangler config is production-routed. From a clean, pushed commit, inspect the account and preview the bundle before deployment:
+
+```powershell
+npx wrangler whoami
+npx wrangler deploy --dry-run
+npx wrangler deploy
+```
+
+Use only the authorized commit. Do not change DNS, rotate secrets, alter billing settings, delete data/storage, enable paid services, or upload an Android artifact to Google Play without separate approval. If backup verification, provider access, or test-account credentials are unavailable, stop before the affected production action and report the exact blocker.
+
+## Smoke tests and rollback
+
+Using a test account only and no real payments, verify: home page; browse/paginate/refresh; open artwork and image loading; sign-in and sign-out; like/save and download; premium entitlement check; admin upload with a test admin. Check HTTP status, browser console, Worker/container logs, and DB errors. Do not claim sign-in/like/premium passed based on public HTTP checks alone.
+
+If a smoke test fails, roll back the Worker to the previously serving Cloudflare version through Cloudflare's version rollback/traffic controls, then retest the known-good version. Keep additive DB schema in place unless a separately reviewed recovery is needed. Never roll back by deleting user data or media.
+
+## Release artifact status
+
+The signed Android AAB is a local artifact at `mobile/app/build/outputs/bundle/release/app-release.aab`. Keep the keystore/password out of source control. The AAB is not uploaded to Google Play by this deployment.

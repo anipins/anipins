@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getAdminJson, prefetchAdminRoute } from "@/lib/admin-prefetch";
 
 const NAV = [
   { href: "/admin", label: "Overview", d: "M3.5 12.5 12 4l8.5 8.5M6 10.5V20h12v-9.5" },
@@ -25,11 +26,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     // this request keeps the mobile upload screen responsive. On desktop it
     // is non-critical, so wait for an idle moment rather than competing with
     // the route and artwork controls.
-    if (!window.matchMedia("(min-width: 768px)").matches) return;
+    // The overview already fetches the complete stats payload. Avoid launching
+    // a duplicate query on the page most likely to be the admin entry point.
+    if (path === "/admin" || !window.matchMedia("(min-width: 768px)").matches) return;
     let cancelled = false;
     const load = () => {
-      fetch("/api/admin/stats")
-        .then(response => response.ok ? response.json() : null)
+      getAdminJson("/api/admin/stats")
         .then(data => { if (!cancelled && data?.totals) setMini(data.totals); })
         .catch(() => {});
     };
@@ -39,23 +41,24 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       return () => { cancelled = true; window.clearTimeout(timer); };
     }
     return () => { cancelled = true; window.cancelIdleCallback(idle); };
-  }, []);
+  }, [path]);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-[1560px] gap-0 px-0 pt-20 md:px-6 md:pt-24">
       <aside className="hidden w-64 shrink-0 flex-col border-r border-paper/[0.07] py-8 pr-5 md:flex">
-        <div className="flex items-center gap-3 px-3"><img src="/brand/ap-symbol-192.png" alt="" className="block h-10 w-10 rounded-xl object-contain object-center shadow-[0_0_24px_rgba(198,161,91,0.15)]" /><div><p className="font-display font-semibold leading-none">Ani<span className="text-gold">Pins</span></p><span className="badge-gold mt-1.5 !px-2 !py-0.5">Super Admin</span></div></div>
+        <div className="flex items-center gap-3 px-3"><img src="/brand/ap-symbol-192.png?v=gold-20261016" alt="" className="block h-10 w-10 rounded-xl object-contain object-center shadow-[0_0_24px_rgba(198,161,91,0.15)]" /><div><p className="font-display font-semibold leading-none">Ani<span className="text-gold">Pins</span></p><span className="badge-gold mt-1.5 !px-2 !py-0.5">Super Admin</span></div></div>
         <div className="mx-3 mt-6 h-px bg-gradient-to-r from-gold/30 via-white/10 to-transparent" />
         <nav className="mt-5 flex flex-col gap-1">{NAV.map(item => {
           const active = path === item.href;
-          return <Link key={item.href} href={item.href} className={`relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition-all duration-200 ${active ? "bg-gradient-to-r from-gold/[0.14] to-transparent text-gold" : "text-fog hover:bg-paper/[0.04] hover:text-paper"}`}>
+          const warm = () => prefetchAdminRoute(item.href);
+          return <Link key={item.href} href={item.href} prefetch={true} onMouseEnter={warm} onFocus={warm} className={`relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition-all duration-200 ${active ? "bg-gradient-to-r from-gold/[0.14] to-transparent text-gold" : "text-fog hover:bg-paper/[0.04] hover:text-paper"}`}>
             {active && <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-gradient-to-b from-gold-bright to-gold-deep" />}<svg viewBox="0 0 24 24" className="h-[17px] w-[17px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={item.d} /></svg>{item.label}
           </Link>;
         })}</nav>
         {mini && <div className="mx-3 mt-8 rounded-2xl border border-line bg-panel/60 p-4"><p className="text-[10px] uppercase tracking-[0.25em] text-gold/70">Quick stats</p><div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm"><div><p className="font-display font-semibold">{mini.artworks}</p><p className="text-[10px] text-fog">Artworks</p></div><div><p className="font-display font-semibold">{mini.views}</p><p className="text-[10px] text-fog">Views</p></div><div><p className="font-display font-semibold">{mini.downloads}</p><p className="text-[10px] text-fog">Downloads</p></div><div><p className="font-display font-semibold">{mini.characters}</p><p className="text-[10px] text-fog">Characters</p></div></div></div>}
         <div className="mt-auto px-3 pt-6"><Link href="/" className="mb-2 flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm text-fog transition-colors hover:bg-paper/[0.04] hover:text-paper"><svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>Back to website</Link><button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); location.href = "/"; }} className="w-full rounded-xl border border-line px-4 py-2.5 text-sm text-fog transition-colors hover:border-gold/40 hover:text-paper">Sign out</button></div>
       </aside>
-      <div className="min-w-0 flex-1 px-4 py-8 md:px-10"><div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto md:hidden">{NAV.map(item => <Link key={item.href} href={item.href} className={`chip ${path === item.href ? "chip-on" : ""}`}>{item.label}</Link>)}</div>{children}</div>
+      <div className="min-w-0 flex-1 px-4 py-8 md:px-10"><div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto md:hidden">{NAV.map(item => <Link key={item.href} href={item.href} prefetch={true} onMouseEnter={() => prefetchAdminRoute(item.href)} onFocus={() => prefetchAdminRoute(item.href)} className={`chip ${path === item.href ? "chip-on" : ""}`}>{item.label}</Link>)}</div>{children}</div>
     </div>
   );
 }

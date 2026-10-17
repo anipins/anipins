@@ -30,6 +30,8 @@ export const PG_SCHEMA: string[] = [
   `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ DEFAULT now()`,
   `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS ip_address TEXT DEFAULT ''`,
   `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS user_agent TEXT DEFAULT ''`,
+  `ALTER TABLE public.sessions ENABLE ROW LEVEL SECURITY`,
+  `REVOKE ALL ON TABLE public.sessions FROM anon, authenticated`,
   `CREATE TABLE IF NOT EXISTS login_challenges (token TEXT PRIMARY KEY, user_id INTEGER NOT NULL, expires_at BIGINT NOT NULL, ip_address TEXT DEFAULT '', user_agent TEXT DEFAULT '')`,
   `CREATE TABLE IF NOT EXISTS security_alerts (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, kind TEXT NOT NULL, message TEXT NOT NULL, ip_address TEXT DEFAULT '', user_agent TEXT DEFAULT '', read_at TIMESTAMPTZ, created_at TIMESTAMPTZ DEFAULT now())`,
   `CREATE TABLE IF NOT EXISTS admin_audit_log (id SERIAL PRIMARY KEY, admin_id INTEGER NOT NULL, action TEXT NOT NULL, target_type TEXT DEFAULT '', target_id TEXT DEFAULT '', detail TEXT DEFAULT '', ip_address TEXT DEFAULT '', created_at TIMESTAMPTZ DEFAULT now())`,
@@ -54,6 +56,9 @@ export const PG_SCHEMA: string[] = [
   `CREATE INDEX IF NOT EXISTS idx_art_premium_feed ON artworks(created_at DESC, id DESC) WHERE published=1 AND COALESCE(premium, 0)=1 AND COALESCE(category, '') <> 'Wallpapers'`,
   `CREATE INDEX IF NOT EXISTS idx_art_orig ON artworks(orig)`,
   `CREATE INDEX IF NOT EXISTS idx_art_thumb ON artworks(thumb)`,
+  `CREATE TABLE IF NOT EXISTS media_cleanup_queue (
+    object_key TEXT NOT NULL, premium INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (object_key, premium))`,
   `CREATE TABLE IF NOT EXISTS collections (
     id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, name TEXT NOT NULL, is_private INTEGER DEFAULT 1, created_at TIMESTAMPTZ DEFAULT now())`,
   `ALTER TABLE collections ADD COLUMN IF NOT EXISTS is_private INTEGER DEFAULT 1`,
@@ -111,14 +116,15 @@ export const PG_SCHEMA: string[] = [
   `CREATE TABLE IF NOT EXISTS billing_subscriptions (
     subscription_id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'created',
     payment_id TEXT DEFAULT '', current_end BIGINT DEFAULT 0, cancel_at_cycle_end INTEGER DEFAULT 0,
-    created_at BIGINT NOT NULL, updated_at BIGINT NOT NULL)`,
+    created_at BIGINT NOT NULL, updated_at BIGINT NOT NULL, provider_event_at BIGINT NOT NULL DEFAULT 0)`,
+  `ALTER TABLE billing_subscriptions ADD COLUMN IF NOT EXISTS provider_event_at BIGINT NOT NULL DEFAULT 0`,
   `CREATE INDEX IF NOT EXISTS idx_billing_subscriptions_user ON billing_subscriptions(user_id, updated_at)`,
   `ALTER TABLE public.billing_subscriptions ENABLE ROW LEVEL SECURITY`,
   `REVOKE ALL ON TABLE public.billing_subscriptions FROM anon, authenticated`,
   `INSERT INTO settings (key, value) VALUES
     ('site_name','AniPins'),
     ('tagline','Anime artwork for inspiration.'),
-    ('instagram_handle','@anipins.art'),
-    ('instagram_url','https://www.instagram.com/anipins.art/')
+    ('instagram_handle','@anipins.verse'),
+    ('instagram_url','https://www.instagram.com/anipins.verse/')
    ON CONFLICT (key) DO NOTHING`,
 ];

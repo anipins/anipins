@@ -4,7 +4,8 @@ import PremiumCheckout from "@/components/PremiumCheckout";
 import PremiumLibrary from "@/components/PremiumLibrary";
 import PremiumMemberFeed from "@/components/PremiumMemberFeed";
 import PremiumActivationWatcher from "@/components/PremiumActivationWatcher";
-import { getArtworkCards, getPremiumPreviewCards } from "@/lib/content";
+import PremiumPreviews from "@/components/PremiumPreviews";
+import { getArtworkCards } from "@/lib/content";
 import { getUser } from "@/lib/auth";
 import { canAccessPremium, getUserSubscription } from "@/lib/billing";
 
@@ -48,7 +49,6 @@ export default async function PremiumPage() {
   const pendingSubscription = existingSubscription && ["created", "authenticated", "pending"].includes(existingSubscription.status)
     ? existingSubscription
     : null;
-  const previews = await getPremiumPreviewCards(3);
   return <main className="mx-auto max-w-6xl overflow-hidden px-5 pb-24 pt-28 md:px-8 md:pt-36">
     <section className="relative isolate overflow-hidden rounded-[2rem] border border-gold/30 bg-[#12110e] px-6 py-10 shadow-[0_35px_100px_rgba(0,0,0,.45)] sm:px-10 md:rounded-[2.5rem] md:px-14 md:py-16">
       <div className="pointer-events-none absolute -left-32 top-1/2 h-[30rem] w-[30rem] -translate-y-1/2 rounded-full bg-gold/10 blur-[120px]"/>
@@ -70,7 +70,7 @@ export default async function PremiumPage() {
             <div className="pointer-events-none absolute -right-20 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full border border-gold/25"/>
             <div className="pointer-events-none absolute -right-10 top-1/2 h-52 w-52 -translate-y-1/2 rounded-full border border-gold/20"/>
             <div className="pointer-events-none absolute right-4 top-5 h-44 w-44 opacity-[.18] mix-blend-screen sm:right-7 sm:top-3 sm:h-52 sm:w-52">
-              <Image src="/brand/ap-mark-master-v2.png" alt="" fill className="object-contain" sizes="208px" aria-hidden="true" priority />
+              <Image src="/brand/ap-mark-master-v2.png?v=gold-20261016" alt="" fill className="object-contain" sizes="208px" aria-hidden="true" priority />
             </div>
             <div className="pointer-events-none absolute bottom-7 right-7 grid h-14 w-14 grid-cols-5 gap-1 opacity-40">{Array.from({ length: 25 }, (_, index) => <span key={index} className={`rounded-[1px] ${[0, 2, 4, 6, 8, 11, 13, 15, 18, 20, 22, 24].includes(index) ? "bg-gold" : "bg-gold/20"}`}/>)}</div>
             <div className="relative flex items-start justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[.3em] text-gold">AniPins / member pass</p><p className="mt-2 font-display text-2xl text-paper">Private access</p></div><div className="grid h-12 w-12 place-items-center rounded-2xl border border-gold/40 bg-gold/10 text-gold"><Crown/></div></div>
@@ -93,13 +93,7 @@ export default async function PremiumPage() {
         <div><p className="text-xs font-semibold uppercase tracking-[.25em] text-gold">Inside the private archive</p><h2 className="mt-2 font-display text-3xl font-semibold text-paper">Real drops. Kept private.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-fog">A glimpse of the member library, deliberately obscured until you unlock it. Full-resolution artwork is never displayed on this public sales page.</p></div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-gold/30 bg-gold/5 px-3 py-1.5 text-xs text-gold"><Lock/> Blurred member previews</span>
       </div>
-      <div className="mt-7 grid gap-3 sm:grid-cols-3">{Array.from({ length: 3 }, (_, index) => {
-        const preview = previews[index];
-        return <div key={preview?.id || index} className="group relative min-h-52 overflow-hidden rounded-2xl border border-paper/10 bg-soft sm:min-h-64">
-          {preview ? <img src={`/api/premium-preview/${preview.id}`} alt="Blurred Premium artwork preview" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-80" /> : <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(212,170,85,.35),transparent_35%),linear-gradient(135deg,#302516,#111)]" />}
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.82))]"/><div className="absolute inset-0 grid place-items-center"><span className="grid h-12 w-12 place-items-center rounded-full border border-gold/50 bg-black/60 text-gold backdrop-blur"><Lock/></span></div><div className="absolute inset-x-0 bottom-0 p-4"><p className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Private drop {String(index + 1).padStart(2, "0")}</p><p className="mt-1 text-sm font-medium text-paper">Unlock the full member collection</p></div>
-        </div>;
-      })}</div>
+      <PremiumPreviews />
     </section>
 
     <section className="mt-5 overflow-hidden rounded-[2rem] border border-gold/25 bg-gradient-to-r from-[#20170c] via-[#15120e] to-[#20170c] p-6 sm:p-8">

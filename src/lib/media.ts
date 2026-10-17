@@ -2,8 +2,9 @@ import path from "path";
 import fs from "fs";
 import sharp from "sharp";
 import crypto from "crypto";
-import { UPLOADS_DIR } from "./db";
+import { row, rows, run, UPLOADS_DIR } from "./db";
 import { r2Delete, r2Get, r2Put, USE_R2_STORAGE } from "./r2";
+import { drainMediaCleanupQueue, type MediaCleanupItem } from "./media-cleanup";
 
 const SB_URL = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -51,11 +52,12 @@ async function sbUpload(key: string, buf: Buffer, contentType: string) {
 }
 
 async function sbDelete(keys: string[]) {
-  await fetch(`${SB_URL}/storage/v1/object/${BUCKET}`, {
+  const response = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({ prefixes: keys }),
-  }).catch(() => {});
+  });
+  if (!response.ok) throw new Error(`Storage delete failed (${response.status})`);
 }
 
 const MIME: Record<string, string> = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif" };
@@ -70,6 +72,29 @@ export function newArtworkUploadKey(origName: string) {
 }
 
 async function putMedia(key: string, buf: Buffer, contentType: string, premium = false) {
+  if (USE_R2_MEDIA && key.startsWith("t/")) {
+    const secret = process.env.NEXTAUTH_SECRET;
+    const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL;
+    if (secret && origin && !/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)/i.test(origin)) {
+      const expiresAt = Math.floor(Date.now() / 1000) + 300;
+      const scope = premium ? "1" : "0";
+      const signature = crypto.createHmac("sha256", secret).update(`thumbnail:${key}:${scope}:${expiresAt}`).digest("base64url");
+      const url = new URL("/api/storage-thumbnail", origin);
+      url.searchParams.set("key", key);
+      url.searchParams.set("p", scope);
+      url.searchParams.set("e", String(expiresAt));
+      url.searchParams.set("s", signature);
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": contentType },
+        body: new Uint8Array(buf),
+      });
+      if (response.ok) return;
+      // Keep uploads resilient if the Worker capability route is temporarily
+      // unavailable; the server-side R2 credentials are the trusted fallback.
+      console.warn("Worker thumbnail write failed; falling back to R2", response.status);
+    }
+  }
   if (USE_R2_MEDIA) return r2Put(key, buf, contentType, premium);
   if (USE_SUPABASE_STORAGE) return sbUpload(key, buf, contentType);
   throw new Error("Object storage is not configured");
@@ -92,9 +117,13 @@ async function getMedia(key: string, premium = false) {
       url.searchParams.set("p", scope);
       url.searchParams.set("e", String(expiresAt));
       url.searchParams.set("s", signature);
-      const response = await fetch(url, { cache: "no-store" });
-      if (!response.ok) throw new Error(`Staged artwork read failed (${response.status})`);
-      return Buffer.from(await response.arrayBuffer());
+      try {
+        const response = await fetch(url, { cache: "no-store" });
+        if (response.ok) return Buffer.from(await response.arrayBuffer());
+        console.warn("Worker staged artwork read failed; falling back to R2", response.status);
+      } catch (error) {
+        console.warn("Worker staged artwork read failed; falling back to R2", error);
+      }
     }
     const object = await r2Get(key, premium);
     if (!object.Body) throw new Error("Storage object has no body");
@@ -264,34 +293,70 @@ export function hashDistance(a: string, b: string) {
   return distance;
 }
 
+async function deleteStoredMedia(rel: string, premium = false) {
+  if (!isSafeMediaKey(rel)) throw new Error("Invalid media key");
+  if (USE_R2_MEDIA) return r2Delete(rel, premium);
+  if (USE_SUPABASE_STORAGE) return sbDelete([rel]);
+  const root = path.resolve(UPLOADS_DIR);
+  const target = path.resolve(root, rel);
+  if (!target.startsWith(`${root}${path.sep}`)) throw new Error("Invalid media path");
+  try {
+    fs.unlinkSync(target);
+  } catch (error: any) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+}
+
+export async function enqueueMediaCleanup(items: MediaCleanupItem[]) {
+  const unique = new Map<string, MediaCleanupItem>();
+  for (const item of items) {
+    if (!item || !isSafeMediaKey(item.key)) throw new Error("Invalid media cleanup key");
+    unique.set(`${item.premium ? 1 : 0}:${item.key}`, { key: item.key, premium: Boolean(item.premium) });
+  }
+  for (const item of unique.values()) {
+    await run(
+      "INSERT INTO media_cleanup_queue (object_key, premium) VALUES (?, ?) ON CONFLICT (object_key, premium) DO NOTHING",
+      item.key,
+      item.premium ? 1 : 0,
+    );
+  }
+}
+
+export async function processMediaCleanupQueue() {
+  const pending = await rows("SELECT object_key AS key, premium FROM media_cleanup_queue ORDER BY created_at ASC LIMIT 100");
+  return drainMediaCleanupQueue(
+    pending.map((item: any) => ({ key: String(item.key), premium: Number(item.premium || 0) === 1 })),
+    {
+      isReferenced: async item => {
+        const artwork = USE_R2_MEDIA
+          ? await row("SELECT 1 AS found FROM artworks WHERE (orig=? OR thumb=?) AND COALESCE(premium, 0)=? LIMIT 1", item.key, item.key, item.premium ? 1 : 0)
+          : await row("SELECT 1 AS found FROM artworks WHERE orig=? OR thumb=? LIMIT 1", item.key, item.key);
+        if (artwork) return true;
+        return Boolean(await row("SELECT 1 AS found FROM users WHERE avatar=? OR cover=? LIMIT 1", item.key, item.key));
+      },
+      deleteObject: item => deleteStoredMedia(item.key, item.premium),
+      removeFromQueue: async item => {
+        await run("DELETE FROM media_cleanup_queue WHERE object_key=? AND premium=?", item.key, item.premium ? 1 : 0);
+      },
+    },
+  );
+}
+
 export async function deleteFile(rel: string, premium = false) {
   if (!rel || !isSafeMediaKey(rel)) return;
-  if (USE_R2_MEDIA) { await r2Delete(rel, premium).catch(() => {}); return; }
-  if (USE_SUPABASE_STORAGE) { await sbDelete([rel]); return; }
-  try {
-    const p = path.normalize(path.join(UPLOADS_DIR, rel));
-    if (p.startsWith(UPLOADS_DIR) && fs.existsSync(p)) fs.unlinkSync(p);
-  } catch {}
+  await deleteStoredMedia(rel, premium);
 }
 
 export async function deleteFiles(orig: string, thumb: string, premium = false) {
   if (!isSafeMediaKey(orig) || !isSafeMediaKey(thumb)) return;
-  if (USE_R2_MEDIA) { await Promise.all([r2Delete(orig, premium), r2Delete(thumb, premium)].map(task => task.catch(() => {}))); return; }
-  if (USE_SUPABASE_STORAGE) { await sbDelete([orig, thumb]); return; }
-  for (const rel of [orig, thumb]) {
-    try {
-      const p = path.join(UPLOADS_DIR, rel);
-      if (p.startsWith(UPLOADS_DIR) && fs.existsSync(p)) fs.unlinkSync(p);
-    } catch {}
-  }
+  await Promise.all([deleteStoredMedia(orig, premium), deleteStoredMedia(thumb, premium)]);
 }
 
-/** Keep public and Premium R2 buckets separate when an admin changes visibility. */
+/** Copy to the new R2 bucket first; the caller updates metadata, then queues the old bucket for cleanup. */
 export async function moveArtworkVisibility(orig: string, thumb: string, fromPremium: boolean, toPremium: boolean) {
   if (!USE_R2_MEDIA || fromPremium === toPremium) return;
   for (const key of [orig, thumb]) {
     const bytes = await getMedia(key, fromPremium);
     await putMedia(key, bytes, MIME[path.extname(key).toLowerCase()] || "application/octet-stream", toPremium);
-    await r2Delete(key, fromPremium);
   }
 }

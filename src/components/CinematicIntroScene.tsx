@@ -7,7 +7,7 @@ import * as THREE from "three";
 const LAYERS = Array.from({ length: 15 }, (_, index) => index);
 
 function LogoVolume({ onReady }: { onReady?: () => void }) {
-  const texture = useLoader(THREE.TextureLoader, "/brand/ap-symbol-transparent.png");
+  const texture = useLoader(THREE.TextureLoader, "/brand/ap-symbol-transparent.png?v=gold-20261016");
   const mark = useRef<THREE.Group>(null);
   const hasReportedReady = useRef(false);
 

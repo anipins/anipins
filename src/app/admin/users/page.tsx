@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
+import { getAdminJson } from "@/lib/admin-prefetch";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<any[] | null>(null);
-  useEffect(() => { fetch("/api/admin/users").then(r => r.json()).then(d => setUsers(d.users || [])); }, []);
+  useEffect(() => { getAdminJson("/api/admin/users").then(d => setUsers(d.users || [])).catch(() => setUsers([])); }, []);
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold md:text-3xl">Users</h1>

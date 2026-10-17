@@ -18,8 +18,10 @@ const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 export async function POST(req: NextRequest) {
   const u = await getUser();
   if (!isAdmin(u)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  let phase = "database-schema";
   try {
   await ensurePremiumArtworkSchema();
+  phase = "request-validation";
   const direct = req.headers.get("content-type")?.includes("application/json") === true;
   const body = direct ? await req.json() : null;
   const form = direct ? null : await req.formData();
@@ -59,14 +61,20 @@ export async function POST(req: NextRequest) {
   const published = value("published") === (direct ? true : "1") ? 1 : 0;
   const allowDuplicate = value("allowDuplicate") === (direct ? true : "1");
 
+  phase = "read-original";
   const prepared = direct
-    ? (() => Promise.resolve(readArtworkUpload(storageKey, Boolean(premium))).then(async buffer => [{ name: fileName, buffer, fingerprint: await fingerprintImage(buffer) }]))()
+    ? (() => Promise.resolve(readArtworkUpload(storageKey, Boolean(premium))).then(async buffer => {
+        phase = "fingerprint-image";
+        return [{ name: fileName, buffer, fingerprint: await fingerprintImage(buffer) }];
+      }))()
     : Promise.all(files.map(async file => {
         const buffer = Buffer.from(await file.arrayBuffer());
+        phase = "fingerprint-image";
         return { name: file.name, buffer, fingerprint: await fingerprintImage(buffer) };
       }));
   const uploaded = await prepared;
   if (!allowDuplicate) {
+    phase = "duplicate-check";
     const known = await rows("SELECT id, title, character_name, anime_name, content_hash, perceptual_hash, thumb FROM artworks WHERE content_hash != '' OR perceptual_hash != ''");
     const duplicates: any[] = [];
     uploaded.forEach((item, index) => {
@@ -82,7 +90,9 @@ export async function POST(req: NextRequest) {
 
   const ids: number[] = [];
   for (const item of uploaded) {
+    phase = "thumbnail-generation-and-storage";
     const m = direct ? await processUploadedArtwork(item.buffer, storageKey, Boolean(premium)) : await saveImage(item.buffer, item.name, Boolean(premium));
+    phase = "database-insert";
     await run(
       `INSERT INTO artworks (title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, premium, featured, published, orig, thumb, width, height, content_hash, perceptual_hash, creator_name, source_url)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
@@ -91,14 +101,16 @@ export async function POST(req: NextRequest) {
     ids.push(r.id);
     if (published && !premium) await notifyFollowers(r.id, slugify(storedCharacter), storedCharacter, slugify(storedAnime), storedAnime);
   }
+  phase = "audit-log";
   await audit(u!.id, "ARTWORK_UPLOAD", "artwork", ids.join(","), `${ids.length} artwork(s): ${character} · ${anime}`, requestInfo(req).ip);
   return NextResponse.json({ ok: true, ids });
   } catch (error) {
     // Return a retryable response rather than dropping the browser connection.
     // Never expose storage/database details to the public upload UI.
-    console.error("Artwork upload failed", error);
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error("Artwork upload failed", { phase, detail, name: error instanceof Error ? error.name : "UnknownError" });
     return NextResponse.json(
-      { error: "The upload service was temporarily unavailable. This image can be retried safely." },
+      { error: `The upload service failed during ${phase.replaceAll("-", " ")}. This image is still safe to retry.` },
       { status: 503, headers: { "Retry-After": "2" } },
     );
   }

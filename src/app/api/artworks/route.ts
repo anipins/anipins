@@ -6,6 +6,7 @@ import { premiumArtworkFilter } from "@/lib/premium-artwork";
 import { canAccessPremium } from "@/lib/billing";
 import { nonWallpaperFilter, wallpaperFilter } from "@/lib/wallpaper-feed-utils";
 import { decodeArtworkCursor, encodeArtworkCursor } from "@/lib/artwork-cursor";
+import { artworkFeedCacheHeaders } from "@/lib/artwork-feed-cache";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
@@ -14,12 +15,17 @@ const clientItems = (items: any[], signedPublicMedia = false) => items.map(({ _c
   thumb_url: signedPublicMedia ? publicThumbnailUrl(item.thumb) : publicMediaUrl(item.thumb),
   orig_url: signedPublicMedia ? publicOriginalUrl(item.orig) : publicMediaUrl(item.orig),
 }));
-const publicBrowseHeaders = { "Cache-Control": "public, max-age=5, s-maxage=10, stale-while-revalidate=45" };
+const privateBrowseHeaders = { "Cache-Control": "private, no-store" };
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
-  const page = Math.max(0, parseInt(sp.get("page") || "0"));
-  const limit = Math.min(40, parseInt(sp.get("limit") || "20"));
+  const rawPage = sp.get("page") ?? "0";
+  const rawLimit = sp.get("limit") ?? "20";
+  const page = Number(rawPage);
+  const limit = Number(rawLimit);
+  if (!Number.isSafeInteger(page) || page < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 40) {
+    return NextResponse.json({ error: "Invalid artwork pagination." }, { status: 400, headers: privateBrowseHeaders });
+  }
   const q = (sp.get("q") || "").trim().toLowerCase();
   const character = sp.get("character") || "";
   const anime = sp.get("anime") || "";
@@ -80,7 +86,7 @@ export async function GET(req: NextRequest) {
     const followArgs: any[] = [];
     if (characterValues.length) { clauses.push(`character_slug IN (${characterValues.map(() => "?").join(",")})`); followArgs.push(...characterValues); }
     if (animeValues.length) { clauses.push(`anime_slug IN (${animeValues.map(() => "?").join(",")})`); followArgs.push(...animeValues); }
-    const items = await rows(`SELECT ${cols} FROM artworks WHERE published=1 AND ${premiumArtworkFilter(false)} AND id NOT IN (SELECT artwork_id FROM hidden_artworks WHERE user_id=?) AND (${clauses.join(" OR ")}) ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`, user.id, ...followArgs, limit + 1, page * limit);
+    const items = await rows(`SELECT ${cols} FROM artworks WHERE published=1 AND ${premiumArtworkFilter(false)} AND ${nonWallpaperFilter()} AND id NOT IN (SELECT artwork_id FROM hidden_artworks WHERE user_id=?) AND (${clauses.join(" OR ")}) ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`, user.id, ...followArgs, limit + 1, page * limit);
     return NextResponse.json({ items: clientItems(items.slice(0, limit)), hasMore: items.length > limit }, { headers: { "Cache-Control": "private, no-store" } });
   }
   // The home page already server-renders its first personal discovery set.
@@ -123,6 +129,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (sort === "random") {
+    const responseHeaders = artworkFeedCacheHeaders({ premiumOnly, sort });
     // A deterministic rotation is a much faster alternative to a full-table
     // hash/RANDOM sort. Each seed starts at a different point in the complete
     // filtered library, then follows indexed id order and wraps once—so every
@@ -130,7 +137,7 @@ export async function GET(req: NextRequest) {
     const total = Number((await row(`SELECT COUNT(*) AS count FROM artworks WHERE ${where}`, ...args))?.count || 0);
     const consumed = page * limit;
     if (!total || consumed >= total) {
-      return NextResponse.json({ items: [], hasMore: false }, { headers: publicBrowseHeaders });
+      return NextResponse.json({ items: [], hasMore: false }, { headers: responseHeaders });
     }
     const take = Math.min(limit, total - consumed);
     const offset = (seed % total + consumed) % total;
@@ -141,7 +148,7 @@ export async function GET(req: NextRequest) {
       : [];
     return NextResponse.json(
       { items: clientItems([...first, ...second], !premiumOnly), hasMore: consumed + take < total },
-      { headers: publicBrowseHeaders },
+      { headers: responseHeaders },
     );
   }
 
@@ -173,9 +180,7 @@ export async function GET(req: NextRequest) {
   const nextCursor = hasMore && sort === "latest" && lastItem
     ? encodeArtworkCursor({ createdAt: String(lastItem._cursor_created_at), id: lastItem.id })
     : null;
-  const responseHeaders = !premiumOnly && sort !== "following" && sort !== "for-you"
-    ? publicBrowseHeaders
-    : { "Cache-Control": "private, no-store" };
+  const responseHeaders = artworkFeedCacheHeaders({ premiumOnly, sort });
   return NextResponse.json(
     { items: clientItems(pageItems, !premiumOnly), hasMore, nextCursor },
     // Anonymous browsing is shared for just ten seconds. Images remain

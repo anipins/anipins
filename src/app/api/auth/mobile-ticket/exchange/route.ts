@@ -21,14 +21,15 @@ export async function POST(req: NextRequest) {
 
   const codeHash = crypto.createHash("sha256").update(ticket).digest("hex");
   const now = Date.now();
+  // Claim the ticket in one atomic statement. A read followed by an update
+  // allowed two concurrent requests to both observe an unused ticket.
   const entry = await row(
-    "SELECT user_id FROM mobile_auth_tickets WHERE code_hash=? AND expires_at>? AND used_at IS NULL",
+    "UPDATE mobile_auth_tickets SET used_at=? WHERE code_hash=? AND expires_at>? AND used_at IS NULL RETURNING user_id",
+    now,
     codeHash,
     now,
   );
   if (!entry) return NextResponse.json({ error: "This mobile sign-in request expired. Please try again." }, { status: 401 });
-
-  await run("UPDATE mobile_auth_tickets SET used_at=? WHERE code_hash=? AND used_at IS NULL", now, codeHash);
   const sessionToken = await createSession(entry.user_id, {
     ip: req.headers.get("x-forwarded-for") || "",
     ua: req.headers.get("user-agent") || "",

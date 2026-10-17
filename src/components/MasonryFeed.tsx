@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import ArtCard from "./ArtCard";
 import { shouldLoadFromFeedSignal } from "@/lib/feed-pagination";
+import { distributePinterestFeed } from "@/lib/pinterest-feed-layout";
 
 function createFeedSeed() { return Math.floor(Math.random() * 2_147_483_646) + 1; }
 function shuffled(items: any[]) {
@@ -15,7 +16,8 @@ const CACHE_TTL = 15_000;
 // attempts made a transient network problem look like an endless feed loader.
 const REQUEST_TIMEOUT = 10_000;
 const MAX_REQUEST_ATTEMPTS = 3;
-type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; eagerLoad?: boolean; pageSize?: number; emptyMessage?: string; emptyAction?: { href: string; label: string }; imagePriority?: boolean; maxColumns?: number; leadingContent?: ReactNode; leadingHeight?: number; leadingFillCount?: number };
+type PinterestLayout = { leadingContent: ReactNode; mainColumnCount?: number; sideItemCount?: number; initialMainItemCount?: number; leadingHeight?: number };
+type Props = { query?: Record<string, string>; randomize?: boolean; initialItems?: any[]; initialHasMore?: boolean; initialSeed?: number; eagerLoad?: boolean; pageSize?: number; emptyMessage?: string; emptyAction?: { href: string; label: string }; imagePriority?: boolean; maxColumns?: number; leadingContent?: ReactNode; leadingHeight?: number; leadingFillCount?: number; pinterestLayout?: PinterestLayout; layout?: "mobile" | "desktop" };
 
 function columnsForWidth(width: number) {
   if (width >= 2200) return 7;
@@ -52,23 +54,25 @@ function distributeAcrossColumns(items: any[], columnCount: number, leadingHeigh
   return columns;
 }
 
-export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, eagerLoad = false, pageSize = 36, emptyMessage = "No artwork found.", emptyAction, imagePriority, maxColumns, leadingContent, leadingHeight, leadingFillCount }: Props) {
+export default function MasonryFeed({ query = {}, randomize = false, initialItems = [], initialHasMore = true, initialSeed, eagerLoad = false, pageSize = 36, emptyMessage = "No artwork found.", emptyAction, imagePriority, maxColumns, leadingContent, leadingHeight, leadingFillCount, pinterestLayout, layout }: Props) {
   const [items, setItems] = useState<any[]>(initialItems);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [initial, setInitial] = useState(initialItems.length === 0);
   const [columnCount, setColumnCount] = useState(2);
+  const [activeLayout, setActiveLayout] = useState(!layout);
   const sentinel = useRef<HTMLDivElement>(null);
   const inFlight = useRef(false);
   const nextPage = useRef(initialItems.length ? 1 : 0);
   const nextCursor = useRef<string | null>(null);
   const visitorScrollArmed = useRef(false);
   const canPrimeShortFeed = useRef(initialItems.length === 0);
-  const randomSeed = useRef(createFeedSeed());
+  const randomSeed = useRef(initialSeed ?? createFeedSeed());
   const mounted = useRef(true);
   const key = JSON.stringify(query);
   const queryRef = useRef(query);
+  const renderedItemsRef = useRef(initialItems);
   queryRef.current = query;
 
   useEffect(() => {
@@ -79,6 +83,14 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     return () => { mounted.current = false; };
   }, []);
   useEffect(() => {
+    if (!layout) { setActiveLayout(true); return; }
+    const media = window.matchMedia(layout === "desktop" ? "(min-width: 1280px)" : "(max-width: 1279px)");
+    const update = () => setActiveLayout(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, [layout]);
+  useEffect(() => {
     const updateColumns = () => setColumnCount(columnsForWidth(window.innerWidth));
     updateColumns();
     window.addEventListener("resize", updateColumns);
@@ -87,7 +99,12 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   useEffect(() => {
     // router.refresh() supplies fresh server-rendered cards. Keep the client
     // grid in sync rather than leaving the original list on screen.
+    // The first effect runs during hydration too. Re-shuffling there caused
+    // the server-rendered Home cards to jump as soon as the page became live.
+    if (renderedItemsRef.current === initialItems) return;
+    renderedItemsRef.current = initialItems;
     if (!initialItems.length) return;
+    if (randomize && initialSeed) randomSeed.current = initialSeed;
     setItems(randomize ? shuffled(initialItems) : initialItems);
     setHasMore(initialHasMore);
     nextPage.current = 1;
@@ -96,7 +113,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     nextCursor.current = null;
     setInitial(false);
     setLoadError(false);
-  }, [randomize, initialHasMore, initialItems]);
+  }, [randomize, initialHasMore, initialItems, initialSeed]);
 
   const requestPage = useCallback(async (page: number, reset = false, forceFresh = false, silent = false, cursor: string | null = null) => {
     if (inFlight.current) return false;
@@ -155,28 +172,30 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     canPrimeShortFeed.current = false;
     void requestPage(nextPage.current, false, false, false, nextCursor.current);
   }, [hasMore, requestPage]);
-  useEffect(() => { if (!initialItems.length) void requestPage(0, true); }, [initialItems.length, requestPage]);
+  useEffect(() => { if (activeLayout && !initialItems.length) void requestPage(0, true); }, [activeLayout, initialItems.length, requestPage]);
   useEffect(() => {
     // Hydrate an exact server-issued cursor for ordinary SSR lists. Eager
     // feeds already start page 1 themselves; a simultaneous page-zero
     // hydration request used to occupy the single request slot and make the
     // Premium prefetch silently disappear.
-    if (initialItems.length && !randomize && !eagerLoad) void requestPage(0, true, false, true);
-  }, [eagerLoad, initialItems.length, randomize, requestPage]);
+    if (activeLayout && initialItems.length && !randomize && !eagerLoad) void requestPage(0, true, false, true);
+  }, [activeLayout, eagerLoad, initialItems.length, randomize, requestPage]);
   useEffect(() => {
-    if (!eagerLoad || !initialItems.length) return;
+    if (!activeLayout || !eagerLoad || !initialItems.length) return;
     // Give the first visible thumbnails a minimal head start, then request
     // the next metadata page before the visitor can reach the feed boundary.
     // Images themselves remain lazy, so this does not download another screen.
     const timer = window.setTimeout(() => { void requestPage(nextPage.current, false, false, true, nextCursor.current); }, 120);
     return () => window.clearTimeout(timer);
-  }, [eagerLoad, initialItems.length, requestPage]);
+  }, [activeLayout, eagerLoad, initialItems.length, requestPage]);
   useEffect(() => {
+    if (!activeLayout) return;
     const refresh = () => { if (randomize) randomSeed.current = createFeedSeed(); nextPage.current = 0; nextCursor.current = null; canPrimeShortFeed.current = true; setHasMore(true); void requestPage(0, true, true); };
     window.addEventListener("anipins:refresh", refresh);
     return () => window.removeEventListener("anipins:refresh", refresh);
-  }, [randomize, requestPage]);
+  }, [activeLayout, randomize, requestPage]);
   useEffect(() => {
+    if (!activeLayout) return;
     // IntersectionObserver reacts to layout changes as well as actual
     // scrolling. Arm pagination from physical input, so appending cards can
     // never fetch every subsequent page by itself.
@@ -192,18 +211,19 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       window.removeEventListener("touchmove", arm);
       window.removeEventListener("keydown", armFromKey);
     };
-  }, []);
+  }, [activeLayout]);
   useEffect(() => {
     const element = sentinel.current;
-    if (!element) return;
+    if (!activeLayout || !element) return;
     const observer = new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) loadNext(); }, { rootMargin: "1600px 0px" });
     observer.observe(element);
     return () => observer.disconnect();
-  }, [loadNext]);
+  }, [activeLayout, loadNext]);
   useEffect(() => {
-    // Some mobile WebViews do not reliably notify IntersectionObserver after
-    // masonry images change height. Keep the observer for efficient browsers,
-    // but use the document scroll position as a dependable fallback.
+    // Some Android WebViews do not reliably notify IntersectionObserver after
+    // masonry images change height. Keep the observer as the normal pagination
+    // path; only the native app needs this per-scroll document-height fallback.
+    if (!activeLayout || !window.AniPinsAndroid) return;
     let ticking = false;
     const onScroll = () => {
       if (ticking) return;
@@ -218,7 +238,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     window.addEventListener("resize", onScroll);
     onScroll();
     return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); };
-  }, [loadNext]);
+  }, [activeLayout, loadNext]);
   useEffect(() => {
     const hide = (event: Event) => { const id = Number((event as CustomEvent).detail?.id); if (id) setItems(current => current.filter(item => item.id !== id)); };
     window.addEventListener("anipins:hide-art", hide);
@@ -226,14 +246,34 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   }, []);
 
   const renderedColumnCount = maxColumns ? Math.min(columnCount, maxColumns) : columnCount;
+  const renderColumns = (columns: any[][], count: number, startIndex = 0) => <div className="masonry-grid" style={{ "--masonry-columns": count } as React.CSSProperties}>
+    {columns.map((column, columnIndex) => <div className="masonry-grid__column" key={columnIndex}>
+      {column.map(art => <ArtCard key={art.id} art={art} index={startIndex + artworkIndex(art)} priority={imagePriority} />)}
+    </div>)}
+  </div>;
+  const artworkIndex = (art: any) => items.indexOf(art);
   const renderGrid = (artwork: any[]) => {
+    if (pinterestLayout) {
+      const split = distributePinterestFeed(artwork, {
+        totalColumns: renderedColumnCount,
+        mainColumnCount: pinterestLayout.mainColumnCount || 4,
+        sideItemCount: pinterestLayout.sideItemCount ?? 8,
+        initialMainItemCount: pinterestLayout.initialMainItemCount ?? 6,
+        leadingHeight: pinterestLayout.leadingHeight || 2.6,
+      });
+      const sideColumnCount = renderedColumnCount - split.mainColumnCount;
+      return <div className="pinterest-feed-grid" style={{ "--masonry-columns": renderedColumnCount } as React.CSSProperties}>
+        <div className="min-w-0" style={{ gridColumn: `span ${split.mainColumnCount}` }}>
+          {pinterestLayout.leadingContent}
+          <div className="mt-4">{renderColumns(split.mainColumns, split.mainColumnCount)}</div>
+        </div>
+        <div className="min-w-0" style={{ gridColumn: `span ${sideColumnCount}` }}>
+          {renderColumns(split.sideColumns, sideColumnCount)}
+        </div>
+      </div>;
+    }
     const columns = distributeAcrossColumns(artwork, renderedColumnCount, leadingContent ? leadingHeight || 2.4 : 0, leadingContent ? leadingFillCount || 0 : 0);
-    return <div className="masonry-grid" style={{ "--masonry-columns": renderedColumnCount } as React.CSSProperties}>
-      {columns.map((column, columnIndex) => <div className="masonry-grid__column" key={columnIndex}>
-        {columnIndex === 0 && leadingContent}
-        {column.map((art) => <ArtCard key={art.id} art={art} index={artwork.indexOf(art)} priority={imagePriority} />)}
-      </div>)}
-    </div>;
+    return renderColumns(columns, renderedColumnCount);
   };
 
   return <div className="w-full max-w-none">

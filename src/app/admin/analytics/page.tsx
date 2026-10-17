@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { getAdminJson } from "@/lib/admin-prefetch";
 
 function Bars({ items, field }: { items: any[]; field: string }) {
   const max = Math.max(1, ...items.map(i => i[field]));
@@ -22,9 +23,9 @@ export default function Analytics() {
   const [data, setData] = useState<any>(null);
   useEffect(() => {
     Promise.all([
-      fetch("/api/admin/artworks?sort=views").then(r => r.json()),
-      fetch("/api/meta").then(r => r.json()),
-      fetch("/api/admin/downloads").then(r => r.json()),
+      getAdminJson("/api/admin/artworks?sort=views"),
+      getAdminJson("/api/meta"),
+      getAdminJson("/api/admin/downloads"),
     ]).then(([arts, meta, downloadHistory]) => setData({ arts: arts.items || [], meta, downloads: downloadHistory.downloads || [] }));
   }, []);
   if (!data) return <div className="text-fog">Loading analytics…</div>;

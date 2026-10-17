@@ -7,7 +7,7 @@ export default function PremiumLoading() {
       <div className="premium-loading-orbit premium-loading-orbit--outer" />
       <div className="premium-loading-orbit premium-loading-orbit--inner" />
       <div className="relative grid h-20 w-20 place-items-center rounded-3xl border border-gold/40 bg-black/45 shadow-[0_0_35px_rgba(198,161,91,.16)]">
-        <Image src="/brand/ap-mark-master-v2.png" alt="AniPins" fill priority sizes="80px" className="p-3 object-contain" />
+        <Image src="/brand/ap-mark-master-v2.png?v=gold-20261016" alt="AniPins" fill priority sizes="80px" className="p-3 object-contain" />
       </div>
       <p className="relative mt-7 text-[11px] font-semibold uppercase tracking-[.3em] text-gold">AniPins Premium</p>
       <p className="relative mt-2 font-display text-2xl text-paper">Opening your private archive</p>

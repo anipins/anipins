@@ -18,7 +18,7 @@ test("production random feed rotates from a seeded indexed position instead of s
 test("home starts the next metadata page in the background before the visitor reaches it", () => {
   const home = fs.readFileSync(path.join(__dirname, "../src/app/page.tsx"), "utf8");
   const feed = fs.readFileSync(path.join(__dirname, "../src/components/MasonryFeed.tsx"), "utf8");
-  assert.match(home, /<MasonryFeed query=\{HOME_DISCOVERY_QUERY\} randomize initialItems=\{discovery\} initialHasMore=\{discovery\.length === 36\} eagerLoad \/>/);
+  assert.match(home, /<MasonryFeed query=\{HOME_DISCOVERY_QUERY\} randomize initialItems=\{discovery\} initialHasMore=\{discovery\.length === 36\} initialSeed=\{discoverySeed\} eagerLoad \/>/);
   assert.match(feed, /rootMargin: "1600px 0px"/);
   assert.match(feed, /remaining < 2000/);
   assert.match(feed, /}, 120\)/);
@@ -27,5 +27,7 @@ test("home starts the next metadata page in the background before the visitor re
 
 test("the server-rendered random Home screen is not immediately replaced during hydration", () => {
   const feed = fs.readFileSync(path.join(__dirname, "../src/components/MasonryFeed.tsx"), "utf8");
-  assert.match(feed, /if \(initialItems\.length && !randomize && !eagerLoad\) void requestPage\(0, true, false, true\)/);
+  assert.match(feed, /const renderedItemsRef = useRef\(initialItems\)/);
+  assert.match(feed, /if \(renderedItemsRef\.current === initialItems\) return/);
+  assert.match(feed, /setItems\(randomize \? shuffled\(initialItems\) : initialItems\)/);
 });
