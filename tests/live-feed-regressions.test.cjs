@@ -41,8 +41,11 @@ test("masonry cards do not translate on hover and paint over neighboring artwork
 
 test("Android download metadata points at a checked-in APK", () => {
   const route = read("src/app/api/app-version/route.ts");
+  const downloadRoute = read("src/app/downloads/[filename]/route.ts");
   const apk = route.match(/apk:\s*"\/downloads\/([^\"]+\.apk)"/);
   assert.ok(apk, "app-version route should publish an APK URL");
+  assert.match(downloadRoute, new RegExp(`\\"${apk[1]}\\"`), "download route must allow the current release APK");
+  assert.match(downloadRoute, /readFile\(path\.join\(process\.cwd\(\), "public", "downloads", filename\)\)/, "current APK must be served from the app image without Supabase");
   assert.ok(fs.existsSync(path.join(__dirname, "..", "public", "downloads", apk[1])), `${apk[1]} must exist in public/downloads`);
 });
 

@@ -10,5 +10,6 @@ mobile/app/release/
 data/
 *.log
 *.apk
+!public/downloads/AniPins-2.5.21.apk
 *.aab
 tsconfig.tsbuildinfo

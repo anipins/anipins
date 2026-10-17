@@ -20,7 +20,7 @@ node --test tests/*.test.cjs
 npx wrangler deploy --dry-run --config wrangler.better-auth-staging.jsonc
 ```
 
-The full test suite must pass before a release. At the time of this update, Node 22 reports 183/184 passing; the remaining test fails because `public/downloads/AniPins-2.5.21.apk` is missing. Do not claim the Android download passes until the artifact/metadata mismatch is resolved. On this machine the local runtime is Node 24, which is outside the supported range; use the Node 22 Docker validation image or a Node 22 installation.
+The full test suite must pass before a release. The current signed `AniPins-2.5.21.apk` is checked in under `public/downloads/`, included in the app image, and served locally by the download route so the current release does not require Supabase storage. Verify the APK signature and package/version metadata before changing it. On this machine the local runtime is Node 24, outside the project's supported range; use the Node 22 Docker validation image or a Node 22 installation for the full test suite.
 
 Required secret/variable names (values belong only in Cloudflare secrets or the private Container environment; never commit values):
 
@@ -68,4 +68,4 @@ Production deployment must target only that approved commit. Apply only reviewed
 
 ## Current status
 
-Build: PASS. Focused auth/migration tests: PASS. Node 22 full suite: 183/184 (missing Android APK artifact). Wrangler dry runs: PASS. Isolated Better Auth staging Worker: deployed and smoke-tested. App identity bridge: implemented and locally tested, not deployed or remotely tested. Production app, database, auth, storage, DNS, and billing: unchanged.
+Build: PASS in the Node 22 Docker build. Node 22 full suite: 184/184 PASS. Current Android APK signature and package/version verified; local app-image download smoke test returns HTTP 200 without Supabase configuration. Wrangler dry runs: PASS. Isolated Better Auth staging Worker: deployed and smoke-tested. App identity bridge: implemented and locally tested, not deployed or remotely tested. Production app, database, auth, storage, DNS, and billing: unchanged.
