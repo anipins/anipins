@@ -21,3 +21,10 @@ test("typed and filtered Search continues through the existing client API query"
   assert.match(page, /wallpaper: "1"/);
   assert.match(feed, /fetch\(`\/api\/artworks\?\$\{params\}`/);
 });
+
+test("only the initial featured slide competes for high-priority image loading", () => {
+  const slider = fs.readFileSync(path.join(__dirname, "../src/components/FeaturedSlider.tsx"), "utf8");
+  assert.match(slider, /<FeaturedImage art=\{a\} priority=\{idx === 0\}/);
+  assert.match(slider, /}, 1500\);/);
+  assert.match(slider, /quality=\{95\}/);
+});

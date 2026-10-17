@@ -9,17 +9,22 @@ import DownloadButton from "./DownloadButton";
 
 function FeaturedImage({ art, priority = false, sizes }: { art: any; priority?: boolean; sizes: string }) {
   const previewSrc = art.thumb_url || `/api/img/${art.thumb}`;
+  const imageSrc = art.orig_url || (art.orig ? `/api/img/${art.orig}` : art.thumb_url || `/api/img/${art.thumb}`);
+  const [fullQualityReady, setFullQualityReady] = useState(false);
 
   return (
     <div className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_50%_20%,rgba(198,161,91,0.18),transparent_48%),#080808]">
+      <Image src={previewSrc} alt="" aria-hidden fill sizes={sizes} priority={priority} loading={priority ? "eager" : "lazy"} className="object-contain" />
       <Image
-        src={previewSrc}
+        src={imageSrc}
         alt={artworkAlt(art)}
         fill
         sizes={sizes}
+        quality={95}
         priority={priority}
         loading={priority ? "eager" : "lazy"}
-        className="object-contain"
+        onLoad={() => setFullQualityReady(true)}
+        className={`featured-image-drift object-contain transition-opacity duration-500 ${fullQualityReady ? "opacity-100" : "opacity-0"}`}
       />
     </div>
   );
@@ -29,6 +34,7 @@ export default function FeaturedSlider({ initialArts = [], premium = false }: { 
   const [arts, setArts] = useState<any[]>(initialArts);
   const [idx, setIdx] = useState(0);
   const [dir, setDir] = useState(1);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     if (initialArts.length === 0) {
@@ -38,10 +44,15 @@ export default function FeaturedSlider({ initialArts = [], premium = false }: { 
     }
   }, [initialArts.length, premium]);
 
-  // A refresh must settle on one featured artwork. Auto-advancing here made
-  // the first few seconds of an Android WebView refresh look like repeated
-  // page reloads, particularly while images were still decoding. Visitors can
-  // still use the arrows, side previews, dots, and keyboard to browse.
+  useEffect(() => {
+    if (arts.length < 2 || isHovered) return;
+    const timer = window.setInterval(() => {
+      if (document.hidden || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      setDir(1);
+      setIdx(current => (current + 1) % arts.length);
+    }, 1500);
+    return () => window.clearInterval(timer);
+  }, [arts.length, isHovered]);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -68,7 +79,7 @@ export default function FeaturedSlider({ initialArts = [], premium = false }: { 
         <div className="h-px flex-1 bg-white/10" />
         <span className="font-display text-sm text-fog tabular-nums">{String(idx + 1).padStart(2, "0")} / {String(arts.length).padStart(2, "0")}</span>
       </div>
-      <div className="relative flex h-[420px] items-stretch gap-4 sm:h-[470px] md:h-[560px] lg:h-[610px]">
+      <div className="relative flex h-[420px] items-stretch gap-4 sm:h-[470px] md:h-[560px] lg:h-[610px]" onPointerEnter={() => setIsHovered(true)} onPointerLeave={() => setIsHovered(false)}>
         {[prevA, nextA].map((side, i) => (
           <button key={i} onClick={() => { setDir(i === 0 ? -1 : 1); setIdx(arts.indexOf(side)); }}
             className={`hidden lg:block relative w-[12%] overflow-hidden rounded-3xl opacity-40 hover:opacity-70 transition-opacity duration-300 ${i === 0 ? "order-first" : "order-last"}`}>
@@ -84,13 +95,11 @@ export default function FeaturedSlider({ initialArts = [], premium = false }: { 
               transition={{ duration: .56, ease: [0.22, 1, 0.36, 1] }}
               style={{ transformPerspective: 1400 }}
               className="absolute inset-0">
-              <FeaturedImage art={a} priority sizes="(max-width: 1023px) 100vw, 76vw" />
+              <FeaturedImage art={a} priority={idx === 0} sizes="(max-width: 1023px) 100vw, 76vw" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
               <motion.div initial={{ y: 28, opacity: 0, x: -20 }} animate={{ y: 0, opacity: 1, x: 0 }} transition={{ delay: .2, duration: .48, ease: [0.22, 1, .36, 1] }}
                 className="absolute inset-x-0 bottom-0 p-6 md:p-9">
-                <p className="text-[10px] uppercase tracking-[0.34em] text-gold">AniPins archive / {a.category || a.anime_name}</p>
-                <h3 className="mt-1.5 font-display text-3xl md:text-5xl font-semibold">{a.character_name}</h3>
-                <p className="mt-1 text-sm text-white/60">{a.anime_name}</p>
+                <h3 className="font-display text-3xl md:text-5xl font-semibold">{a.character_name}</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button onClick={() => openArtwork(a.id)} className="btn-primary !py-2.5">View Artwork</button>
                   <DownloadButton artworkId={a.id} className="btn-ghost !py-2.5 !bg-black/30 backdrop-blur" />
