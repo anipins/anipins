@@ -14,6 +14,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [challenge, setChallenge] = useState("");
   const [code, setCode] = useState("");
+  const [legacyAuthFallback, setLegacyAuthFallback] = useState(false);
   const [instagramBrowser, setInstagramBrowser] = useState(false);
   const router = useRouter();
 
@@ -22,7 +23,7 @@ export default function Login() {
   }, []);
 
   const finishSignIn = useCallback(async (role: string) => {
-    if (!isBetterAuthMode && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mobile") === "1") {
+    if ((!isBetterAuthMode || legacyAuthFallback) && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mobile") === "1") {
       try {
         const ticketResponse = await fetch("/api/auth/mobile-ticket", {
           method: "POST",
@@ -42,7 +43,7 @@ export default function Login() {
     const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "";
     router.push(role === "ADMIN" ? "/admin" : safeNext || "/");
     router.refresh();
-  }, [router]);
+  }, [legacyAuthFallback, router]);
 
   const requestTwoFactor = useCallback((nextChallenge: string) => {
     setChallenge(nextChallenge);
@@ -53,7 +54,7 @@ export default function Login() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(""); setBusy(true);
-    if (isBetterAuthMode) {
+    if (isBetterAuthMode && !legacyAuthFallback) {
       try {
         const result = mode === "login"
           ? await betterAuthClient.signIn.email({ email: email.trim().toLowerCase(), password })
@@ -66,7 +67,10 @@ export default function Login() {
         const data = await response.json();
         if (!response.ok || !data.user) {
           await betterAuthClient.signOut({});
-          throw new Error(data.error || "Your AniPins profile could not be loaded. This login may require the existing administrator security check.");
+          setLegacyAuthFallback(true);
+          setMode("login");
+          setErr("This account needs its existing security verification. Sign in again with your existing AniPins credentials.");
+          return;
         }
         finishSignIn(String(data.user.role || "USER"));
       } catch (authError) {
@@ -119,10 +123,16 @@ export default function Login() {
             <span className="text-xs uppercase tracking-[.2em] text-fog">or</span>
             <span className="h-px flex-1 bg-line" />
           </div>
-          <GoogleSignInButton
+        <GoogleSignInButton
             onSuccess={finishSignIn}
             onTwoFactor={requestTwoFactor}
+          forceLegacyAuth={legacyAuthFallback}
           />
+        {isBetterAuthMode && !legacyAuthFallback && mode === "login" && (
+          <button type="button" onClick={() => { setLegacyAuthFallback(true); setErr(""); }} className="w-full text-center text-xs text-fog hover:text-paper transition-colors">
+            Use existing sign-in
+          </button>
+        )}
         </>}
         <button onClick={() => { if(challenge){setChallenge("");setCode("");}else setMode(mode === "login" ? "register" : "login"); setErr(""); }}
           className="mt-5 w-full text-center text-sm text-fog hover:text-paper transition-colors">

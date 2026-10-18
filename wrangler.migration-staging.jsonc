@@ -1,0 +1,56 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "anipins-migration-staging",
+  "main": "cloudflare/worker.mjs",
+  "compatibility_date": "2026-10-10",
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "D1_RPC_URL": "https://anipins-migration-staging.anipins01.workers.dev/__internal/d1",
+    "BETTER_AUTH_GOOGLE_CLIENT_ID": "903834125575-u9f1i64m3knfvoo1h309ruh8fiufcfh1.apps.googleusercontent.com",
+    "GOOGLE_CLIENT_ID": "903834125575-u9f1i64m3knfvoo1h309ruh8fiufcfh1.apps.googleusercontent.com",
+    "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "903834125575-u9f1i64m3knfvoo1h309ruh8fiufcfh1.apps.googleusercontent.com",
+    "NEXTAUTH_URL": "https://anipins-migration-staging.anipins01.workers.dev",
+    "NEXT_PUBLIC_SITE_URL": "https://anipins-migration-staging.anipins01.workers.dev",
+    "R2_PUBLIC_BUCKET": "anipins-migration-stage-public",
+    "R2_PREMIUM_BUCKET": "anipins-migration-stage-premium",
+    "MEDIA_PROVIDER": "r2",
+    "CONTAINER_INSTANCE": "basic"
+  },
+  "observability": { "enabled": true },
+  "containers": [
+    {
+      "class_name": "AniPinsContainer",
+      "scheduling_policy": "durable_object",
+      "images": {
+        "base": {
+          "dockerfile": "./Dockerfile",
+          "build_vars": {
+            "NEXT_PUBLIC_AUTH_MODE": "better-auth",
+            "NEXT_PUBLIC_BETTER_AUTH_BASE_PATH": "/__staging/auth",
+            "NEXT_PUBLIC_SITE_URL": "https://anipins-migration-staging.anipins01.workers.dev",
+            "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "903834125575-u9f1i64m3knfvoo1h309ruh8fiufcfh1.apps.googleusercontent.com"
+          }
+        }
+      }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "ANIPINS_CONTAINER", "class_name": "AniPinsContainer" }]
+  },
+  "r2_buckets": [
+    { "binding": "ARTWORKS_PUBLIC", "bucket_name": "anipins-migration-stage-public" },
+    { "binding": "ARTWORKS_PREMIUM", "bucket_name": "anipins-migration-stage-premium" }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "anipins-staging-db",
+      "database_id": "47006a2e-45b1-42e4-9f89-5ce8329a44bf",
+      "migrations_dir": "migrations/d1"
+    }
+  ],
+  "exports": {
+    "AniPinsContainer": { "type": "durable-object", "storage": "sqlite" }
+  }
+}

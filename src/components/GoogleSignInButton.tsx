@@ -31,9 +31,10 @@ type Props = {
   onTwoFactor: (challenge: string) => void;
   credentialOnly?: boolean;
   onCredential?: (credential: string) => void;
+  forceLegacyAuth?: boolean;
 };
 
-export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialOnly = false, onCredential }: Props) {
+export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialOnly = false, onCredential, forceLegacyAuth = false }: Props) {
   const [clientId, setClientId] = useState(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "");
   const [configLoaded, setConfigLoaded] = useState(Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID));
   const buttonRef = useRef<HTMLDivElement>(null);
@@ -70,7 +71,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
     setBusy(true);
     setError("");
     try {
-      if (isBetterAuthMode) {
+      if (isBetterAuthMode && !forceLegacyAuth) {
         const result = await betterAuthClient.signIn.social({
           provider: "google",
           idToken: { token: credential, ...(googleNonce.current ? { nonce: googleNonce.current } : {}) },
@@ -100,7 +101,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
     } finally {
       setBusy(false);
     }
-  }, [credentialOnly, onCredential, onSuccess, onTwoFactor]);
+  }, [credentialOnly, forceLegacyAuth, onCredential, onSuccess, onTwoFactor]);
 
   const requestNonce = useCallback(async () => {
     const response = await fetch("/api/auth/google/nonce", {

@@ -3,8 +3,10 @@ import { canonicalHostRedirect, forwardToContainer, isAllowedPublicHost } from "
 import { servePublicImage, signedPublicMediaKey } from "./public-image-cache.mjs";
 import { handleD1RpcRequest } from "./d1-rpc.mjs";
 import { createStagingBetterAuth, isStagingBetterAuthHost, isStagingBetterAuthRequest } from "./better-auth-staging.mjs";
+import { createProductionBetterAuth, isProductionBetterAuthHost, isProductionBetterAuthRequest } from "./production-auth.mjs";
 import { createD1BusinessIdentityStore, ensureBusinessIdentityLink } from "./business-identity-link.mjs";
 import { prepareContainerAuthRequest } from "./auth-request-bridge.mjs";
+import { containerRuntimeEnvironment } from "./container-runtime-env.mjs";
 
 const PORT = 8080;
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
@@ -13,7 +15,7 @@ const HEALTH_INTERVAL_MS = 200;
 // Increment this when a code or configuration rollout must restart the
 // existing durable container. Deploying a new image alone does not replace a
 // container that is already running for this Durable Object.
-const CONTAINER_BOOT_VERSION = "2026-10-17-instagram-launch-v15";
+const CONTAINER_BOOT_VERSION = "2026-10-18-staging-google-oauth-v1";
 const MAX_ARTWORK_UPLOAD_BYTES = 40 * 1024 * 1024;
 const UPLOAD_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const SIGNED_STORAGE_PATHS = new Set(["/api/storage-upload", "/api/storage-read", "/api/storage-thumbnail"]);
@@ -55,15 +57,6 @@ const CONTAINER_ENV_KEYS = [
   "R2_SECRET_ACCESS_KEY",
   "ANDROID_APP_LINKS_SHA256",
 ];
-
-function runtimeEnvironment(env) {
-  return Object.fromEntries(
-    CONTAINER_ENV_KEYS.flatMap((key) => {
-      const value = env[key];
-      return typeof value === "string" && value.length > 0 ? [[key, value]] : [];
-    }),
-  );
-}
 
 function base64UrlBytes(value) {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
@@ -142,12 +135,14 @@ async function signedArtworkThumbnail(request, secret) {
 
 export class AniPinsContainer extends DurableObject {
   starting;
+  monitoring;
 
   constructor(ctx, env) {
     super(ctx, env);
     const container = ctx.container;
     if (container.running) {
       void ctx.blockConcurrencyWhile(() => container.setInactivityTimeout(INACTIVITY_TIMEOUT_MS));
+      this.observeExit();
     }
   }
 
@@ -202,11 +197,14 @@ export class AniPinsContainer extends DurableObject {
     if (!container.running) {
       container.start({
         image: container.images.base,
-        instance: "lite",
+        // Keep production's default lean, while letting isolated staging opt
+        // into more startup memory when validating the Next.js container.
+        instance: this.env.CONTAINER_INSTANCE || "lite",
         // AniPins talks to Supabase, R2, Razorpay, Google and Resend.
         enableInternet: true,
-        env: runtimeEnvironment(this.env),
+        env: containerRuntimeEnvironment(this.env, CONTAINER_ENV_KEYS),
       });
+      this.observeExit();
     }
     await container.setInactivityTimeout(INACTIVITY_TIMEOUT_MS);
 
@@ -227,6 +225,15 @@ export class AniPinsContainer extends DurableObject {
     }
     throw new Error("AniPins did not become ready on port 8080", { cause: lastError });
   }
+
+  observeExit() {
+    if (this.monitoring) return;
+    this.monitoring = this.ctx.container.monitor()
+      .then(() => console.log("AniPins container exited successfully"))
+      .catch(error => console.error("AniPins container failed:", error))
+      .finally(() => { this.monitoring = undefined; });
+    this.ctx.waitUntil(this.monitoring);
+  }
 }
 
 export default {
@@ -242,6 +249,21 @@ export default {
         return await createStagingBetterAuth(env, request).handler(request);
       } catch {
         return new Response("Staging authentication is not configured", {
+          status: 503,
+          headers: { "Cache-Control": "no-store" },
+        });
+      }
+    }
+
+    // Keep the Better Auth namespace distinct from legacy /api/auth handlers.
+    // The only production host accepted is AniPins' canonical domain (www is
+    // redirected above before reaching this point).
+    if (isProductionBetterAuthRequest(request)) {
+      if (!isProductionBetterAuthHost(request)) return new Response("Not found", { status: 404 });
+      try {
+        return await createProductionBetterAuth(env, request).handler(request);
+      } catch {
+        return new Response("Authentication is temporarily unavailable", {
           status: 503,
           headers: { "Cache-Control": "no-store" },
         });
@@ -307,13 +329,23 @@ export default {
       );
     }
     const target = env.ANIPINS_CONTAINER.getByName("anipins-web-v2");
+    const isProductionHost = isProductionBetterAuthHost(request);
+    const productionAuthReady = isProductionHost && env.DB && env.BETTER_AUTH_SECRET;
+    const stagingAuthReady = isStagingBetterAuthHost(request) && env.DB && env.BETTER_AUTH_SECRET;
+    const authCookieName = productionAuthReady ? "anipins_better_auth" : "anipins_staging_better_auth";
+    const authSessionCookieName = new URL(request.url).protocol === "https:"
+      ? `__Secure-${authCookieName}`
+      : authCookieName;
     const containerAuth = await prepareContainerAuthRequest(request, {
       secret: env.D1_RPC_SECRET,
-      resolveIdentity: isStagingBetterAuthHost(request) && env.DB && env.BETTER_AUTH_SECRET
+      cookieName: authCookieName,
+      resolveIdentity: productionAuthReady || stagingAuthReady
         ? async (cookie) => {
-          const auth = createStagingBetterAuth(env, request);
+          const auth = productionAuthReady
+            ? createProductionBetterAuth(env, request)
+            : createStagingBetterAuth(env, request);
           const session = await auth.api.getSession({
-            headers: new Headers({ cookie: `anipins_staging_better_auth=${cookie}` }),
+            headers: new Headers({ cookie: `${authSessionCookieName}=${cookie}` }),
           });
           if (!session?.user) return null;
           const linked = await ensureBusinessIdentityLink(createD1BusinessIdentityStore(env.DB), session.user);

@@ -4,6 +4,11 @@
   "main": "cloudflare/worker.mjs",
   "compatibility_date": "2026-10-10",
   "workers_dev": true,
+  "vars": {
+    "D1_RPC_URL": "https://anipins.com/__internal/d1",
+    "BETTER_AUTH_GOOGLE_CLIENT_ID": "903834125575-h61hfmqa5l32rbun2k3tg40ab657nbut.apps.googleusercontent.com",
+    "CONTAINER_INSTANCE": "basic"
+  },
   "observability": {
     "enabled": true
   },
@@ -13,7 +18,11 @@
       "scheduling_policy": "durable_object",
       "images": {
         "base": {
-          "dockerfile": "./Dockerfile"
+          "dockerfile": "./Dockerfile",
+          "build_vars": {
+            "NEXT_PUBLIC_AUTH_MODE": "better-auth",
+            "NEXT_PUBLIC_BETTER_AUTH_BASE_PATH": "/api/better-auth"
+          }
         }
       }
     }
@@ -39,8 +48,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "anipins-staging-db",
-      "database_id": "47006a2e-45b1-42e4-9f89-5ce8329a44bf",
+      "database_name": "anipins-production-db",
+      "database_id": "5f1923c8-e706-4894-90e7-2d378333a65a",
       "migrations_dir": "migrations/d1"
     }
   ],

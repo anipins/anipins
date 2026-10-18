@@ -5,16 +5,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export default function NotificationBell() {
   const [data, setData] = useState<any>({ notifications: [], unread: 0, guest: true });
   const [open, setOpen] = useState(false);
-  const seen = useRef<number | null>(null);
+  const seen = useRef<string | null>(null);
   const load = useCallback(async () => {
     const r = await fetch("/api/notifications?limit=10", { cache: "no-store" });
     if (!r.ok) return;
     const next = await r.json();
     const newest = next.notifications?.find((n: any) => !n.read_at);
-    if (newest && seen.current !== null && newest.id > seen.current && window.AniPinsAndroid?.showNotification) {
-      window.AniPinsAndroid.showNotification(newest.title, newest.body, `/a/${newest.artwork_id}`);
+    if (newest && seen.current !== null && newest.id !== seen.current && window.AniPinsAndroid?.showNotification) {
+      window.AniPinsAndroid.showNotification(newest.title, newest.body, newest.artwork_id ? `/a/${newest.artwork_id}` : "/");
     }
-    if (next.notifications?.[0]) seen.current = Math.max(seen.current || 0, next.notifications[0].id);
+    if (next.notifications?.[0]) seen.current = String(next.notifications[0].id);
     setData(next);
   }, []);
   useEffect(() => {
@@ -32,8 +32,8 @@ export default function NotificationBell() {
     {open && <div className="absolute right-0 top-full mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl glass hairline shadow-2xl">
       <div className="flex items-center justify-between border-b border-paper/10 px-4 py-3"><strong className="text-sm">Notifications</strong>{data.unread > 0 && <button onClick={markAll} className="text-xs text-gold">Mark all read</button>}</div>
       <div className="max-h-96 overflow-y-auto">
-        {data.notifications.length ? data.notifications.map((n: any) => <Link key={n.id} href={`/a/${n.artwork_id}`} onClick={async () => { setOpen(false); await fetch("/api/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: n.id }) }); }} className={`flex gap-3 border-b border-paper/5 p-3 hover:bg-paper/5 ${n.read_at ? "opacity-60" : ""}`}>
-          <img src={`/api/img/${n.thumb}`} alt="" className="h-14 w-11 rounded-lg object-cover" />
+        {data.notifications.length ? data.notifications.map((n: any) => <Link key={n.id} href={n.artwork_id ? `/a/${n.artwork_id}` : "/"} onClick={async () => { setOpen(false); await fetch("/api/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: n.id }) }); }} className={`flex gap-3 border-b border-paper/5 p-3 hover:bg-paper/5 ${n.read_at ? "opacity-60" : ""}`}>
+          {n.thumb ? <img src={`/api/img/${n.thumb}`} alt="" className="h-14 w-11 rounded-lg object-cover" /> : <span className="grid h-14 w-11 shrink-0 place-items-center rounded-lg bg-gold/10 text-gold">A</span>}
           <span><span className="block text-sm font-medium">{n.title}</span><span className="mt-1 block text-xs text-fog">{n.body}</span></span>
         </Link>) : <p className="p-6 text-center text-sm text-fog">Follow a character or series to get alerts here.</p>}
       </div>

@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "anipins-d1-migrations-only",
+  "compatibility_date": "2026-10-10",
+  "workers_dev": false,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "anipins-production-db",
+      "database_id": "5f1923c8-e706-4894-90e7-2d378333a65a",
+      "migrations_dir": "migrations/d1"
+    }
+  ]
+}

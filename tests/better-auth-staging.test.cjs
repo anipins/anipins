@@ -7,6 +7,7 @@ test("staging Better Auth has a separate namespace and refuses other hosts", asy
   assert.equal(auth.isStagingBetterAuthRequest(new Request("https://anipins.com/api/auth/login")), false);
   assert.equal(auth.isStagingBetterAuthHost(new Request("https://anipins-staging.anipins01.workers.dev/")), true);
   assert.equal(auth.isStagingBetterAuthHost(new Request("https://anipins-better-auth-staging.anipins01.workers.dev/")), true);
+  assert.equal(auth.isStagingBetterAuthHost(new Request("https://anipins-migration-staging.anipins01.workers.dev/")), true);
   assert.equal(auth.isStagingBetterAuthHost(new Request("https://anipins.com/")), false);
 });
 

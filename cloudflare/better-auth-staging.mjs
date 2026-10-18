@@ -4,6 +4,7 @@ import { hashCompatiblePassword, verifyLegacyCompatiblePassword } from "./legacy
 const STAGING_HOSTS = new Set([
   "anipins-staging.anipins01.workers.dev",
   "anipins-better-auth-staging.anipins01.workers.dev",
+  "anipins-migration-staging.anipins01.workers.dev",
 ]);
 const STAGING_PATH = "/__staging/auth";
 

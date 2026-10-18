@@ -19,6 +19,19 @@ test("only a Better Auth session gets a signed assertion for the Container", asy
   assert.match(result.request.headers.get("x-anipins-auth-context"), /^[A-Za-z0-9_-]+$/);
 });
 
+test("secure-prefixed Better Auth cookies get a signed assertion for the Container", async () => {
+  const request = new Request("https://anipins-migration-staging.anipins01.workers.dev/api/me", {
+    headers: { cookie: "__Secure-anipins_staging_better_auth=secure-session" },
+  });
+  const result = await prepareContainerAuthRequest(request, {
+    secret,
+    cookieName: "anipins_staging_better_auth",
+    resolveIdentity: async cookie => cookie === "secure-session" ? { userId: 84 } : null,
+  });
+  assert.equal(result.authenticated, true);
+  assert.match(result.request.headers.get("x-anipins-auth-context"), /^[A-Za-z0-9_-]+$/);
+});
+
 test("forged assertions are removed when no valid staging session exists", async () => {
   const request = new Request("https://anipins-staging.anipins01.workers.dev/api/me", {
     headers: { "x-anipins-auth-context": "forged", "x-anipins-auth-signature": "forged", "x-anipins-auth-role": "ADMIN" },

@@ -50,6 +50,17 @@ test("accepts only the configured public domains as forwarded hosts", async () =
   assert.equal(isAllowedPublicHost(new Request("https://anipins-staging.example.workers.dev/api/saves")), false);
 });
 
+test("accepts only the dedicated migration staging host in addition to production domains", async () => {
+  const isAllowedPublicHost = await getHostCheck();
+  const forwardToContainer = await getForwarder();
+  const incoming = new Request("https://anipins-migration-staging.anipins01.workers.dev/api/auth/me");
+  assert.equal(isAllowedPublicHost(incoming), true);
+  const forwarded = forwardToContainer(incoming);
+  assert.equal(forwarded.headers.get("x-forwarded-host"), "anipins-migration-staging.anipins01.workers.dev");
+  assert.equal(forwarded.headers.get("x-forwarded-proto"), "https");
+  assert.equal(isAllowedPublicHost(new Request("https://attacker.workers.dev/api/auth/me")), false);
+});
+
 test("permanently redirects www requests to the canonical HTTPS apex and preserves path and query", async () => {
   const canonicalHostRedirect = await getCanonicalRedirect();
   const response = canonicalHostRedirect(new Request("https://www.anipins.com/a/1301?from=share"));

@@ -52,9 +52,31 @@ export async function ensureBillingSchema() {
         }
       }
       await run("CREATE INDEX IF NOT EXISTS idx_billing_subscriptions_user ON billing_subscriptions(user_id, updated_at)");
+      await run(`CREATE TABLE IF NOT EXISTS billing_transactions (
+        event_id TEXT PRIMARY KEY, payment_id TEXT NOT NULL, subscription_id TEXT NOT NULL DEFAULT '',
+        user_id INTEGER NOT NULL, event_type TEXT NOT NULL, status TEXT NOT NULL,
+        amount BIGINT, currency TEXT NOT NULL DEFAULT '', method TEXT NOT NULL DEFAULT '',
+        occurred_at BIGINT NOT NULL, created_at BIGINT NOT NULL
+      )`);
+      await run("CREATE INDEX IF NOT EXISTS idx_billing_transactions_user_time ON billing_transactions(user_id, occurred_at DESC)");
     })();
   }
   return schemaReady;
+}
+
+export async function storeRazorpayPaymentEvent(transaction: {
+  event_id: string; payment_id: string; subscription_id: string; user_id: number;
+  event_type: string; status: string; amount: number | null; currency: string;
+  method: string; occurred_at: number;
+}) {
+  await ensureBillingSchema();
+  await run(
+    `INSERT INTO billing_transactions (event_id,payment_id,subscription_id,user_id,event_type,status,amount,currency,method,occurred_at,created_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (event_id) DO NOTHING`,
+    transaction.event_id, transaction.payment_id, transaction.subscription_id, transaction.user_id,
+    transaction.event_type, transaction.status, transaction.amount, transaction.currency,
+    transaction.method, transaction.occurred_at, Date.now(),
+  );
 }
 
 export async function storeSubscription(subscription: Partial<BillingSubscription> & { subscription_id: string; user_id: number; status: string; eventCreatedAt?: number | null }) {

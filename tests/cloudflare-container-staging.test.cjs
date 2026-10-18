@@ -6,7 +6,7 @@ const test = require("node:test");
 const root = path.join(__dirname, "..");
 const read = (...segments) => fs.readFileSync(path.join(root, ...segments), "utf8");
 
-test("Cloudflare migration is staging-only and has a container readiness path", () => {
+test("Cloudflare app release config targets production D1 and keeps the container readiness path", () => {
   const config = read("wrangler.jsonc");
   const worker = read("cloudflare", "worker.mjs");
   const dockerfile = read("Dockerfile");
@@ -18,6 +18,8 @@ test("Cloudflare migration is staging-only and has a container readiness path", 
   assert.match(config, /"class_name"\s*:\s*"AniPinsContainer"/);
   assert.match(config, /"scheduling_policy"\s*:\s*"durable_object"/);
   assert.match(config, /"dockerfile"\s*:\s*"\.\/Dockerfile"/);
+  assert.match(config, /"database_name"\s*:\s*"anipins-production-db"/);
+  assert.match(config, /"NEXT_PUBLIC_AUTH_MODE"\s*:\s*"better-auth"/);
   assert.doesNotMatch(config, /"routes"\s*:/);
 
   assert.match(worker, /class AniPinsContainer extends DurableObject/);

@@ -176,6 +176,24 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at, id);
 CREATE INDEX IF NOT EXISTS idx_notifications_artwork ON notifications(artwork_id);
+CREATE TABLE IF NOT EXISTS admin_announcements (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL DEFAULT '',
+  artwork_id INTEGER,
+  created_by INTEGER NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (artwork_id) REFERENCES artworks(id) ON DELETE SET NULL
+);
+CREATE TABLE IF NOT EXISTS admin_announcement_recipients (
+  announcement_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  read_at TEXT,
+  PRIMARY KEY (announcement_id, user_id),
+  FOREIGN KEY (announcement_id) REFERENCES admin_announcements(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_admin_announcement_recipients_user ON admin_announcement_recipients(user_id, read_at, announcement_id);
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS billing_subscriptions (
   subscription_id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'created',
@@ -183,6 +201,13 @@ CREATE TABLE IF NOT EXISTS billing_subscriptions (
   created_at BIGINT NOT NULL, updated_at BIGINT NOT NULL, provider_event_at BIGINT NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_billing_subscriptions_user ON billing_subscriptions(user_id, updated_at);
+CREATE TABLE IF NOT EXISTS billing_transactions (
+  event_id TEXT PRIMARY KEY, payment_id TEXT NOT NULL, subscription_id TEXT NOT NULL DEFAULT '',
+  user_id INTEGER NOT NULL, event_type TEXT NOT NULL, status TEXT NOT NULL,
+  amount BIGINT, currency TEXT NOT NULL DEFAULT '', method TEXT NOT NULL DEFAULT '',
+  occurred_at BIGINT NOT NULL, created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_billing_transactions_user_time ON billing_transactions(user_id, occurred_at DESC);
 INSERT OR IGNORE INTO settings (key, value) VALUES
  ('site_name','AniPins'),
  ('tagline','Anime artwork for inspiration.'),

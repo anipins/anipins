@@ -1,4 +1,8 @@
-const PUBLIC_HOSTS = new Set(["anipins.com", "www.anipins.com"]);
+const PUBLIC_HOSTS = new Set([
+  "anipins.com",
+  "www.anipins.com",
+  "anipins-migration-staging.anipins01.workers.dev",
+]);
 
 export function canonicalHostRedirect(request) {
   const url = new URL(request.url);
