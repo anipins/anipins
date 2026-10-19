@@ -96,6 +96,25 @@ test("admin TOTP remains verifiable when its legacy encryption key is the admin 
   assert.match(response.headers.get("set-cookie"), /^anipins_admin_mfa=/);
 });
 
+test("admin MFA failures expose only a safe stage and error type to diagnostics", async () => {
+  const { handleAdminMfaVerification } = await importRoute();
+  const context = setup({ user: {
+    id: 7, role: "ADMIN", two_factor_enabled: 1,
+    two_factor_secret: encryptLegacyTotpSecret("JBSWY3DPEHPK3PXP"), recovery_codes: "[]",
+  } });
+  context.env.ADMIN_2FA_ENCRYPTION_KEY = undefined;
+  context.env.ADMIN_PASSWORD = undefined;
+  const diagnostics = [];
+  context.dependencies.onError = event => diagnostics.push(event);
+  const response = await handleAdminMfaVerification(new Request("https://anipins.com/api/auth/admin-mfa", {
+    method: "POST", headers: { origin: "https://anipins.com", "content-type": "application/json" }, body: JSON.stringify({ code: "123456" }),
+  }), context.env, context.dependencies);
+
+  assert.equal(response.status, 503);
+  assert.deepEqual(diagnostics, [{ stage: "decrypt_totp", errorName: "TypeError" }]);
+  assert.equal(JSON.stringify(diagnostics).includes("JBSWY3DPEHPK3PXP"), false);
+});
+
 test("failed admin TOTP increments throttling state and never issues an MFA cookie", async () => {
   const { handleAdminMfaVerification } = await importRoute();
   const context = setup({ user: { id: 7, role: "ADMIN", two_factor_enabled: 1, two_factor_secret: encryptLegacyTotpSecret("JBSWY3DPEHPK3PXP"), recovery_codes: "[]" } });

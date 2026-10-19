@@ -9,4 +9,5 @@ uploads/
 *.log
 .vercel/
 .wrangler/
+.wrangler-dry-run/
 artifacts/

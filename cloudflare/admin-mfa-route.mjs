@@ -64,10 +64,12 @@ export async function handleAdminMfaVerification(request, env, dependencies = {}
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, { Allow: "POST" });
   if (new URL(request.url).origin !== request.headers.get("origin")) return json({ error: "origin_not_allowed" }, 403);
   if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("application/json")) return json({ error: "invalid_content_type" }, 415);
+  let stage = "session_lookup";
   try {
     const session = await readSession(request, env, dependencies);
     const claims = sessionClaims(session);
     if (!claims || !session?.user?.email) return json({ error: "unauthorized" }, 401);
+    stage = "d1_store_lookup";
     const store = (dependencies.storeFactory || (db => createD1BusinessIdentityStore(db)))(env.DB);
     const user = await store.findBusinessUserForMfa(session.user.email);
     if (!isAdministrator(user)) return json({ error: "not_required" }, 403);
@@ -75,9 +77,11 @@ export async function handleAdminMfaVerification(request, env, dependencies = {}
     if (claims.expiresAt <= Date.now()) return json({ error: "session_expired" }, 401);
 
     const now = Date.now();
+    stage = "mfa_attempt_lookup";
     const attempts = await store.getMfaAttempts(claims.sessionId);
     if (Number(attempts?.locked_until || 0) > now) return json({ error: "temporarily_locked" }, 429, { "Retry-After": String(Math.ceil((attempts.locked_until - now) / 1000)) });
 
+    stage = "parse_code";
     let body;
     try {
       const text = await request.text();
@@ -87,10 +91,13 @@ export async function handleAdminMfaVerification(request, env, dependencies = {}
     const code = String(body?.code || "").trim();
     let valid = false;
     if (user.two_factor_secret) {
+      stage = "decrypt_totp";
       const totpSecret = await decryptAdminTotpSecret(user.two_factor_secret, env);
+      stage = "verify_totp";
       valid = await verifyLegacyTotp(totpSecret, code);
     }
 
+    stage = "verify_recovery_code";
     let recoveryCodes = String(user.recovery_codes || "[]");
     if (!valid) {
       const wantedHash = await hashLegacyRecoveryCode(code);
@@ -107,17 +114,23 @@ export async function handleAdminMfaVerification(request, env, dependencies = {}
       }
     }
     if (!valid) {
+      stage = "record_failed_attempt";
       await store.recordMfaFailure(claims.sessionId, user.id, now);
       return json({ error: "invalid_code" }, 401);
     }
 
+    stage = "clear_failed_attempts";
     await store.clearMfaAttempts(claims.sessionId);
+    stage = "create_mfa_proof";
     const proof = await createAdminMfaProof(claims, env.D1_RPC_SECRET, now);
     const maxAge = Math.max(0, Math.floor((claims.expiresAt - now) / 1000));
     return json({ ok: true }, 200, {
       "Set-Cookie": `${PROOF_COOKIE}=${proof}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`,
     });
-  } catch {
+  } catch (error) {
+    const diagnostic = { stage, errorName: typeof error?.name === "string" ? error.name : "Error" };
+    if (typeof dependencies.onError === "function") dependencies.onError(diagnostic);
+    else console.error("[admin-mfa-diagnostic]", diagnostic);
     return json({ error: "verification_unavailable" }, 503);
   }
 }
