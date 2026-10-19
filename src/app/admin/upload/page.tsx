@@ -69,7 +69,7 @@ export default function AdminUpload({ premiumOnly = false }: { premiumOnly?: boo
           setProgress(`Sending ${item.file.name} directly to secure artwork storage…`);
           if (!stored) {
             // R2 signed uploads need only the content type that was signed.  Do
-            // not send Supabase-specific headers here: they trigger an avoidable
+            // not send storage-provider-specific headers here: they trigger an avoidable
             // CORS preflight and can make an otherwise valid browser upload fail.
             const storageResponse = await fetchWithTimeout(signed.uploadUrl!, { method: "PUT", headers: { "Content-Type": item.file.type }, body: item.file }, 10 * 60_000);
             if (!storageResponse.ok) {

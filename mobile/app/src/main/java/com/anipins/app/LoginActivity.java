@@ -179,23 +179,50 @@ public class LoginActivity extends Activity {
             if (!challenge.isEmpty()) {
                 String auth = code.getText().toString().trim();
                 if (auth.length() < 6) { Toast.makeText(this, "Enter your authentication or recovery code", Toast.LENGTH_LONG).show(); return; }
-                body = new JSONObject().put("challenge", challenge).put("code", auth);
-                endpoint = "/api/auth/login";
+                body = new JSONObject().put("code", auth);
+                endpoint = "/api/auth/admin-mfa";
             } else {
                 if (!mail.contains("@") || secret.length() < 1) { Toast.makeText(this, "Enter your email and password", Toast.LENGTH_LONG).show(); return; }
-                body = new JSONObject().put("email", mail).put("password", secret);
+                body = new JSONObject().put("email", mail.toLowerCase(java.util.Locale.ROOT)).put("password", secret);
                 if (register) body.put("name", name.getText().toString().trim());
-                endpoint = register ? "/api/auth/register" : "/api/auth/login";
+                endpoint = register ? "/api/better-auth/sign-up/email" : "/api/better-auth/sign-in/email";
             }
             submit.setEnabled(false);
             submit.setText(challenge.isEmpty() ? (register ? "Creating…" : "Signing in…") : "Verifying…");
             api.post(endpoint, body, (status, data, error) -> {
-                submit.setEnabled(true);
-                if (status == 200 && data.optBoolean("requiresTwoFactor")) { enterTwoFactor(data.optString("challenge")); return; }
-                if (status == 200) { Toast.makeText(this, "Signed in to AniPins", Toast.LENGTH_SHORT).show(); finish(); }
-                else { submit.setText(register ? "Create account" : "Sign in"); Toast.makeText(this, data.optString("error", "Could not sign in."), Toast.LENGTH_LONG).show(); }
+                if (status == 200 && error == null) {
+                    if (!challenge.isEmpty()) {
+                        challenge = "";
+                        loadSignedInProfile();
+                    } else loadSignedInProfile();
+                } else {
+                    submit.setEnabled(true);
+                    submit.setText(challenge.isEmpty() ? (register ? "Create account" : "Sign in") : "Verify and sign in");
+                    String message = data.optString("message", data.optString("error", "Could not sign in."));
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                }
             });
         } catch (JSONException ignored) { submit.setEnabled(true); }
+    }
+
+    private void loadSignedInProfile() {
+        api.get("/api/auth/me", (status, profile, error) -> {
+            submit.setEnabled(true);
+            if (status == 200 && error == null && profile.optBoolean("requiresTwoFactor")) {
+                enterTwoFactor("better-auth");
+                return;
+            }
+            if (status == 200 && error == null && profile.has("user") && !profile.isNull("user")) {
+                JSONObject user = profile.optJSONObject("user");
+                if (user != null) {
+                    Toast.makeText(this, "Signed in to AniPins", Toast.LENGTH_SHORT).show();
+                    finish();
+                    return;
+                }
+            }
+            submit.setText(challenge.isEmpty() ? (register ? "Create account" : "Sign in") : "Verify and sign in");
+            Toast.makeText(this, "Your AniPins profile could not be confirmed. Please try again.", Toast.LENGTH_LONG).show();
+        });
     }
 
     private void beginGoogleSignIn() {
@@ -248,16 +275,12 @@ public class LoginActivity extends Activity {
 
     private void completeGoogle(String idToken) {
         try {
-            JSONObject body = new JSONObject().put("credential", idToken).put("nonce", pendingGoogleNonce);
-            api.post("/api/auth/google", body, (status, data, error) -> {
-                if (status == 200 && data.optBoolean("requiresTwoFactor")) {
-                    enterTwoFactor(data.optString("challenge"));
-                    return;
-                }
-                if (status == 200) {
-                    Toast.makeText(this, "Signed in with Google", Toast.LENGTH_SHORT).show();
-                    finish();
-                } else googleFailed(data.optString("error", "Google sign-in failed."));
+            JSONObject idTokenPayload = new JSONObject().put("token", idToken).put("nonce", pendingGoogleNonce);
+            JSONObject body = new JSONObject().put("provider", "google").put("idToken", idTokenPayload);
+            api.post("/api/better-auth/sign-in/social", body, (status, data, error) -> {
+                if (status == 200 && error == null) {
+                    loadSignedInProfile();
+                } else googleFailed(data.optString("message", data.optString("error", "Google sign-in failed.")));
             });
         } catch (JSONException e) { googleFailed("Google sign-in failed."); }
     }

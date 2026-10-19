@@ -4,14 +4,10 @@ import path from "path";
 import sharp from "sharp";
 import { rows, row, run, slugify } from "@/lib/db";
 import { hashPassword, ADMIN_EMAIL } from "@/lib/auth";
-import { PG_SCHEMA } from "@/lib/pgschema";
-import { BUCKET, saveImage } from "@/lib/media";
+import { saveImage } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-const SB_URL = process.env.SUPABASE_URL?.replace(/\/$/, "");
-const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const SEED = [
   { file: "asta.jpg", ch: "Asta", an: "Black Clover", title: "Anti-Magic Unleashed", tags: "black clover,asta,sword,dark,action,male", cat: "Male Characters", featured: 1, desc: "Asta grips the Demon-Slayer sword as anti-magic surges around him." },
@@ -34,31 +30,11 @@ export async function GET(req: Request) {
       const supplied = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
       if (!expected || supplied !== expected) return new NextResponse("Not found", { status: 404 });
     }
-    // 1. Schema (Postgres only; SQLite auto-creates)
-    if (process.env.DATABASE_URL) {
-      for (const stmt of PG_SCHEMA) await run(stmt);
-      log.push("Database schema ready");
-    } else {
-      await rows("SELECT 1");
-      log.push("SQLite schema ready (local mode)");
-    }
-
-    // 2. Storage bucket (public)
-    if (SB_URL && SB_KEY) {
-      const r = await fetch(`${SB_URL}/storage/v1/bucket`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ id: BUCKET, name: BUCKET, public: true }),
-      });
-      if (r.ok) log.push("Storage bucket created");
-      else {
-        const t = await r.text();
-        if (t.includes("already") || r.status === 409 || r.status === 400) log.push("Storage bucket already exists");
-        else throw new Error(`Bucket creation failed: ${t}`);
-      }
-    } else {
-      log.push("Local file storage (no Supabase keys set)");
-    }
+    // D1 schema is deployed through versioned migrations; setup only verifies
+    // database connectivity and must never mutate production schema.
+    await rows("SELECT 1");
+    log.push("D1/local database connection ready");
+    log.push(process.env.MEDIA_PROVIDER === "r2" ? "Cloudflare R2 selected" : "Local file storage selected");
 
     // 3. Admin account
     const admin = await row("SELECT id FROM users WHERE email=?", ADMIN_EMAIL);

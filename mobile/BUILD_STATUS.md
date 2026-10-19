@@ -1,7 +1,7 @@
 # AniPins Android build status
 
 - Package: `com.anipins.app`
-- Version: `2.1.0` (`versionCode` 8)
+- Current checked-in release artifact: `2.5.21` (`versionCode` 42); source now targets migration release candidate `2.5.22` (`versionCode` 43).
 - Website: `https://anipins.com/`
 - minSdk: 24
 - targetSdk / compileSdk: 36
@@ -13,10 +13,18 @@
 - Native Firebase notification support and periodic artwork-alert fallback: enabled
 - Signed APK SHA-256: `60E119D64D255B203CD82E92CCF0575C1B221CA776EEF1611D44F933FDAAD03A`
 
-The application is a native Android `Activity` containing a full-size `WebView`.
-It loads the live AniPins site directly, keeps cookies and DOM storage, supports
-the site's email/password login form, handles file chooser uploads and sends
-site downloads to Android's Download Manager.
+The app combines a native Android shell and screens with a WebView surface for
+the live AniPins site. Native email/password and Google ID-token sign-in use
+Better Auth on `/api/better-auth`, then resolve the AniPins profile through
+`/api/auth/me`. Better Auth and administrator MFA session cookies are stored
+encrypted with Android Keystore. The WebView continues to use the website's
+Better Auth flow and handles file chooser uploads and Android downloads.
+
+The migration candidate builds as a debug APK. A signed production release
+cannot be created or published from this checkout because the existing Android
+upload keystore is not present. Configure the existing upload key through the
+release workflow secrets before publishing; do not generate a replacement key
+for an existing Play listing.
 
 Instant Firebase delivery activates when the four `ANIPINS_FIREBASE_*` build
 variables and the website's matching `FIREBASE_SERVICE_ACCOUNT_JSON` are set.

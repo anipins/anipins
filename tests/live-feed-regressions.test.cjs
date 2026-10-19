@@ -47,6 +47,12 @@ test("Android download metadata points at a checked-in APK", () => {
   assert.match(downloadRoute, new RegExp(`\\"${apk[1]}\\"`), "download route must allow the current release APK");
   assert.match(downloadRoute, /readFile\(path\.join\(process\.cwd\(\), "public", "downloads", filename\)\)/, "current APK must be served from the app image without Supabase");
   assert.ok(fs.existsSync(path.join(__dirname, "..", "public", "downloads", apk[1])), `${apk[1]} must exist in public/downloads`);
+  const allowlist = downloadRoute.match(/const APK_NAMES = new Set\(\[(.*?)\]\);/s)?.[1] || "";
+  const allowedNames = [...allowlist.matchAll(/"([^"]+\.apk)"/g)].map(match => match[1]);
+  assert.ok(allowedNames.length > 0, "download route should allow the archived APK files");
+  for (const filename of allowedNames) {
+    assert.ok(fs.existsSync(path.join(__dirname, "..", "public", "downloads", filename)), `${filename} must be checked in; no remote legacy storage fallback remains`);
+  }
 });
 
 test("Windows can install AniPins as a standalone live website", () => {

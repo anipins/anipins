@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser, isAdmin } from "@/lib/auth";
-import { createSignedArtworkUpload, newArtworkUploadKey, USE_R2_MEDIA, USE_SUPABASE_STORAGE } from "@/lib/media";
+import { createSignedArtworkUpload, newArtworkUploadKey, USE_R2_MEDIA } from "@/lib/media";
 
 export const runtime = "nodejs";
 
@@ -10,7 +10,7 @@ const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 /**
  * Issues one short-lived, single-object upload capability. This keeps binary
  * image data off the Vercel request path (which is what produced HTTP 413),
- * without exposing the Supabase service role key to the browser.
+ * without exposing storage credentials to the browser.
  */
 export async function POST(req: NextRequest) {
   const user = await getUser();
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     // Local development can continue using the existing multipart path. In
     // production this is always direct storage, avoiding the platform body cap.
-    if (!USE_R2_MEDIA && !USE_SUPABASE_STORAGE) return NextResponse.json({ direct: false });
+    if (!USE_R2_MEDIA) return NextResponse.json({ direct: false });
     const signed = await createSignedArtworkUpload(newArtworkUploadKey(name), premium);
     if (!signed) return NextResponse.json({ direct: false });
     return NextResponse.json({ direct: true, ...signed });

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
 import { row, run, UPLOADS_DIR, slugify } from "@/lib/db";
-import { USE_R2_MEDIA, USE_SUPABASE_STORAGE, sbPublicUrl } from "@/lib/media";
+import { USE_R2_MEDIA } from "@/lib/media";
 import { r2SignedDownloadUrl } from "@/lib/r2";
 import { getUser } from "@/lib/auth";
 import { recordActivity } from "@/lib/activity";
@@ -33,14 +33,6 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     } catch (error: any) {
       return new NextResponse("Download could not start", { status: error?.$metadata?.httpStatusCode === 404 ? 404 : 502 });
     }
-  }
-  if (USE_SUPABASE_STORAGE) {
-    const r = await fetch(sbPublicUrl(art.orig));
-    if (!r.ok) return new NextResponse("File missing", { status: 404 });
-    const buf = Buffer.from(await r.arrayBuffer());
-    return new NextResponse(buf, {
-      headers: { "Content-Type": contentType, "Content-Length": String(buf.length), "Content-Disposition": `attachment; filename="${name}"`, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" },
-    });
   }
   const file = path.join(UPLOADS_DIR, art.orig);
   if (!fs.existsSync(file)) return new NextResponse("File missing", { status: 404 });

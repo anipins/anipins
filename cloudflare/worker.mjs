@@ -15,7 +15,7 @@ const HEALTH_INTERVAL_MS = 200;
 // Increment this when a code or configuration rollout must restart the
 // existing durable container. Deploying a new image alone does not replace a
 // container that is already running for this Durable Object.
-const CONTAINER_BOOT_VERSION = "2026-10-19-staging-admin-security-setup-v1";
+const CONTAINER_BOOT_VERSION = "2026-10-19-retired-storage-runtime-v1";
 const MAX_ARTWORK_UPLOAD_BYTES = 40 * 1024 * 1024;
 const UPLOAD_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const SIGNED_STORAGE_PATHS = new Set(["/api/storage-upload", "/api/storage-read", "/api/storage-thumbnail"]);
@@ -24,11 +24,8 @@ const SIGNED_STORAGE_WORKER_HOST = "anipins-staging.anipins01.workers.dev";
 // Keep this allow-list in source control so every runtime dependency is
 // explicit. Values are configured as Worker secrets and are never committed.
 const CONTAINER_ENV_KEYS = [
-  "DATABASE_URL",
   "D1_RPC_URL",
   "D1_RPC_SECRET",
-  "SUPABASE_URL",
-  "SUPABASE_SERVICE_ROLE_KEY",
   "ADMIN_PASSWORD",
   "ADMIN_2FA_ENCRYPTION_KEY",
   "FIREBASE_SERVICE_ACCOUNT_JSON",
@@ -45,8 +42,6 @@ const CONTAINER_ENV_KEYS = [
   "SETUP_TOKEN",
   "NEXTAUTH_URL",
   "NEXTAUTH_SECRET",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SITE_URL",
   "MEDIA_PROVIDER",
   "R2_PREMIUM_BUCKET",
@@ -200,7 +195,7 @@ export class AniPinsContainer extends DurableObject {
         // Keep production's default lean, while letting isolated staging opt
         // into more startup memory when validating the Next.js container.
         instance: this.env.CONTAINER_INSTANCE || "lite",
-        // AniPins talks to Supabase, R2, Razorpay, Google and Resend.
+        // AniPins talks to D1, R2, Razorpay, Google and Resend.
         enableInternet: true,
         env: containerRuntimeEnvironment(this.env, CONTAINER_ENV_KEYS),
       });

@@ -3,17 +3,12 @@ const assert = require("node:assert/strict");
 const { containerRuntimeEnvironment } = require("../cloudflare/container-runtime-env.mjs");
 
 const keys = [
-  "DATABASE_URL",
   "D1_RPC_URL",
   "D1_RPC_SECRET",
-  "SUPABASE_URL",
-  "SUPABASE_SERVICE_ROLE_KEY",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  "NEXT_PUBLIC_SUPABASE_URL",
   "MEDIA_PROVIDER",
 ];
 
-test("D1 runtime omits Postgres and Supabase credentials so the app cannot select its legacy data path", () => {
+test("D1 runtime only forwards the active D1 and R2 configuration", () => {
   const actual = containerRuntimeEnvironment({
     DATABASE_URL: "postgres://must-not-forward",
     D1_RPC_URL: "https://anipins.com/__internal/d1",
@@ -32,11 +27,29 @@ test("D1 runtime omits Postgres and Supabase credentials so the app cannot selec
   });
 });
 
-test("legacy runtime keeps its configured PostgreSQL and Supabase variables unchanged", () => {
+test("runtime never forwards retired Supabase or PostgreSQL credentials", () => {
   const env = {
     DATABASE_URL: "postgres://legacy",
+    D1_RPC_URL: "https://anipins.com/__internal/d1",
+    D1_RPC_SECRET: "private-worker-secret",
     SUPABASE_URL: "https://legacy.supabase.co",
     SUPABASE_SERVICE_ROLE_KEY: "legacy-key",
   };
-  assert.deepEqual(containerRuntimeEnvironment(env, keys), env);
+  assert.deepEqual(containerRuntimeEnvironment(env, keys), {
+    D1_RPC_URL: env.D1_RPC_URL,
+    D1_RPC_SECRET: env.D1_RPC_SECRET,
+  });
+});
+
+test("Better Auth Google client ID overrides the retained legacy Google client for app runtime", () => {
+  const actual = containerRuntimeEnvironment({
+    GOOGLE_CLIENT_ID: "old-google-client.apps.googleusercontent.com",
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: "old-google-client.apps.googleusercontent.com",
+    BETTER_AUTH_GOOGLE_CLIENT_ID: "better-auth-client.apps.googleusercontent.com",
+  }, ["GOOGLE_CLIENT_ID", "NEXT_PUBLIC_GOOGLE_CLIENT_ID"]);
+
+  assert.deepEqual(actual, {
+    GOOGLE_CLIENT_ID: "better-auth-client.apps.googleusercontent.com",
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: "better-auth-client.apps.googleusercontent.com",
+  });
 });

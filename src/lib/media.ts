@@ -6,58 +6,11 @@ import { row, rows, run, UPLOADS_DIR } from "./db";
 import { r2Delete, r2Get, r2Put, USE_R2_STORAGE } from "./r2";
 import { drainMediaCleanupQueue, type MediaCleanupItem } from "./media-cleanup";
 
-const SB_URL = process.env.SUPABASE_URL?.replace(/\/$/, "");
-const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-export const USE_SUPABASE_STORAGE = !!(SB_URL && SB_KEY);
 /** R2 becomes active only when explicitly selected after a verified migration. */
 export const USE_R2_MEDIA = USE_R2_STORAGE && process.env.MEDIA_PROVIDER === "r2";
-export const BUCKET = "artworks";
 
 export function isSafeMediaKey(rel: string) {
   return /^(?:o|t|avatars|covers)\/[a-zA-Z0-9._-]+$/.test(rel);
-}
-
-export function sbPublicUrl(rel: string) {
-  if (!isSafeMediaKey(rel)) throw new Error("Invalid media key");
-  return `${SB_URL}/storage/v1/object/public/${BUCKET}/${rel}`;
-}
-
-async function sbUpload(key: string, buf: Buffer, contentType: string) {
-  const attempts = 5;
-  for (let attempt = 0; attempt < attempts; attempt++) {
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    try {
-      const controller = new AbortController();
-      timeout = setTimeout(() => controller.abort(), 40_000);
-      const r = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${key}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${SB_KEY}`, "Content-Type": contentType, "Cache-Control": "public, max-age=31536000, immutable", "x-upsert": "true" },
-        body: new Uint8Array(buf),
-        signal: controller.signal,
-      });
-      if (r.ok) return;
-      const detail = await r.text();
-      if (![429, 500, 502, 503, 504].includes(r.status)) throw new Error(`Storage upload failed (${r.status}): ${detail}`);
-      if (attempt === attempts - 1) throw new Error(`Storage upload failed (${r.status}). Please retry this image.`);
-      const retryAfter = Number(r.headers.get("retry-after"));
-      const delay = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 750 * 2 ** attempt;
-      await new Promise(resolve => setTimeout(resolve, Math.min(delay, 10_000)));
-    } catch (error) {
-      if (attempt === attempts - 1) throw error;
-      await new Promise(resolve => setTimeout(resolve, 750 * 2 ** attempt));
-    } finally {
-      if (timeout) clearTimeout(timeout);
-    }
-  }
-}
-
-async function sbDelete(keys: string[]) {
-  const response = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ prefixes: keys }),
-  });
-  if (!response.ok) throw new Error(`Storage delete failed (${response.status})`);
 }
 
 const MIME: Record<string, string> = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif" };
@@ -96,8 +49,12 @@ async function putMedia(key: string, buf: Buffer, contentType: string, premium =
     }
   }
   if (USE_R2_MEDIA) return r2Put(key, buf, contentType, premium);
-  if (USE_SUPABASE_STORAGE) return sbUpload(key, buf, contentType);
-  throw new Error("Object storage is not configured");
+  if (process.env.NODE_ENV === "production") throw new Error("Cloudflare R2 storage is not configured");
+  const target = path.resolve(UPLOADS_DIR, key);
+  const root = path.resolve(UPLOADS_DIR);
+  if (!target.startsWith(`${root}${path.sep}`)) throw new Error("Invalid media path");
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, buf);
 }
 
 async function getMedia(key: string, premium = false) {
@@ -129,12 +86,10 @@ async function getMedia(key: string, premium = false) {
     if (!object.Body) throw new Error("Storage object has no body");
     return Buffer.from(await object.Body.transformToByteArray());
   }
-  if (USE_SUPABASE_STORAGE) {
-    const response = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${key}`, { headers: { Authorization: `Bearer ${SB_KEY}` } });
-    if (!response.ok) throw new Error(`Storage read failed (${response.status})`);
-    return Buffer.from(await response.arrayBuffer());
-  }
-  throw new Error("Object storage is not configured");
+  const target = path.resolve(UPLOADS_DIR, key);
+  const root = path.resolve(UPLOADS_DIR);
+  if (!target.startsWith(`${root}${path.sep}`)) throw new Error("Invalid media path");
+  return fs.readFileSync(target);
 }
 
 export async function createSignedArtworkUpload(key: string, premium = false) {
@@ -151,16 +106,7 @@ export async function createSignedArtworkUpload(key: string, premium = false) {
     const signature = crypto.createHmac("sha256", secret).update(`upload:${key}:${scope}:${expiresAt}`).digest("base64url");
     return { key, uploadUrl: `/api/storage-upload?key=${encodeURIComponent(key)}&p=${scope}&e=${expiresAt}&s=${signature}`, token: "" };
   }
-  if (!USE_SUPABASE_STORAGE) return null;
-  const response = await fetch(`${SB_URL}/storage/v1/object/upload/sign/${BUCKET}/${key}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({}),
-  });
-  if (!response.ok) throw new Error(`Unable to prepare storage upload (${response.status})`);
-  const data = await response.json() as { url?: string; token?: string };
-  if (!data.url) throw new Error("Storage did not return an upload URL");
-  return { key, uploadUrl: data.url.startsWith("http") ? data.url : `${SB_URL}/storage/v1${data.url}`, token: data.token || "" };
+  return null;
 }
 
 /** Read a direct-to-storage original back on the server for validation,
@@ -193,7 +139,7 @@ export async function saveImage(buffer: Buffer, origName: string, premium = fals
   const meta = await img.metadata();
   const thumbBuf = await img.rotate().resize({ width: 640, withoutEnlargement: true, fastShrinkOnLoad: true }).webp({ quality: 72, effort: 4 }).toBuffer();
 
-  if (USE_R2_MEDIA || USE_SUPABASE_STORAGE) {
+  if (USE_R2_MEDIA) {
     await Promise.all([
       putMedia(origKey, buffer, MIME[ext] || "application/octet-stream", premium),
       putMedia(thumbKey, thumbBuf, "image/webp", premium),
@@ -251,7 +197,7 @@ export async function saveAvatar(buffer: Buffer, userId: number) {
     .webp({ quality: 84 })
     .toBuffer();
 
-  if (USE_R2_MEDIA || USE_SUPABASE_STORAGE) {
+  if (USE_R2_MEDIA) {
     await putMedia(key, avatar, "image/webp");
   } else {
     fs.mkdirSync(path.join(UPLOADS_DIR, "avatars"), { recursive: true });
@@ -263,7 +209,7 @@ export async function saveAvatar(buffer: Buffer, userId: number) {
 export async function saveCover(buffer: Buffer, userId: number) {
   const key = `covers/${userId}-${crypto.randomBytes(8).toString("hex")}.webp`;
   const cover = await sharp(buffer).rotate().resize(1600, 600, { fit: "cover", position: "attention" }).webp({ quality: 82 }).toBuffer();
-  if (USE_R2_MEDIA || USE_SUPABASE_STORAGE) await putMedia(key, cover, "image/webp");
+  if (USE_R2_MEDIA) await putMedia(key, cover, "image/webp");
   else {
     fs.mkdirSync(path.join(UPLOADS_DIR, "covers"), { recursive: true });
     fs.writeFileSync(path.join(UPLOADS_DIR, key), cover);
@@ -296,7 +242,6 @@ export function hashDistance(a: string, b: string) {
 async function deleteStoredMedia(rel: string, premium = false) {
   if (!isSafeMediaKey(rel)) throw new Error("Invalid media key");
   if (USE_R2_MEDIA) return r2Delete(rel, premium);
-  if (USE_SUPABASE_STORAGE) return sbDelete([rel]);
   const root = path.resolve(UPLOADS_DIR);
   const target = path.resolve(root, rel);
   if (!target.startsWith(`${root}${path.sep}`)) throw new Error("Invalid media path");

@@ -3,7 +3,8 @@ import path from "path";
 import fs from "fs";
 import sharp from "sharp";
 import { row, UPLOADS_DIR } from "@/lib/db";
-import { USE_SUPABASE_STORAGE, isSafeMediaKey, sbPublicUrl } from "@/lib/media";
+import { isSafeMediaKey, USE_R2_MEDIA } from "@/lib/media";
+import { r2Get } from "@/lib/r2";
 
 export const runtime = "nodejs";
 
@@ -16,10 +17,15 @@ export async function GET(_req: Request, props: { params: Promise<{ id: string }
   const key = String(artwork?.thumb || "");
   if (!isSafeMediaKey(key)) return new NextResponse("Not found", { status: 404 });
   let source: Buffer;
-  if (USE_SUPABASE_STORAGE) {
-    const response = await fetch(sbPublicUrl(key), { next: { revalidate: 3600 } });
-    if (!response.ok) return new NextResponse("Not found", { status: 404 });
-    source = Buffer.from(await response.arrayBuffer());
+  if (USE_R2_MEDIA) {
+    try {
+      const object = await r2Get(key, true);
+      if (!object.Body) return new NextResponse("Not found", { status: 404 });
+      source = Buffer.from(await object.Body.transformToByteArray());
+    } catch (error: any) {
+      const status = error?.$metadata?.httpStatusCode === 404 || error?.name === "NoSuchKey" ? 404 : 502;
+      return new NextResponse(status === 404 ? "Not found" : "Preview temporarily unavailable", { status });
+    }
   } else {
     const file = path.normalize(path.join(UPLOADS_DIR, key));
     if (!file.startsWith(UPLOADS_DIR) || !fs.existsSync(file)) return new NextResponse("Not found", { status: 404 });
