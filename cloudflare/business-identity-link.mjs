@@ -8,10 +8,7 @@ function publicBusinessUser(user) {
   };
 }
 
-function legacyAdminSecondFactorRequired(user) {
-  // The legacy admin flow verifies encrypted TOTP/recovery codes before it
-  // creates a session. Until that challenge is ported, Better Auth must not
-  // turn a password or Google login into an admin session without that check.
+function adminSecondFactorRequired(user) {
   return String(user?.role || "").toUpperCase() === "ADMIN" && Number(user?.two_factor_enabled) === 1;
 }
 
@@ -20,7 +17,7 @@ function legacyAdminSecondFactorRequired(user) {
  * Existing account ownership is only inferred from a verified email; new,
  * non-conflicting signups receive a least-privileged USER profile.
  */
-export async function ensureBusinessIdentityLink(store, authIdentity) {
+export async function ensureBusinessIdentityLink(store, authIdentity, { adminMfaVerified = false } = {}) {
   const authUserId = String(authIdentity?.id || "");
   const email = normalizeEmail(authIdentity?.email);
   if (!authUserId || authUserId.length > 256 || !email || email.length > 320 || !email.includes("@")) {
@@ -29,8 +26,8 @@ export async function ensureBusinessIdentityLink(store, authIdentity) {
 
   const linked = await store.findLink(authUserId);
   if (linked) {
-    if (legacyAdminSecondFactorRequired(linked)) {
-      return { ok: false, reason: "admin_second_factor_requires_legacy_login" };
+    if (adminSecondFactorRequired(linked) && !adminMfaVerified) {
+      return { ok: false, reason: "admin_second_factor_required" };
     }
     return { ok: true, user: publicBusinessUser(linked) };
   }
@@ -52,8 +49,8 @@ export async function ensureBusinessIdentityLink(store, authIdentity) {
     }
   }
 
-  if (legacyAdminSecondFactorRequired(businessUser)) {
-    return { ok: false, reason: "admin_second_factor_requires_legacy_login" };
+  if (adminSecondFactorRequired(businessUser) && !adminMfaVerified) {
+    return { ok: false, reason: "admin_second_factor_required" };
   }
 
   await store.createLink(authUserId, Number(businessUser.id));
@@ -61,8 +58,8 @@ export async function ensureBusinessIdentityLink(store, authIdentity) {
   if (!finalLink || Number(finalLink.id) !== Number(businessUser.id)) {
     return { ok: false, reason: "identity_link_conflict" };
   }
-  if (legacyAdminSecondFactorRequired(finalLink)) {
-    return { ok: false, reason: "admin_second_factor_requires_legacy_login" };
+  if (adminSecondFactorRequired(finalLink) && !adminMfaVerified) {
+    return { ok: false, reason: "admin_second_factor_required" };
   }
   return { ok: true, user: publicBusinessUser(finalLink) };
 }
@@ -80,6 +77,40 @@ export function createD1BusinessIdentityStore(db) {
     findBusinessUser(email) {
       return db.prepare("SELECT id, lower(email) AS email, role, two_factor_enabled FROM users WHERE lower(email)=? LIMIT 1")
         .bind(email).first();
+    },
+    findBusinessUserForMfa(email) {
+      return db.prepare(`SELECT id, lower(email) AS email, role, two_factor_enabled,
+        two_factor_secret, recovery_codes FROM users WHERE lower(email)=? LIMIT 1`)
+        .bind(email).first();
+    },
+    async replaceRecoveryCodes(userId, currentValue, nextValue) {
+      const result = await db.prepare("UPDATE users SET recovery_codes=? WHERE id=? AND recovery_codes=?")
+        .bind(nextValue, userId, currentValue).run();
+      return Number(result?.meta?.changes || 0) === 1;
+    },
+    getMfaAttempts(sessionId) {
+      return db.prepare("SELECT attempt_count, window_started_at, locked_until FROM admin_mfa_attempts WHERE session_id=? LIMIT 1")
+        .bind(sessionId).first();
+    },
+    async recordMfaFailure(sessionId, userId, now) {
+      await db.prepare(`INSERT INTO admin_mfa_attempts (session_id, user_id, attempt_count, window_started_at, locked_until)
+        VALUES (?, ?, 1, ?, 0)
+        ON CONFLICT(session_id) DO UPDATE SET
+          user_id=excluded.user_id,
+          attempt_count=CASE WHEN admin_mfa_attempts.window_started_at<=? OR admin_mfa_attempts.locked_until<=? THEN 1 ELSE admin_mfa_attempts.attempt_count+1 END,
+          window_started_at=CASE WHEN admin_mfa_attempts.window_started_at<=? OR admin_mfa_attempts.locked_until<=? THEN excluded.window_started_at ELSE admin_mfa_attempts.window_started_at END,
+          locked_until=CASE
+            WHEN admin_mfa_attempts.window_started_at<=? OR admin_mfa_attempts.locked_until<=? THEN 0
+            WHEN admin_mfa_attempts.attempt_count+1>=5 THEN ?
+            ELSE admin_mfa_attempts.locked_until END`)
+        .bind(sessionId, userId, now,
+          now - 600_000, now, now - 600_000, now,
+          now - 600_000, now, now + 900_000)
+        .run();
+      return this.getMfaAttempts(sessionId);
+    },
+    async clearMfaAttempts(sessionId) {
+      await db.prepare("DELETE FROM admin_mfa_attempts WHERE session_id=?").bind(sessionId).run();
     },
     async createBusinessUser({ email, name }) {
       const result = await db.prepare(`INSERT INTO users (email, password_hash, name, role)

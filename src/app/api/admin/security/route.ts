@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkPassword, COOKIE, getUser, isAdmin } from "@/lib/auth";
 import { row, rows, run } from "@/lib/db";
 import { audit, createRecoveryCodes, decryptSecret, encryptSecret, ensureSecuritySchema, generateTotpSecret, hashRecovery, requestInfo, verifyTotp } from "@/lib/admin-security";
+import { GOOGLE_NONCE_COOKIE, verifyGoogleCredential } from "@/lib/google-auth";
 
 const sessionId = (token: string) => crypto.createHash("sha256").update(token).digest("hex").slice(0, 24);
 async function guard() { await ensureSecuritySchema(); const user = await getUser(); return isAdmin(user) ? user : null; }
@@ -23,6 +24,21 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = await guard(); if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const body = await req.json(); const action=String(body.action||""); const account=await row("SELECT password_hash,two_factor_secret,two_factor_pending_secret,two_factor_enabled FROM users WHERE id=?",user.id); const info=requestInfo(req);
+  if(action==="begin-google"){
+    const nonce=req.cookies.get(GOOGLE_NONCE_COOKIE)?.value||"";
+    const respond=(payload:{error?:string;secret?:string;qr?:string},status=200)=>{const response=NextResponse.json(payload,{status,headers:{"Cache-Control":"private, no-store"}});response.cookies.set(GOOGLE_NONCE_COOKIE,"",{path:"/",maxAge:0});return response};
+    try{
+      const google=await verifyGoogleCredential(String(body.credential||""),nonce);
+      const linked=await row("SELECT 1 AS linked FROM better_auth_user_link l JOIN better_auth_account a ON a.userId=l.auth_user_id WHERE l.anipins_user_id=? AND a.providerId=? AND a.accountId=? LIMIT 1",user.id,"google",google.sub);
+      if(!linked)return respond({error:"That Google account is not linked to your signed-in AniPins account."},403);
+      const secret=generateTotpSecret();await run("UPDATE users SET two_factor_pending_secret=? WHERE id=?",encryptSecret(secret),user.id);
+      const uri=`otpauth://totp/${encodeURIComponent("AniPins:"+user.email)}?secret=${secret}&issuer=AniPins&algorithm=SHA1&digits=6&period=30`;
+      return respond({secret,qr:await QRCode.toDataURL(uri,{width:240,margin:1,color:{dark:"#17140d",light:"#ffffff"}})});
+    }catch(error){
+      const unavailable=error instanceof Error&&error.message==="GOOGLE_NOT_CONFIGURED";
+      return respond({error:unavailable?"Google reauthentication is not configured.":"Google account verification failed. Please try again."},unavailable?503:401);
+    }
+  }
   if(action==="begin"){
     if(!checkPassword(String(body.password||""),account.password_hash))return NextResponse.json({error:"Incorrect password."},{status:401});
     const secret=generateTotpSecret(); await run("UPDATE users SET two_factor_pending_secret=? WHERE id=?",encryptSecret(secret),user.id);

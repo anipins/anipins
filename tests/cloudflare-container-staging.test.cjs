@@ -30,6 +30,7 @@ test("Cloudflare app release config targets production D1 and keeps the containe
   assert.match(worker, /this\.starting \?\?= this\.ensureReady\(\)/);
   assert.match(worker, /async ensureReady\(\) \{\s*await this\.restartForConfigurationRollout\(\);\s*await this\.startAndWaitForPort\(\);/);
   assert.match(worker, /getByName\("anipins-web-v2"\)/);
+  assert.match(worker, /resolveBetterAuthIdentity\(request, env, \{ authFactory:/);
   assert.match(worker, /const containerInfo = await container\.inspect\(\)/);
   assert.match(worker, /containerInfo\?\.image && containerInfo\.image !== container\.images\.base/);
   assert.match(worker, /await container\.destroy\("Configuration rollout"\)/);

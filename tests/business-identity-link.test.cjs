@@ -64,6 +64,18 @@ test("verified email can link to an existing profile and uses its database role"
   assert.deepEqual(result, { ok: true, user: { id: 41, email: "owner@example.com", role: "ADMIN" } });
 });
 
+test("admin with legacy two-factor enabled links only after the server verifies the second factor", async () => {
+  const store = createStore([{ id: 42, email: "owner@example.com", name: "Owner", role: "ADMIN", two_factor_enabled: 1 }]);
+  const identity = { id: "ba-owner-mfa", email: "owner@example.com", emailVerified: true };
+
+  const blocked = await ensureBusinessIdentityLink(store, identity);
+  const verified = await ensureBusinessIdentityLink(store, identity, { adminMfaVerified: true });
+
+  assert.deepEqual(blocked, { ok: false, reason: "admin_second_factor_required" });
+  assert.deepEqual(verified, { ok: true, user: { id: 42, email: "owner@example.com", role: "ADMIN" } });
+  assert.equal(store.links.get("ba-owner-mfa"), 42);
+});
+
 test("identity linking is idempotent and will not reassign an existing link", async () => {
   const store = createStore();
   const first = await ensureBusinessIdentityLink(store, {

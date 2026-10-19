@@ -4,8 +4,8 @@ import { servePublicImage, signedPublicMediaKey } from "./public-image-cache.mjs
 import { handleD1RpcRequest } from "./d1-rpc.mjs";
 import { createStagingBetterAuth, isStagingBetterAuthHost, isStagingBetterAuthRequest } from "./better-auth-staging.mjs";
 import { createProductionBetterAuth, isProductionBetterAuthHost, isProductionBetterAuthRequest } from "./production-auth.mjs";
-import { createD1BusinessIdentityStore, ensureBusinessIdentityLink } from "./business-identity-link.mjs";
 import { prepareContainerAuthRequest } from "./auth-request-bridge.mjs";
+import { handleAdminMfaVerification, handleBetterAuthProfile, resolveBetterAuthIdentity } from "./admin-mfa-route.mjs";
 import { containerRuntimeEnvironment } from "./container-runtime-env.mjs";
 
 const PORT = 8080;
@@ -15,7 +15,7 @@ const HEALTH_INTERVAL_MS = 200;
 // Increment this when a code or configuration rollout must restart the
 // existing durable container. Deploying a new image alone does not replace a
 // container that is already running for this Durable Object.
-const CONTAINER_BOOT_VERSION = "2026-10-19-staging-razorpay-webhook-v1";
+const CONTAINER_BOOT_VERSION = "2026-10-19-staging-admin-security-setup-v1";
 const MAX_ARTWORK_UPLOAD_BYTES = 40 * 1024 * 1024;
 const UPLOAD_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const SIGNED_STORAGE_PATHS = new Set(["/api/storage-upload", "/api/storage-read", "/api/storage-thumbnail"]);
@@ -276,6 +276,19 @@ export default {
     const signedStorageRequest = requestUrl.hostname === SIGNED_STORAGE_WORKER_HOST
       && SIGNED_STORAGE_PATHS.has(requestUrl.pathname);
     if (!isAllowedPublicHost(request) && !signedStorageRequest) return new Response("Misdirected request", { status: 421 });
+    const isProductionHost = isProductionBetterAuthHost(request);
+    const productionAuthReady = isProductionHost && env.DB && env.BETTER_AUTH_SECRET;
+    const stagingAuthReady = isStagingBetterAuthHost(request) && env.DB && env.BETTER_AUTH_SECRET;
+    if (productionAuthReady || stagingAuthReady) {
+      const authFactory = productionAuthReady ? createProductionBetterAuth : createStagingBetterAuth;
+      if (requestUrl.pathname === "/api/auth/admin-mfa") {
+        return handleAdminMfaVerification(request, env, { authFactory });
+      }
+      if (requestUrl.pathname === "/api/auth/me") {
+        const response = await handleBetterAuthProfile(request, env, { authFactory });
+        if (response) return response;
+      }
+    }
     if (requestUrl.pathname === "/__internal/d1") {
       return handleD1RpcRequest(request, env);
     }
@@ -329,27 +342,13 @@ export default {
       );
     }
     const target = env.ANIPINS_CONTAINER.getByName("anipins-web-v2");
-    const isProductionHost = isProductionBetterAuthHost(request);
-    const productionAuthReady = isProductionHost && env.DB && env.BETTER_AUTH_SECRET;
-    const stagingAuthReady = isStagingBetterAuthHost(request) && env.DB && env.BETTER_AUTH_SECRET;
     const authCookieName = productionAuthReady ? "anipins_better_auth" : "anipins_staging_better_auth";
-    const authSessionCookieName = new URL(request.url).protocol === "https:"
-      ? `__Secure-${authCookieName}`
-      : authCookieName;
     const containerAuth = await prepareContainerAuthRequest(request, {
       secret: env.D1_RPC_SECRET,
       cookieName: authCookieName,
       resolveIdentity: productionAuthReady || stagingAuthReady
-        ? async (cookie) => {
-          const auth = productionAuthReady
-            ? createProductionBetterAuth(env, request)
-            : createStagingBetterAuth(env, request);
-          const session = await auth.api.getSession({
-            headers: new Headers({ cookie: `${authSessionCookieName}=${cookie}` }),
-          });
-          if (!session?.user) return null;
-          const linked = await ensureBusinessIdentityLink(createD1BusinessIdentityStore(env.DB), session.user);
-          return linked.ok ? { userId: linked.user.id } : null;
+        ? async () => {
+          return resolveBetterAuthIdentity(request, env, { authFactory: productionAuthReady ? createProductionBetterAuth : createStagingBetterAuth });
         }
         : undefined,
     });

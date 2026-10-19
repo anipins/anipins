@@ -32,9 +32,10 @@ type Props = {
   credentialOnly?: boolean;
   onCredential?: (credential: string) => void;
   forceLegacyAuth?: boolean;
+  onAdminMfaRequired?: () => void;
 };
 
-export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialOnly = false, onCredential, forceLegacyAuth = false }: Props) {
+export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialOnly = false, onCredential, forceLegacyAuth = false, onAdminMfaRequired }: Props) {
   const [clientId, setClientId] = useState(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "");
   const [configLoaded, setConfigLoaded] = useState(Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID));
   const buttonRef = useRef<HTMLDivElement>(null);
@@ -79,6 +80,10 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
         if (result.error) throw new Error(result.error.message || "Google sign-in failed.");
         const response = await fetch("/api/auth/me", { credentials: "same-origin", cache: "no-store" });
         const data = await response.json();
+        if (response.ok && data.requiresTwoFactor) {
+          onAdminMfaRequired?.();
+          return;
+        }
         if (!response.ok || !data.user) {
           await betterAuthClient.signOut({});
           throw new Error(data.error || "Your AniPins profile could not be loaded. This login may require the existing administrator security check.");
@@ -101,7 +106,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
     } finally {
       setBusy(false);
     }
-  }, [credentialOnly, forceLegacyAuth, onCredential, onSuccess, onTwoFactor]);
+  }, [credentialOnly, forceLegacyAuth, onAdminMfaRequired, onCredential, onSuccess, onTwoFactor]);
 
   const requestNonce = useCallback(async () => {
     const response = await fetch("/api/auth/google/nonce", {
