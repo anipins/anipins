@@ -7,9 +7,9 @@
   "preview_urls": false,
   "vars": {
     "D1_RPC_URL": "https://anipins-migration-staging.anipins01.workers.dev/__internal/d1",
-    "BETTER_AUTH_GOOGLE_CLIENT_ID": "903834125575-u9f1i64m3knfvoo1h309ruh8fiufcfh1.apps.googleusercontent.com",
-    "GOOGLE_CLIENT_ID": "903834125575-u9f1i64m3knfvoo1h309ruh8fiufcfh1.apps.googleusercontent.com",
-    "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "903834125575-u9f1i64m3knfvoo1h309ruh8fiufcfh1.apps.googleusercontent.com",
+    "BETTER_AUTH_GOOGLE_CLIENT_ID": "903834125575-hah2qeuvdkhgs2ns9i31i77jasujukuf.apps.googleusercontent.com",
+    "GOOGLE_CLIENT_ID": "903834125575-hah2qeuvdkhgs2ns9i31i77jasujukuf.apps.googleusercontent.com",
+    "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "903834125575-hah2qeuvdkhgs2ns9i31i77jasujukuf.apps.googleusercontent.com",
     "NEXTAUTH_URL": "https://anipins-migration-staging.anipins01.workers.dev",
     "NEXT_PUBLIC_SITE_URL": "https://anipins-migration-staging.anipins01.workers.dev",
     "R2_PUBLIC_BUCKET": "anipins-migration-stage-public",
@@ -29,7 +29,7 @@
             "NEXT_PUBLIC_AUTH_MODE": "better-auth",
             "NEXT_PUBLIC_BETTER_AUTH_BASE_PATH": "/__staging/auth",
             "NEXT_PUBLIC_SITE_URL": "https://anipins-migration-staging.anipins01.workers.dev",
-            "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "903834125575-u9f1i64m3knfvoo1h309ruh8fiufcfh1.apps.googleusercontent.com"
+            "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "903834125575-hah2qeuvdkhgs2ns9i31i77jasujukuf.apps.googleusercontent.com"
           }
         }
       }

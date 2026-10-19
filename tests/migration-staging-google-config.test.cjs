@@ -4,7 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const root = path.join(__dirname, "..");
-const stagingClientId = "903834125575-u9f1i64m3knfvoo1h309ruh8fiufcfh1.apps.googleusercontent.com";
+const stagingClientId = "903834125575-hah2qeuvdkhgs2ns9i31i77jasujukuf.apps.googleusercontent.com";
 
 test("migration staging uses one Google OAuth client across Worker and container config", () => {
   const config = JSON.parse(fs.readFileSync(path.join(root, "wrangler.migration-staging.jsonc"), "utf8"));
