@@ -5,7 +5,7 @@ import { handleD1RpcRequest } from "./d1-rpc.mjs";
 import { createStagingBetterAuth, isStagingBetterAuthHost, isStagingBetterAuthRequest } from "./better-auth-staging.mjs";
 import { createProductionBetterAuth, isProductionBetterAuthHost, isProductionBetterAuthRequest } from "./production-auth.mjs";
 import { prepareContainerAuthRequest } from "./auth-request-bridge.mjs";
-import { handleAdminMfaVerification, handleBetterAuthProfile, resolveBetterAuthIdentity } from "./admin-mfa-route.mjs";
+import { handleAdminMfaRecovery, handleAdminMfaVerification, handleBetterAuthProfile, resolveBetterAuthIdentity } from "./admin-mfa-route.mjs";
 import { containerRuntimeEnvironment } from "./container-runtime-env.mjs";
 
 const PORT = 8080;
@@ -281,6 +281,9 @@ export default {
     const stagingAuthReady = isStagingBetterAuthHost(request) && env.DB && env.BETTER_AUTH_SECRET;
     if (productionAuthReady || stagingAuthReady) {
       const authFactory = productionAuthReady ? createProductionBetterAuth : createStagingBetterAuth;
+      if (requestUrl.pathname === "/api/auth/admin-mfa/recovery") {
+        return handleAdminMfaRecovery(request, env, { authFactory });
+      }
       if (requestUrl.pathname === "/api/auth/admin-mfa") {
         return handleAdminMfaVerification(request, env, { authFactory });
       }

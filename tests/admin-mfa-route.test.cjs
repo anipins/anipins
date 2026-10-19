@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
-const { createAdminMfaProof, hashLegacyRecoveryCode } = require("../cloudflare/admin-mfa.mjs");
+const { createAdminMfaProof, decryptLegacySecret, hashLegacyRecoveryCode } = require("../cloudflare/admin-mfa.mjs");
 
 const importRoute = () => import("../cloudflare/admin-mfa-route.mjs");
 const secretKey = "configured-admin-encryption-key";
@@ -205,4 +205,145 @@ test("admin lockout blocks further guesses and a recovery code is consumed once"
   }), recovery.env, recovery.dependencies);
   assert.equal(recoveryResponse.status, 200);
   assert.deepEqual(recovery.state.recoveryCodes, []);
+});
+
+test("Google-verified MFA recovery keeps the old factor until the new authenticator is confirmed", async () => {
+  const { handleAdminMfaRecovery } = await importRoute();
+  const oldEncrypted = encryptLegacyTotpSecret("JBSWY3DPEHPK3PXP");
+  const state = { pending: "", secret: oldEncrypted, enabled: 1, codes: "[]", completed: false };
+  const context = setup({ user: {
+    id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: 1,
+    two_factor_secret: oldEncrypted, recovery_codes: "[]",
+  } });
+  context.dependencies.storeFactory = () => ({
+    findBusinessUserForMfa: async () => ({
+      id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: state.enabled,
+      two_factor_secret: state.secret, recovery_codes: state.codes,
+    }),
+    findGoogleAccount: async (userId, subject) => userId === 7 && subject === "google-owner-sub",
+    getMfaAttempts: async () => ({ attempt_count: state.failed || 0, locked_until: 0 }),
+    setPendingMfaSecret: async (_userId, encrypted) => { state.pending = encrypted; return true; },
+    getPendingMfaSecret: async () => state.pending,
+    completeMfaRecovery: async (_userId, expected, encrypted, recoveryCodes) => {
+      if (!expected || expected !== state.pending) return false;
+      state.secret = encrypted;
+      state.pending = "";
+      state.codes = recoveryCodes;
+      state.enabled = 1;
+      state.completed = true;
+      return true;
+    },
+    recordMfaFailure: async () => { state.failed = (state.failed || 0) + 1; },
+    clearMfaAttempts: async () => { state.failed = 0; },
+  });
+  context.dependencies.verifyGoogleCredential = async () => ({ sub: "google-owner-sub", email: "owner@example.com", email_verified: true });
+  context.env.BETTER_AUTH_GOOGLE_CLIENT_ID = "google-client-id";
+  const makeRequest = (body, cookie = "") => new Request("https://anipins.com/api/auth/admin-mfa/recovery", {
+    method: "POST",
+    headers: {
+      origin: "https://anipins.com",
+      "content-type": "application/json",
+      ...(cookie ? { cookie } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+
+  const begun = await handleAdminMfaRecovery(makeRequest({ action: "begin", credential: "fresh-google-credential" }, "anipins_google_nonce=nonce"), context.env, context.dependencies);
+  const enrollment = await begun.json();
+  assert.equal(begun.status, 200);
+  assert.ok(enrollment.secret);
+  assert.match(enrollment.otpauthUri, /^otpauth:\/\/totp\//);
+  assert.match(begun.headers.get("set-cookie"), /anipins_admin_mfa_setup=/);
+  assert.equal(state.secret, oldEncrypted);
+  assert.equal(state.enabled, 1);
+  assert.equal(state.completed, false);
+
+  const setupCookie = begun.headers.get("set-cookie").split(";")[0];
+  const invalid = await handleAdminMfaRecovery(makeRequest({ action: "confirm", code: "000000" }, setupCookie), context.env, context.dependencies);
+  assert.equal(invalid.status, 401);
+  assert.equal(state.secret, oldEncrypted);
+  assert.equal(state.completed, false);
+
+  const valid = await handleAdminMfaRecovery(makeRequest({ action: "confirm", code: currentTotp(enrollment.secret) }, setupCookie), context.env, context.dependencies);
+  const result = await valid.json();
+  assert.equal(valid.status, 200);
+  assert.equal(result.ok, true);
+  assert.equal(result.recoveryCodes.length, 8);
+  assert.equal(state.completed, true);
+  assert.equal(state.pending, "");
+  assert.notEqual(state.secret, oldEncrypted);
+  assert.equal(await decryptLegacySecret(state.secret, secretKey), enrollment.secret);
+  assert.match(valid.headers.get("set-cookie"), /anipins_admin_mfa=/);
+});
+
+test("MFA recovery cannot start with a Google identity that is not linked to this administrator", async () => {
+  const { handleAdminMfaRecovery } = await importRoute();
+  const context = setup({ user: {
+    id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: 1,
+    two_factor_secret: encryptLegacyTotpSecret("JBSWY3DPEHPK3PXP"), recovery_codes: "[]",
+  } });
+  let pendingWrites = 0;
+  context.dependencies.storeFactory = () => ({
+    findBusinessUserForMfa: async () => ({ id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: 1 }),
+    findGoogleAccount: async () => false,
+    setPendingMfaSecret: async () => { pendingWrites += 1; return true; },
+  });
+  context.dependencies.verifyGoogleCredential = async () => ({ sub: "another-google-account", email: "owner@example.com", email_verified: true });
+  context.env.BETTER_AUTH_GOOGLE_CLIENT_ID = "google-client-id";
+  const response = await handleAdminMfaRecovery(new Request("https://anipins.com/api/auth/admin-mfa/recovery", {
+    method: "POST",
+    headers: { origin: "https://anipins.com", "content-type": "application/json", cookie: "anipins_google_nonce=nonce" },
+    body: JSON.stringify({ action: "begin", credential: "fresh-google-credential" }),
+  }), context.env, context.dependencies);
+
+  assert.equal(response.status, 403);
+  assert.equal(pendingWrites, 0);
+});
+
+test("MFA recovery verifies Google JWT signatures, audience, and one-time nonce", async () => {
+  const { handleAdminMfaRecovery } = await importRoute();
+  const keyPair = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const jwk = { ...keyPair.publicKey.export({ format: "jwk" }), kid: "google-test-key", alg: "RS256", use: "sig" };
+  const now = Math.floor(Date.now() / 1000);
+  const nonce = crypto.createHash("sha256").update("google-nonce").digest("hex");
+  const makeToken = (claims, privateKey = keyPair.privateKey) => {
+    const header = Buffer.from(JSON.stringify({ alg: "RS256", kid: jwk.kid })).toString("base64url");
+    const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
+    const content = `${header}.${payload}`;
+    const signature = crypto.sign("RSA-SHA256", Buffer.from(content), privateKey).toString("base64url");
+    return `${content}.${signature}`;
+  };
+  const claims = {
+    iss: "https://accounts.google.com", aud: "google-client-id", exp: now + 300, iat: now,
+    email: "owner@example.com", email_verified: true, sub: "google-owner-sub", nonce,
+  };
+  const context = setup({ user: { id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: 1 } });
+  let pendingWrites = 0;
+  context.dependencies.storeFactory = () => ({
+    findBusinessUserForMfa: async () => ({ id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: 1 }),
+    findGoogleAccount: async (_id, subject) => subject === claims.sub,
+    setPendingMfaSecret: async () => { pendingWrites += 1; return true; },
+  });
+  context.env.BETTER_AUTH_GOOGLE_CLIENT_ID = "google-client-id";
+  const originalFetch = global.fetch;
+  global.fetch = async url => {
+    assert.equal(String(url), "https://www.googleapis.com/oauth2/v3/certs");
+    return Response.json({ keys: [jwk] });
+  };
+  const request = credential => new Request("https://anipins.com/api/auth/admin-mfa/recovery", {
+    method: "POST",
+    headers: { origin: "https://anipins.com", "content-type": "application/json", cookie: "anipins_google_nonce=google-nonce" },
+    body: JSON.stringify({ action: "begin", credential }),
+  });
+  try {
+    const valid = await handleAdminMfaRecovery(request(makeToken(claims)), context.env, context.dependencies);
+    assert.equal(valid.status, 200);
+    const wrongAudience = await handleAdminMfaRecovery(request(makeToken({ ...claims, aud: "attacker-client" })), context.env, context.dependencies);
+    assert.equal(wrongAudience.status, 401);
+    const wrongNonce = await handleAdminMfaRecovery(request(makeToken({ ...claims, nonce: "replayed-nonce" })), context.env, context.dependencies);
+    assert.equal(wrongNonce.status, 401);
+    assert.equal(pendingWrites, 1);
+  } finally {
+    global.fetch = originalFetch;
+  }
 });

@@ -83,6 +83,31 @@ export function createD1BusinessIdentityStore(db) {
         two_factor_secret, recovery_codes FROM users WHERE lower(email)=? LIMIT 1`)
         .bind(email).first();
     },
+    async findGoogleAccount(businessUserId, googleSubject) {
+      const account = await db.prepare(`SELECT 1 AS linked FROM better_auth_user_link l
+        JOIN better_auth_account a ON a.userId=l.auth_user_id
+        WHERE l.anipins_user_id=? AND a.providerId='google' AND a.accountId=? LIMIT 1`)
+        .bind(businessUserId, googleSubject).first();
+      return Boolean(account);
+    },
+    async setPendingMfaSecret(userId, encryptedSecret) {
+      const result = await db.prepare(`UPDATE users SET two_factor_pending_secret=?
+        WHERE id=? AND upper(role)='ADMIN' AND two_factor_enabled=1`)
+        .bind(encryptedSecret, userId).run();
+      return Number(result?.meta?.changes || 0) === 1;
+    },
+    getPendingMfaSecret(userId) {
+      return db.prepare(`SELECT two_factor_pending_secret FROM users WHERE id=? AND upper(role)='ADMIN' AND two_factor_enabled=1 LIMIT 1`)
+        .bind(userId).first()
+        .then(row => String(row?.two_factor_pending_secret || ""));
+    },
+    async completeMfaRecovery(userId, expectedPending, encryptedSecret, recoveryCodes) {
+      const result = await db.prepare(`UPDATE users
+        SET two_factor_secret=?, two_factor_pending_secret='', two_factor_enabled=1, recovery_codes=?
+        WHERE id=? AND upper(role)='ADMIN' AND two_factor_enabled=1 AND two_factor_pending_secret=?`)
+        .bind(encryptedSecret, recoveryCodes, userId, expectedPending).run();
+      return Number(result?.meta?.changes || 0) === 1;
+    },
     async replaceRecoveryCodes(userId, currentValue, nextValue) {
       const result = await db.prepare("UPDATE users SET recovery_codes=? WHERE id=? AND recovery_codes=?")
         .bind(nextValue, userId, currentValue).run();

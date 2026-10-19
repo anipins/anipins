@@ -53,6 +53,79 @@ export async function decryptLegacySecret(encrypted, keySource) {
   return new TextDecoder().decode(plaintext);
 }
 
+export async function encryptLegacySecret(value, keySource) {
+  if (typeof keySource !== "string" || keySource.length < 12) throw new TypeError("Admin security encryption key is not configured.");
+  const digest = await crypto.subtle.digest("SHA-256", encoder.encode(keySource));
+  const key = await crypto.subtle.importKey("raw", digest, { name: "AES-GCM" }, false, ["encrypt"]);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv, tagLength: 128 }, key, encoder.encode(String(value))));
+  const ciphertext = encrypted.slice(0, -16);
+  const tag = encrypted.slice(-16);
+  return [iv, tag, ciphertext].map(encodeBase64Url).join(".");
+}
+
+export function generateLegacyTotpSecret() {
+  const bytes = crypto.getRandomValues(new Uint8Array(20));
+  let bits = 0;
+  let buffer = 0;
+  let output = "";
+  for (const byte of bytes) {
+    buffer = (buffer << 8) | byte;
+    bits += 8;
+    while (bits >= 5) {
+      output += BASE32[(buffer >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+  if (bits) output += BASE32[(buffer << (5 - bits)) & 31];
+  return output;
+}
+
+export function createLegacyRecoveryCodes() {
+  return Array.from({ length: 8 }, () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(6));
+    const hex = [...bytes].map(byte => byte.toString(16).padStart(2, "0")).join("").toUpperCase();
+    return `${hex.slice(0, 6)}-${hex.slice(6)}`;
+  });
+}
+
+async function digestHex(value) {
+  return [...new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(value)))]
+    .map(byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function createAdminMfaRecoveryProof(claims, secret, pendingSecret, now = Date.now()) {
+  const sessionId = String(claims?.sessionId || "");
+  const userId = Number(claims?.userId);
+  const expiresAt = Math.min(Number(claims?.expiresAt), now + 10 * 60_000);
+  if (!sessionId || sessionId.length > 256 || !Number.isSafeInteger(userId) || userId < 1 || !Number.isSafeInteger(expiresAt) || expiresAt <= now || typeof secret !== "string" || secret.length < 32 || typeof pendingSecret !== "string" || !pendingSecret) {
+    throw new TypeError("Valid authenticated session, bridge secret, and pending authenticator are required.");
+  }
+  const payload = encodeBase64Url(encoder.encode(JSON.stringify({ sessionId, userId, expiresAt, pendingDigest: await digestHex(pendingSecret) })));
+  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = encodeBase64Url(new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(payload))));
+  return `${payload}.${signature}`;
+}
+
+export async function verifyAdminMfaRecoveryProof(proof, expected, secret, pendingSecret, now = Date.now()) {
+  try {
+    if (typeof secret !== "string" || secret.length < 32 || typeof pendingSecret !== "string" || !pendingSecret) return false;
+    const [payload, signature, extra] = String(proof || "").split(".");
+    if (!payload || !signature || extra !== undefined) return false;
+    const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+    if (!await crypto.subtle.verify("HMAC", key, decodeBase64Url(signature), encoder.encode(payload))) return false;
+    const claims = JSON.parse(new TextDecoder().decode(decodeBase64Url(payload)));
+    return claims.sessionId === String(expected?.sessionId || "")
+      && Number(claims.userId) === Number(expected?.userId)
+      && Number.isSafeInteger(claims.expiresAt)
+      && claims.expiresAt > now
+      && claims.expiresAt <= now + 10 * 60_000
+      && claims.pendingDigest === await digestHex(pendingSecret);
+  } catch {
+    return false;
+  }
+}
+
 async function totpValue(secret, timeStep) {
   const key = await crypto.subtle.importKey("raw", decodeBase32(secret), { name: "HMAC", hash: "SHA-1" }, false, ["sign"]);
   const counter = new Uint8Array(8);

@@ -1,19 +1,32 @@
 import { createD1BusinessIdentityStore, ensureBusinessIdentityLink } from "./business-identity-link.mjs";
 import {
   createAdminMfaProof,
+  createAdminMfaRecoveryProof,
+  createLegacyRecoveryCodes,
   decryptLegacySecret,
+  encryptLegacySecret,
+  generateLegacyTotpSecret,
   hashLegacyRecoveryCode,
+  verifyAdminMfaRecoveryProof,
   verifyAdminMfaProof,
   verifyLegacyTotp,
 } from "./admin-mfa.mjs";
 
 const PROOF_COOKIE = "anipins_admin_mfa";
+const RECOVERY_COOKIE = "anipins_admin_mfa_setup";
+const GOOGLE_NONCE_COOKIE = "anipins_google_nonce";
 const MAX_FAILED_ATTEMPTS = 5;
 const FAILURE_WINDOW_MS = 10 * 60_000;
 const LOCKOUT_MS = 15 * 60_000;
 
 function json(body, status = 200, headers = {}) {
-  return Response.json(body, { status, headers: { "Cache-Control": "no-store", ...headers } });
+  const responseHeaders = new Headers({ "Cache-Control": "no-store" });
+  for (const [name, value] of Object.entries(headers)) {
+    if (name.toLowerCase() === "set-cookie" && Array.isArray(value)) {
+      for (const cookie of value) responseHeaders.append(name, cookie);
+    } else responseHeaders.set(name, value);
+  }
+  return Response.json(body, { status, headers: responseHeaders });
 }
 
 function cookieValue(request, name) {
@@ -22,6 +35,62 @@ function cookieValue(request, name) {
     if (separator >= 0 && part.slice(0, separator).trim() === name) return part.slice(separator + 1).trim();
   }
   return "";
+}
+
+function encodeBase64Url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+
+function decodeBase64Url(value) {
+  const normalized = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(normalized + "=".repeat((4 - normalized.length % 4) % 4));
+  return Uint8Array.from(binary, character => character.charCodeAt(0));
+}
+
+async function sha256Hex(value) {
+  return [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)))]
+    .map(byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function verifyGoogleCredential(idToken, rawNonce, audience, dependencies) {
+  if (typeof dependencies.verifyGoogleCredential === "function") {
+    return dependencies.verifyGoogleCredential(idToken, rawNonce, audience);
+  }
+  if (!idToken || idToken.length > 10_000 || !rawNonce || !audience) throw new TypeError("Google credential is invalid.");
+  const [encodedHeader, encodedPayload, encodedSignature, extra] = idToken.split(".");
+  if (!encodedHeader || !encodedPayload || !encodedSignature || extra !== undefined) throw new TypeError("Google credential is invalid.");
+  const header = JSON.parse(new TextDecoder().decode(decodeBase64Url(encodedHeader)));
+  const claims = JSON.parse(new TextDecoder().decode(decodeBase64Url(encodedPayload)));
+  if (header?.alg !== "RS256" || typeof header?.kid !== "string" || claims?.iss !== "https://accounts.google.com" && claims?.iss !== "accounts.google.com") {
+    throw new TypeError("Google credential is invalid.");
+  }
+  const now = Math.floor(Date.now() / 1000);
+  const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
+  if (!audiences.includes(audience) || !Number.isSafeInteger(claims.exp) || claims.exp <= now
+    || !Number.isSafeInteger(claims.iat) || claims.iat > now + 60
+    || claims.email_verified !== true || typeof claims.sub !== "string" || !claims.sub
+    || claims.nonce !== await sha256Hex(rawNonce)) {
+    throw new TypeError("Google credential is invalid.");
+  }
+
+  const keyResponse = await fetch("https://www.googleapis.com/oauth2/v3/certs", {
+    headers: { Accept: "application/json" },
+    cf: { cacheTtl: 3600, cacheEverything: true },
+  });
+  if (!keyResponse.ok) throw new Error("Google verification keys are unavailable.");
+  const keySet = await keyResponse.json();
+  const jwk = Array.isArray(keySet?.keys) ? keySet.keys.find(key => key?.kid === header.kid && key?.kty === "RSA") : null;
+  if (!jwk?.n || !jwk?.e) throw new TypeError("Google credential is invalid.");
+  const publicKey = await crypto.subtle.importKey("jwk", {
+    kty: "RSA", n: jwk.n, e: jwk.e, alg: "RS256", use: "sig", ext: true, key_ops: ["verify"],
+  }, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+  const signedContent = new TextEncoder().encode(`${encodedHeader}.${encodedPayload}`);
+  if (!await crypto.subtle.verify("RSASSA-PKCS1-v1_5", publicKey, decodeBase64Url(encodedSignature), signedContent)) {
+    throw new TypeError("Google credential is invalid.");
+  }
+  return claims;
 }
 
 function sessionClaims(session) {
@@ -139,6 +208,111 @@ export async function handleAdminMfaVerification(request, env, dependencies = {}
     if (typeof dependencies.onError === "function") dependencies.onError(diagnostic);
     else console.error("[admin-mfa-diagnostic]", diagnostic);
     return json({ error: "verification_unavailable" }, 503);
+  }
+}
+
+/** Allow an MFA-locked administrator to enroll a replacement factor after fresh Google verification. */
+export async function handleAdminMfaRecovery(request, env, dependencies = {}) {
+  if (new URL(request.url).pathname !== "/api/auth/admin-mfa/recovery") return json({ error: "not_found" }, 404);
+  if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, { Allow: "POST" });
+  if (new URL(request.url).origin !== request.headers.get("origin")) return json({ error: "origin_not_allowed" }, 403);
+  if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("application/json")) return json({ error: "invalid_content_type" }, 415);
+
+  const clearGoogleNonce = `${GOOGLE_NONCE_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
+  const clearSetupCookie = `${RECOVERY_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`;
+  let stage = "session_lookup";
+  try {
+    const session = await readSession(request, env, dependencies);
+    const claims = sessionClaims(session);
+    if (!claims || !session?.user?.email || claims.expiresAt <= Date.now()) return json({ error: "unauthorized" }, 401);
+
+    stage = "parse_request";
+    let body;
+    try {
+      const text = await request.text();
+      if (new TextEncoder().encode(text).byteLength > 16_000) return json({ error: "invalid_request" }, 413);
+      body = JSON.parse(text);
+    } catch { return json({ error: "invalid_request" }, 400); }
+    const action = String(body?.action || "");
+    if (action !== "begin" && action !== "confirm") return json({ error: "invalid_action" }, 400);
+
+    stage = "admin_lookup";
+    const store = (dependencies.storeFactory || (db => createD1BusinessIdentityStore(db)))(env.DB);
+    const user = await store.findBusinessUserForMfa(session.user.email);
+    if (!isAdministrator(user) || String(user.email || "").toLowerCase() !== String(session.user.email).toLowerCase()) return json({ error: "not_allowed" }, 403);
+    claims.userId = Number(user.id);
+
+    if (action === "begin") {
+      stage = "google_reauthentication";
+      const rawNonce = cookieValue(request, GOOGLE_NONCE_COOKIE);
+      const audience = env.BETTER_AUTH_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+      let google;
+      try {
+        google = await verifyGoogleCredential(String(body?.credential || ""), rawNonce, audience, dependencies);
+      } catch {
+        return json({ error: "google_verification_failed" }, 401, { "Set-Cookie": clearGoogleNonce });
+      }
+      stage = "google_account_link_lookup";
+      const linked = await store.findGoogleAccount(user.id, google.sub);
+      if (!linked || String(google.email || "").toLowerCase() !== String(user.email || "").toLowerCase()) {
+        return json({ error: "google_account_mismatch" }, 403, { "Set-Cookie": clearGoogleNonce });
+      }
+
+      stage = "encrypt_pending_authenticator";
+      const secret = generateLegacyTotpSecret();
+      const encryptionKey = env.ADMIN_2FA_ENCRYPTION_KEY || env.ADMIN_PASSWORD;
+      const pending = await encryptLegacySecret(secret, encryptionKey);
+      if (!await store.setPendingMfaSecret(user.id, pending)) return json({ error: "setup_unavailable" }, 503, { "Set-Cookie": clearGoogleNonce });
+      const proof = await createAdminMfaRecoveryProof(claims, env.D1_RPC_SECRET, pending);
+      const label = encodeURIComponent(`AniPins:${user.email}`);
+      const otpauthUri = `otpauth://totp/${label}?secret=${secret}&issuer=AniPins&algorithm=SHA1&digits=6&period=30`;
+      return json({ secret, otpauthUri, expiresIn: 600 }, 200, {
+        "Set-Cookie": [`${RECOVERY_COOKIE}=${proof}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=600`, clearGoogleNonce],
+      });
+    }
+
+    stage = "pending_authenticator_lookup";
+    const pending = await store.getPendingMfaSecret(user.id);
+    const setupProof = cookieValue(request, RECOVERY_COOKIE);
+    if (!pending || !await verifyAdminMfaRecoveryProof(setupProof, claims, env.D1_RPC_SECRET, pending)) {
+      return json({ error: "setup_expired" }, 401, { "Set-Cookie": clearSetupCookie });
+    }
+
+    stage = "mfa_attempt_lookup";
+    const attempts = await store.getMfaAttempts(claims.sessionId);
+    const attemptNow = Date.now();
+    if (Number(attempts?.locked_until || 0) > attemptNow) {
+      return json({ error: "temporarily_locked" }, 429, { "Retry-After": String(Math.ceil((attempts.locked_until - attemptNow) / 1000)) });
+    }
+
+    stage = "decrypt_pending_authenticator";
+    const secret = await decryptAdminTotpSecret(pending, env);
+    stage = "verify_new_authenticator";
+    if (!await verifyLegacyTotp(secret, String(body?.code || "").trim())) {
+      const now = Date.now();
+      await store.recordMfaFailure(claims.sessionId, user.id, now);
+      return json({ error: "invalid_code" }, 401);
+    }
+
+    stage = "save_replacement_authenticator";
+    const recoveryCodes = createLegacyRecoveryCodes();
+    const recoveryHashes = await Promise.all(recoveryCodes.map(hashLegacyRecoveryCode));
+    const replacement = await encryptLegacySecret(secret, env.ADMIN_2FA_ENCRYPTION_KEY || env.ADMIN_PASSWORD);
+    if (!await store.completeMfaRecovery(user.id, pending, replacement, JSON.stringify(recoveryHashes))) {
+      return json({ error: "setup_expired" }, 409, { "Set-Cookie": clearSetupCookie });
+    }
+    await store.clearMfaAttempts(claims.sessionId);
+    const now = Date.now();
+    const proof = await createAdminMfaProof(claims, env.D1_RPC_SECRET, now);
+    const maxAge = Math.max(0, Math.floor((claims.expiresAt - now) / 1000));
+    return json({ ok: true, recoveryCodes }, 200, {
+      "Set-Cookie": [`${PROOF_COOKIE}=${proof}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`, clearSetupCookie],
+    });
+  } catch (error) {
+    const diagnostic = { stage, errorName: typeof error?.name === "string" ? error.name : "Error" };
+    if (typeof dependencies.onError === "function") dependencies.onError(diagnostic);
+    else console.error("[admin-mfa-recovery-diagnostic]", diagnostic);
+    return json({ error: "recovery_unavailable" }, 503);
   }
 }
 
