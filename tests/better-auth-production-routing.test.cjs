@@ -92,3 +92,12 @@ test("production Better Auth prefers its dedicated Google client ID without chan
   );
 });
 
+test("production Google sign-in UI uses the same Google client ID as Better Auth", () => {
+  const config = JSON.parse(fs.readFileSync(path.join(root, "wrangler.jsonc"), "utf8"));
+  const providerClientId = config.vars.BETTER_AUTH_GOOGLE_CLIENT_ID;
+  const browserClientId = config.containers[0].images.base.build_vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+  assert.ok(providerClientId, "production Better Auth Google client ID must be configured");
+  assert.equal(browserClientId, providerClientId);
+});
+

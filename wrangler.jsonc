@@ -21,7 +21,8 @@
           "dockerfile": "./Dockerfile",
           "build_vars": {
             "NEXT_PUBLIC_AUTH_MODE": "better-auth",
-            "NEXT_PUBLIC_BETTER_AUTH_BASE_PATH": "/api/better-auth"
+            "NEXT_PUBLIC_BETTER_AUTH_BASE_PATH": "/api/better-auth",
+            "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "903834125575-h61hfmqa5l32rbun2k3tg40ab657nbut.apps.googleusercontent.com"
           }
         }
       }
