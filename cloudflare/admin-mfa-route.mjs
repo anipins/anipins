@@ -45,6 +45,20 @@ function isAdministrator(user) {
   return String(user?.role || "").toUpperCase() === "ADMIN" && Number(user?.two_factor_enabled) === 1;
 }
 
+async function decryptAdminTotpSecret(encrypted, env) {
+  const keys = [...new Set([env.ADMIN_2FA_ENCRYPTION_KEY, env.ADMIN_PASSWORD].filter(value => typeof value === "string" && value.length >= 12))];
+  let lastError;
+  for (const key of keys) {
+    try {
+      return await decryptLegacySecret(encrypted, key);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  if (lastError) throw lastError;
+  throw new TypeError("Admin security encryption key is not configured.");
+}
+
 export async function handleAdminMfaVerification(request, env, dependencies = {}) {
   if (new URL(request.url).pathname !== "/api/auth/admin-mfa") return json({ error: "not_found" }, 404);
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, { Allow: "POST" });
@@ -73,8 +87,7 @@ export async function handleAdminMfaVerification(request, env, dependencies = {}
     const code = String(body?.code || "").trim();
     let valid = false;
     if (user.two_factor_secret) {
-      const encryptionKey = env.ADMIN_2FA_ENCRYPTION_KEY || env.ADMIN_PASSWORD;
-      const totpSecret = await decryptLegacySecret(user.two_factor_secret, encryptionKey);
+      const totpSecret = await decryptAdminTotpSecret(user.two_factor_secret, env);
       valid = await verifyLegacyTotp(totpSecret, code);
     }
 

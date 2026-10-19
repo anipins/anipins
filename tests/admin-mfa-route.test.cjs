@@ -7,8 +7,8 @@ const importRoute = () => import("../cloudflare/admin-mfa-route.mjs");
 const secretKey = "configured-admin-encryption-key";
 const bridgeKey = "bridge-secret-with-more-than-thirty-two-characters";
 
-function encryptLegacyTotpSecret(secret) {
-  const key = crypto.createHash("sha256").update(secretKey).digest();
+function encryptLegacyTotpSecret(secret, keySource = secretKey) {
+  const key = crypto.createHash("sha256").update(keySource).digest();
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
   const encrypted = Buffer.concat([cipher.update(secret, "utf8"), cipher.final()]);
@@ -80,6 +80,20 @@ test("valid admin TOTP sets a session-bound HttpOnly proof cookie", async () => 
   assert.equal(response.status, 200);
   assert.match(response.headers.get("set-cookie"), /^anipins_admin_mfa=.*; Path=\/; HttpOnly; Secure; SameSite=Lax; Max-Age=/);
   assert.equal(context.state.cleared, true);
+});
+
+test("admin TOTP remains verifiable when its legacy encryption key is the admin password", async () => {
+  const { handleAdminMfaVerification } = await importRoute();
+  const secret = "JBSWY3DPEHPK3PXP";
+  const context = setup({ user: { id: 7, role: "ADMIN", two_factor_enabled: 1, two_factor_secret: encryptLegacyTotpSecret(secret, secretKey), recovery_codes: "[]" } });
+  context.env.ADMIN_2FA_ENCRYPTION_KEY = "a-new-dedicated-key-that-did-not-encrypt-the-existing-secret";
+  context.env.ADMIN_PASSWORD = secretKey;
+  const response = await handleAdminMfaVerification(new Request("https://anipins.com/api/auth/admin-mfa", {
+    method: "POST", headers: { origin: "https://anipins.com", "content-type": "application/json" }, body: JSON.stringify({ code: currentTotp(secret) }),
+  }), context.env, context.dependencies);
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("set-cookie"), /^anipins_admin_mfa=/);
 });
 
 test("failed admin TOTP increments throttling state and never issues an MFA cookie", async () => {
