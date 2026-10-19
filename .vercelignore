@@ -1,0 +1,9 @@
+.wrangler/
+.wrangler-dry-run/
+release/
+anipins-deploy.zip
+tsconfig.tsbuildinfo
+AUDIT.md
+DATA_CLEANUP_REPORT.md
+DEPLOY.md
+BETTER_AUTH_D1_MIGRATION.md
