@@ -23,3 +23,13 @@ test("privacy policy explains Premium cancellation and limited retained billing 
   assert.match(privacy, /billing transaction and subscription records/i);
   assert.match(privacy, /receipts, refunds, charge disputes, accounting, tax or other legal requirements/i);
 });
+
+test("privacy policy and browser security policy describe the active Cloudflare stack, not Supabase", () => {
+  const layout = fs.readFileSync(path.join(root, "src/app/layout.tsx"), "utf8");
+  const nextConfig = fs.readFileSync(path.join(root, "next.config.js"), "utf8");
+  assert.match(privacy, /Cloudflare Workers.*Cloudflare D1.*Cloudflare R2/s);
+  assert.match(privacy, /Better Auth manages web sign-in sessions/);
+  assert.doesNotMatch(privacy, /Supabase|Vercel for website and API hosting/i);
+  assert.doesNotMatch(layout, /supabase\.co/i);
+  assert.doesNotMatch(nextConfig, /supabase\.co/i);
+});

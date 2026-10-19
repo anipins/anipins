@@ -59,8 +59,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="p:domain_verify" content="81812c5729786ec6e9853a47f64afced" />
         <link rel="preload" as="image" href="/brand/ap-symbol-intro.png?v=gold-20261016" fetchPriority="high" />
-        <link rel="preconnect" href="https://synqmyiwjyvvrbrhcetw.supabase.co" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://synqmyiwjyvvrbrhcetw.supabase.co" />
         <script
           dangerouslySetInnerHTML={{
             __html: `try{var t=localStorage.getItem("anipins-theme");document.documentElement.dataset.theme=t==="light"?"light":"dark"}catch(e){document.documentElement.dataset.theme="dark"}`,
