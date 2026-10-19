@@ -20,11 +20,14 @@ Better Auth on `/api/better-auth`, then resolve the AniPins profile through
 encrypted with Android Keystore. The WebView continues to use the website's
 Better Auth flow and handles file chooser uploads and Android downloads.
 
-The migration candidate builds as a debug APK. A signed production release
-cannot be created or published from this checkout because the existing Android
-upload keystore is not present. Configure the existing upload key through the
-release workflow secrets before publishing; do not generate a replacement key
-for an existing Play listing.
+The migration candidate builds as a debug APK and an unsigned release APK.
+GitHub Actions is configured to sign through the existing private Supabase
+Edge Function signer; the private signing key is kept in Supabase Storage and
+is not copied to the repository or GitHub secrets. The workflow checks that
+the signed APK certificate matches the currently published website APK. The
+new signed artifact still needs to be reviewed and published to the website's
+download route; do not replace the live download before signature and login
+verification pass.
 
 Instant Firebase delivery activates when the four `ANIPINS_FIREBASE_*` build
 variables and the website's matching `FIREBASE_SERVICE_ACCOUNT_JSON` are set.

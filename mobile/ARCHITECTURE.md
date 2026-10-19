@@ -11,11 +11,11 @@ The app reuses the website JSON APIs at `https://anipins.com/api/*`, so website 
 ## Release
 
 - Package: `com.anipins.app`
-- Source release candidate: `2.5.22` (`versionCode 43`); the currently published/signed artifact remains `2.5.21` until rebuilt with the existing upload key.
+- Source release candidate: `2.5.22` (`versionCode 43`); the currently published/signed artifact remains `2.5.21` until a new signed APK is generated and published.
 - compileSdk / targetSdk: 36
 - minSdk: 24
 - Release build: GitHub Actions workflow `.github/workflows/build-anipins-android.yml`
-- Release signing: GitHub Actions signs APK artifacts with the Android upload keystore supplied through repository Actions secrets. The signing material is not stored in the repository.
+- Release signing: GitHub Actions requests a short-lived OIDC token and sends the unsigned APK to the existing Supabase Edge Function signer. The signing key and password stay in a private Supabase Storage bucket; CI verifies the resulting certificate matches the currently published website APK before uploading its artifact.
 
 ## Runtime permissions
 

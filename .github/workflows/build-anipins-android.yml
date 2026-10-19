@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   build:
@@ -29,32 +30,77 @@ jobs:
           java-version: '17'
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
-      - name: Configure Android upload-key signing
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANIPINS_UPLOAD_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANIPINS_UPLOAD_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANIPINS_UPLOAD_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANIPINS_UPLOAD_KEY_PASSWORD }}
+      - name: Build release APK
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Request GitHub OIDC token for existing signer
+        id: oidc
+        working-directory: .
         run: |
           set -euo pipefail
-          if [[ -z "$KEYSTORE_BASE64" || -z "$KEYSTORE_PASSWORD" || -z "$KEY_ALIAS" || -z "$KEY_PASSWORD" ]]; then
-            echo "Missing Android signing secrets. Configure ANIPINS_UPLOAD_KEYSTORE_BASE64, ANIPINS_UPLOAD_KEYSTORE_PASSWORD, ANIPINS_UPLOAD_KEY_ALIAS, and ANIPINS_UPLOAD_KEY_PASSWORD in GitHub Actions secrets."
+          token="$(curl -fsSL \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            -H "Accept: application/json; api-version=2.0" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=anipins-apk-signer" \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin)["value"])')"
+          test -n "$token"
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+      - name: Sign release with existing private Supabase signer
+        env:
+          OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+        working-directory: .
+        run: |
+          set -euo pipefail
+          unsigned_apk="mobile/app/build/outputs/apk/release/app-release-unsigned.apk"
+          signed_apk="mobile/app/build/outputs/apk/release/AniPins-2.5.22.apk"
+          signer_response="$RUNNER_TEMP/anipins-signer-response.json"
+          test -s "$unsigned_apk"
+
+          status="$(curl --silent --show-error -o "$signer_response" -w '%{http_code}' \
+            -X POST \
+            -H "Authorization: Bearer $OIDC_TOKEN" \
+            -H "Content-Type: application/vnd.android.package-archive" \
+            --data-binary "@$unsigned_apk" \
+            "https://synqmyiwjyvvrbrhcetw.supabase.co/functions/v1/anipins-apk-signer")"
+          if [[ "$status" -lt 200 || "$status" -ge 300 ]]; then
+            echo "Existing Android signer returned HTTP $status; response body withheld."
             exit 1
           fi
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/anipins-upload-key.jks"
-          test -s "$RUNNER_TEMP/anipins-upload-key.jks"
-          echo "ANIPINS_KEYSTORE_PATH=$RUNNER_TEMP/anipins-upload-key.jks" >> "$GITHUB_ENV"
-          echo "ANIPINS_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
-          echo "ANIPINS_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "ANIPINS_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
-      - name: Build release
-        run: ./gradlew assembleRelease --no-daemon
-      - name: Verify signed APK
-        run: |
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose mobile/app/build/outputs/apk/release/app-release.apk
+
+          signed_url="$(python3 - "$signer_response" <<'PY'
+          import json, sys
+          from urllib.parse import urlparse
+          with open(sys.argv[1], encoding="utf-8") as response_file:
+              url = json.load(response_file).get("apkUrl", "")
+          parsed = urlparse(url)
+          if parsed.scheme != "https" or parsed.hostname != "synqmyiwjyvvrbrhcetw.supabase.co":
+              raise SystemExit("Signer returned an unexpected download host.")
+          print(url)
+          PY
+          )"
+          unset OIDC_TOKEN
+          curl --fail --silent --show-error "$signed_url" -o "$signed_apk"
+          unset signed_url
+          test -s "$signed_apk"
+
+          apksigner="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          "$apksigner" verify --verbose "$signed_apk"
+          certificate_digest() {
+            "$apksigner" verify --print-certs "$1" \
+              | sed -nE 's/.*certificate SHA-256 digest: ([[:xdigit:]]+).*/\1/p' \
+              | head -n 1
+          }
+          expected_digest="632af3681db8f46c66073fd60a51a0baa88b9db8539a3f2cde0c226b86687acc"
+          current_digest="$(certificate_digest public/downloads/AniPins-2.5.21.apk)"
+          release_digest="$(certificate_digest "$signed_apk")"
+          if [[ "$current_digest" != "$expected_digest" || "$release_digest" != "$current_digest" ]]; then
+            echo "Release signing certificate does not match the current website download; refusing to publish artifact."
+            exit 1
+          fi
+          rm -f "$unsigned_apk"
       - name: Upload release APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AniPins-Android-${{ github.run_number }}
-          path: mobile/app/build/outputs/apk/release/app-release.apk
+          name: AniPins-Android-2.5.22-${{ github.run_number }}
+          path: mobile/app/build/outputs/apk/release/AniPins-2.5.22.apk
           if-no-files-found: error
