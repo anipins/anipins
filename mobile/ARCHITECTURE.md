@@ -15,7 +15,7 @@ The app reuses the website JSON APIs at `https://anipins.com/api/*`, so website 
 - compileSdk / targetSdk: 36
 - minSdk: 24
 - Release build: GitHub Actions workflow `.github/workflows/build-anipins-android.yml`
-- Release signing: GitHub Actions requests a short-lived OIDC token and sends the unsigned APK to the existing Supabase Edge Function signer. The signing key and password stay in a private Supabase Storage bucket; CI verifies the resulting certificate matches the currently published website APK before uploading its artifact.
+- Release signing: GitHub Actions signs the unsigned APK locally with the existing v2 release key stored as encrypted repository Actions secrets. The workflow verifies the signing certificate still matches the currently published website APK before uploading its artifact. Supabase is not part of Android release signing.
 
 ## Runtime permissions
 

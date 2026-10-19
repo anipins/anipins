@@ -12,7 +12,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   build:
@@ -32,55 +31,24 @@ jobs:
         run: chmod +x ./gradlew
       - name: Build release APK
         run: ./gradlew assembleRelease --no-daemon
-      - name: Request GitHub OIDC token for existing signer
-        id: oidc
+      - name: Set up Node.js for local APK signing
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install pinned APK signing dependency
         working-directory: .
-        run: |
-          set -euo pipefail
-          token="$(curl -fsSL \
-            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            -H "Accept: application/json; api-version=2.0" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=anipins-apk-signer" \
-            | python3 -c 'import json,sys; print(json.load(sys.stdin)["value"])')"
-          test -n "$token"
-          echo "::add-mask::$token"
-          echo "token=$token" >> "$GITHUB_OUTPUT"
-      - name: Sign release with existing private Supabase signer
+        run: npm ci --prefix scripts/android-signer --ignore-scripts --no-audit --no-fund
+      - name: Sign APK locally with the existing release key
         env:
-          OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+          ANIPINS_SIGNING_KEY_DATA: ${{ secrets.ANIPINS_SIGNING_KEY_DATA }}
+          ANIPINS_SIGNING_PASSWORD: ${{ secrets.ANIPINS_SIGNING_PASSWORD }}
         working-directory: .
         run: |
           set -euo pipefail
           unsigned_apk="mobile/app/build/outputs/apk/release/app-release-unsigned.apk"
           signed_apk="mobile/app/build/outputs/apk/release/AniPins-2.5.22.apk"
-          signer_response="$RUNNER_TEMP/anipins-signer-response.json"
           test -s "$unsigned_apk"
-
-          status="$(curl --silent --show-error -o "$signer_response" -w '%{http_code}' \
-            -X POST \
-            -H "Authorization: Bearer $OIDC_TOKEN" \
-            -H "Content-Type: application/vnd.android.package-archive" \
-            --data-binary "@$unsigned_apk" \
-            "https://synqmyiwjyvvrbrhcetw.supabase.co/functions/v1/anipins-apk-signer")"
-          if [[ "$status" -lt 200 || "$status" -ge 300 ]]; then
-            echo "Existing Android signer returned HTTP $status; response body withheld."
-            exit 1
-          fi
-
-          signed_url="$(python3 - "$signer_response" <<'PY'
-          import json, sys
-          from urllib.parse import urlparse
-          with open(sys.argv[1], encoding="utf-8") as response_file:
-              url = json.load(response_file).get("apkUrl", "")
-          parsed = urlparse(url)
-          if parsed.scheme != "https" or parsed.hostname != "synqmyiwjyvvrbrhcetw.supabase.co":
-              raise SystemExit("Signer returned an unexpected download host.")
-          print(url)
-          PY
-          )"
-          unset OIDC_TOKEN
-          curl --fail --silent --show-error "$signed_url" -o "$signed_apk"
-          unset signed_url
+          node scripts/sign-android-apk.cjs "$unsigned_apk" "$signed_apk"
           test -s "$signed_apk"
 
           apksigner="$ANDROID_HOME/build-tools/36.0.0/apksigner"

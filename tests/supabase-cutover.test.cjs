@@ -22,10 +22,11 @@ test("live application code has no Supabase storage or database fallback", () =>
   assert.match(read("src/app/api/premium-preview/[id]/route.ts"), /r2Get\(key, true\)/, "Premium previews must load from the Premium R2 bucket");
 });
 
-test("Android signing uses the existing OIDC-protected signer without storing its key in GitHub", () => {
+test("Android signing has no Supabase dependency and uses encrypted GitHub signing secrets", () => {
   const workflow = read(".github/workflows/build-anipins-android.yml");
-  assert.match(workflow, /audience=anipins-apk-signer/);
-  assert.ok(workflow.includes("functions/v1/anipins-apk-signer"));
-  assert.doesNotMatch(workflow, /secrets\.ANIPINS_UPLOAD_KEYSTORE_/);
+  assert.doesNotMatch(workflow, /supabase\.co|functions\/v1\/anipins-apk-signer|ACTIONS_ID_TOKEN_REQUEST/i);
+  assert.match(workflow, /secrets\.ANIPINS_SIGNING_KEY_DATA/);
+  assert.match(workflow, /secrets\.ANIPINS_SIGNING_PASSWORD/);
+  assert.match(workflow, /scripts\/sign-android-apk\.cjs/);
   assert.match(workflow, /apksigner.*verify/);
 });

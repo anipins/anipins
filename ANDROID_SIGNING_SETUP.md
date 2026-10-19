@@ -9,6 +9,23 @@ ANIPINS_KEY_ALIAS
 ANIPINS_KEY_PASSWORD
 ```
 
+The Android APK release workflow signs locally with the existing website APK
+release certificate. Configure these as encrypted repository Actions secrets
+before running `.github/workflows/build-anipins-android.yml`:
+
+```text
+ANIPINS_SIGNING_KEY_DATA      # exact contents of the existing v2-signing-key.txt
+ANIPINS_SIGNING_PASSWORD      # exact contents of the existing v2-signing-password.txt
+```
+
+The key value is a base64 PKCS#12 data URL and must retain its `data:...;base64,`
+prefix. Put both values in GitHub repository Settings → Secrets and variables →
+Actions. Do not paste them into chat, commit them, or use the separate Play
+upload key in place of this existing website-APK key: its certificate must match
+the currently published `public/downloads/AniPins-2.5.21.apk` so existing
+installations remain upgradeable. CI uploads a signed artifact only after
+Android's `apksigner` confirms the exact certificate fingerprint.
+
 Build from `mobile` with JDK 17 and Android SDK platform/build-tools 36 installed:
 
 ```powershell
