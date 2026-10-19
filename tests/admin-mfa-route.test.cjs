@@ -96,14 +96,34 @@ test("admin TOTP remains verifiable when its legacy encryption key is the admin 
   assert.match(response.headers.get("set-cookie"), /^anipins_admin_mfa=/);
 });
 
-test("admin MFA failures expose only a safe stage and error type to diagnostics", async () => {
+test("admin recovery code remains usable when the legacy TOTP encryption key is unavailable", async () => {
   const { handleAdminMfaVerification } = await importRoute();
+  const recoveryHash = await hashLegacyRecoveryCode("ABCDEF-123456");
   const context = setup({ user: {
     id: 7, role: "ADMIN", two_factor_enabled: 1,
-    two_factor_secret: encryptLegacyTotpSecret("JBSWY3DPEHPK3PXP"), recovery_codes: "[]",
+    two_factor_secret: encryptLegacyTotpSecret("JBSWY3DPEHPK3PXP", "old-encryption-key-no-longer-configured"),
+    recovery_codes: JSON.stringify([recoveryHash]),
   } });
-  context.env.ADMIN_2FA_ENCRYPTION_KEY = undefined;
-  context.env.ADMIN_PASSWORD = undefined;
+  const response = await handleAdminMfaVerification(new Request("https://anipins.com/api/auth/admin-mfa", {
+    method: "POST", headers: { origin: "https://anipins.com", "content-type": "application/json" }, body: JSON.stringify({ code: "ABCDEF-123456" }),
+  }), context.env, context.dependencies);
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("set-cookie"), /^anipins_admin_mfa=/);
+  assert.deepEqual(context.state.recoveryCodes, []);
+});
+
+test("admin MFA failures expose only a safe stage and error type to diagnostics", async () => {
+  const { handleAdminMfaVerification } = await importRoute();
+  const admin = {
+    id: 7, role: "ADMIN", two_factor_enabled: 1,
+    two_factor_secret: encryptLegacyTotpSecret("JBSWY3DPEHPK3PXP"), recovery_codes: "[]",
+  };
+  const context = setup({ user: admin });
+  context.dependencies.storeFactory = () => ({
+    findBusinessUserForMfa: async () => admin,
+    getMfaAttempts: async () => { throw new Error("private database details"); },
+  });
   const diagnostics = [];
   context.dependencies.onError = event => diagnostics.push(event);
   const response = await handleAdminMfaVerification(new Request("https://anipins.com/api/auth/admin-mfa", {
@@ -111,8 +131,9 @@ test("admin MFA failures expose only a safe stage and error type to diagnostics"
   }), context.env, context.dependencies);
 
   assert.equal(response.status, 503);
-  assert.deepEqual(diagnostics, [{ stage: "decrypt_totp", errorName: "TypeError" }]);
+  assert.deepEqual(diagnostics, [{ stage: "mfa_attempt_lookup", errorName: "Error" }]);
   assert.equal(JSON.stringify(diagnostics).includes("JBSWY3DPEHPK3PXP"), false);
+  assert.equal(JSON.stringify(diagnostics).includes("private database details"), false);
 });
 
 test("failed admin TOTP increments throttling state and never issues an MFA cookie", async () => {

@@ -92,9 +92,16 @@ export async function handleAdminMfaVerification(request, env, dependencies = {}
     let valid = false;
     if (user.two_factor_secret) {
       stage = "decrypt_totp";
-      const totpSecret = await decryptAdminTotpSecret(user.two_factor_secret, env);
-      stage = "verify_totp";
-      valid = await verifyLegacyTotp(totpSecret, code);
+      try {
+        const totpSecret = await decryptAdminTotpSecret(user.two_factor_secret, env);
+        stage = "verify_totp";
+        valid = await verifyLegacyTotp(totpSecret, code);
+      } catch {
+        // Keep the independent, one-time recovery-code path available if a
+        // legacy TOTP ciphertext was encrypted with a key that is no longer
+        // configured after migration.
+        valid = false;
+      }
     }
 
     stage = "verify_recovery_code";

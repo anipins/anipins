@@ -11,6 +11,8 @@ test("authenticator setup reauthenticates with the linked Google account", () =>
   assert.match(page, /import GoogleSignInButton from "@\/components\/GoogleSignInButton"/);
   assert.match(page, /credentialOnly/);
   assert.match(page, /action:"begin-google",credential/);
+  assert.match(page, /Replace authenticator/);
+  assert.match(page, /reauthEntry\?[\s\S]*data\.twoFactorEnabled\?/);
   assert.doesNotMatch(page, /aria-label="Administrator password"/);
   assert.match(route, /verifyGoogleCredential\(/);
   assert.match(route, /better_auth_user_link/);
