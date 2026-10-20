@@ -24,7 +24,7 @@ The migration candidate builds as a debug APK and an unsigned release APK.
 GitHub Actions signs locally using encrypted repository secrets
 `ANIPINS_SIGNING_KEY_DATA` and `ANIPINS_SIGNING_PASSWORD`; the new release
 certificate SHA-256 is pinned in the workflow as
-`efcf512acc27a7ec220e3a113d8ec30ef5cce0c6f283686d32f474014a125923`. This
+`477c3731274cf4b45c1d3ac1a03acf1c79386c6113cd5558e3a366acb7c0c34a`. This
 replaces the old APK signing identity because there are no existing users to
 preserve. The signed artifact still needs to be built, reviewed, and published
 to the website's download route; do not replace the live download before

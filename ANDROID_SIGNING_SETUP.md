@@ -24,7 +24,7 @@ The key value is a base64 PKCS#12 data URL and must retain its `data:...;base64,
 prefix. Put both values in GitHub repository Settings → Secrets and variables →
 Actions. Do not paste them into chat or commit them. CI uploads a signed artifact
 only when Android's `apksigner` confirms SHA-256 fingerprint
-`efcf512acc27a7ec220e3a113d8ec30ef5cce0c6f283686d32f474014a125923`.
+`477c3731274cf4b45c1d3ac1a03acf1c79386c6113cd5558e3a366acb7c0c34a`.
 
 The encrypted local backup is kept under
 `%LOCALAPPDATA%\AniPins\android-release-signing\`: the `.p12` file is

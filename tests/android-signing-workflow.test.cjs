@@ -26,7 +26,7 @@ test("Android release CI signs locally using encrypted GitHub secrets, not Supab
 
 test("Android release CI only publishes an APK signed by the pinned release certificate", () => {
   assert.match(workflow, /verify --print-certs/);
-  assert.match(workflow, /expected_digest="efcf512acc27a7ec220e3a113d8ec30ef5cce0c6f283686d32f474014a125923"/);
+  assert.match(workflow, /expected_digest="477c3731274cf4b45c1d3ac1a03acf1c79386c6113cd5558e3a366acb7c0c34a"/);
   assert.match(workflow, /release_digest.*expected_digest|expected_digest.*release_digest/);
   assert.doesNotMatch(workflow, /AniPins-2\.5\.21\.apk/);
   assert.match(workflow, /AniPins-Android-2\.5\.22-\$\{\{ github\.run_number \}\}/);
