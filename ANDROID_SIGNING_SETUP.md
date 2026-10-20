@@ -9,22 +9,30 @@ ANIPINS_KEY_ALIAS
 ANIPINS_KEY_PASSWORD
 ```
 
-The Android APK release workflow signs locally with the existing website APK
-release certificate. Configure these as encrypted repository Actions secrets
-before running `.github/workflows/build-anipins-android.yml`:
+The Android APK release workflow signs locally with the new AniPins release
+certificate created on 2026-10-20. There are no existing users to migrate, so
+this intentionally starts a new signing identity; APKs signed with the prior
+certificate will not update in place. Configure these as encrypted repository
+Actions secrets before running `.github/workflows/build-anipins-android.yml`:
 
 ```text
-ANIPINS_SIGNING_KEY_DATA      # exact contents of the existing v2-signing-key.txt
-ANIPINS_SIGNING_PASSWORD      # exact contents of the existing v2-signing-password.txt
+ANIPINS_SIGNING_KEY_DATA      # data:application/x-pkcs12;base64,<new release keystore>
+ANIPINS_SIGNING_PASSWORD      # password for the new PKCS#12 release keystore
 ```
 
 The key value is a base64 PKCS#12 data URL and must retain its `data:...;base64,`
 prefix. Put both values in GitHub repository Settings → Secrets and variables →
-Actions. Do not paste them into chat, commit them, or use the separate Play
-upload key in place of this existing website-APK key: its certificate must match
-the currently published `public/downloads/AniPins-2.5.21.apk` so existing
-installations remain upgradeable. CI uploads a signed artifact only after
-Android's `apksigner` confirms the exact certificate fingerprint.
+Actions. Do not paste them into chat or commit them. CI uploads a signed artifact
+only when Android's `apksigner` confirms SHA-256 fingerprint
+`efcf512acc27a7ec220e3a113d8ec30ef5cce0c6f283686d32f474014a125923`.
+
+The encrypted local backup is kept under
+`%LOCALAPPDATA%\AniPins\android-release-signing\`: the `.p12` file is
+password-protected, and its password is stored as a Windows DPAPI-encrypted
+file tied to this Windows account. Keep a separate secure backup before
+reinstalling Windows or changing accounts. The private Supabase signing bucket
+is no longer part of the Android release workflow; do not upgrade Supabase just
+for APK signing.
 
 Build from `mobile` with JDK 17 and Android SDK platform/build-tools 36 installed:
 

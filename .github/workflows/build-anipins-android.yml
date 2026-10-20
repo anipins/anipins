@@ -38,7 +38,7 @@ jobs:
       - name: Install pinned APK signing dependency
         working-directory: .
         run: npm ci --prefix scripts/android-signer --ignore-scripts --no-audit --no-fund
-      - name: Sign APK locally with the existing release key
+      - name: Sign APK locally with the pinned release key
         env:
           ANIPINS_SIGNING_KEY_DATA: ${{ secrets.ANIPINS_SIGNING_KEY_DATA }}
           ANIPINS_SIGNING_PASSWORD: ${{ secrets.ANIPINS_SIGNING_PASSWORD }}
@@ -58,11 +58,10 @@ jobs:
               | sed -nE 's/.*certificate SHA-256 digest: ([[:xdigit:]]+).*/\1/p' \
               | head -n 1
           }
-          expected_digest="632af3681db8f46c66073fd60a51a0baa88b9db8539a3f2cde0c226b86687acc"
-          current_digest="$(certificate_digest public/downloads/AniPins-2.5.21.apk)"
+          expected_digest="efcf512acc27a7ec220e3a113d8ec30ef5cce0c6f283686d32f474014a125923"
           release_digest="$(certificate_digest "$signed_apk")"
-          if [[ "$current_digest" != "$expected_digest" || "$release_digest" != "$current_digest" ]]; then
-            echo "Release signing certificate does not match the current website download; refusing to publish artifact."
+          if [[ "$release_digest" != "$expected_digest" ]]; then
+            echo "Release signing certificate does not match the pinned AniPins release identity; refusing to publish artifact."
             exit 1
           fi
           rm -f "$unsigned_apk"

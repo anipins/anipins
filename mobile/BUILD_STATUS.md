@@ -22,12 +22,13 @@ Better Auth flow and handles file chooser uploads and Android downloads.
 
 The migration candidate builds as a debug APK and an unsigned release APK.
 GitHub Actions signs locally using encrypted repository secrets
-`ANIPINS_SIGNING_KEY_DATA` and `ANIPINS_SIGNING_PASSWORD`; the signing key must
-remain private and must never be committed. The workflow checks that the signed
-APK certificate matches the currently published website APK. The new signed
-artifact still needs to be reviewed and published to the website's download
-route; do not replace the live download before signature and login
-verification pass.
+`ANIPINS_SIGNING_KEY_DATA` and `ANIPINS_SIGNING_PASSWORD`; the new release
+certificate SHA-256 is pinned in the workflow as
+`efcf512acc27a7ec220e3a113d8ec30ef5cce0c6f283686d32f474014a125923`. This
+replaces the old APK signing identity because there are no existing users to
+preserve. The signed artifact still needs to be built, reviewed, and published
+to the website's download route; do not replace the live download before
+signature and login verification pass.
 
 Instant Firebase delivery activates when the four `ANIPINS_FIREBASE_*` build
 variables and the website's matching `FIREBASE_SERVICE_ACCOUNT_JSON` are set.
