@@ -31,7 +31,22 @@ async function main() {
   await fs.writeFile(outputPath, Buffer.from(match[1], "base64"), { mode: 0o600 });
 }
 
-main().catch(() => {
-  console.error("APK signing failed. Check the private signing secrets and unsigned APK input.");
+main().catch((error) => {
+  const message = error instanceof Error ? error.message : "";
+  let reason = "The signing tool rejected its input; the secret values were not printed.";
+
+  if (/password|mac verify|bad decrypt/i.test(message)) {
+    reason = "The signing password does not unlock the configured PKCS#12 key.";
+  } else if (/certificate not found|private key not found/i.test(message)) {
+    reason = "The PKCS#12 key is missing the expected AniPins signing alias.";
+  } else if (/asn1|der|base64|pkcs.?12/i.test(message)) {
+    reason = "The signing key data is malformed or is not a PKCS#12 key.";
+  } else if (/previously signed/i.test(message)) {
+    reason = "The input APK is already signed; expected an unsigned release APK.";
+  } else if (/central directory|end of central directory/i.test(message)) {
+    reason = "The release APK input is not a readable ZIP/APK file.";
+  }
+
+  console.error(`APK signing failed. ${reason}`);
   process.exitCode = 1;
 });
