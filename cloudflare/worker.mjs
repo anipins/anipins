@@ -12,6 +12,9 @@ const PORT = 8080;
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
 const HEALTH_ATTEMPTS = 100;
 const HEALTH_INTERVAL_MS = 200;
+// A new name routes production traffic to a fresh container instance when an
+// image rollout must not reuse a stale durable container.
+const CONTAINER_INSTANCE_NAME = "anipins-web-mobile-premium-v3";
 // Increment this when a code or configuration rollout must restart the
 // existing durable container. Deploying a new image alone does not replace a
 // container that is already running for this Durable Object.
@@ -342,7 +345,7 @@ export default {
         promise => ctx.waitUntil(promise),
       );
     }
-    const target = env.ANIPINS_CONTAINER.getByName("anipins-web-v2");
+    const target = env.ANIPINS_CONTAINER.getByName(CONTAINER_INSTANCE_NAME);
     const authCookieName = productionAuthReady ? "anipins_better_auth" : "anipins_staging_better_auth";
     const containerAuth = await prepareContainerAuthRequest(request, {
       secret: env.D1_RPC_SECRET,
