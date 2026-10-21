@@ -10,11 +10,18 @@ declare global {
   interface Window { Razorpay?: new (options: Record<string, unknown>) => { open: () => void }; }
 }
 
+const plans = [
+  { key: "weekly", amount: "₹99", cadence: "week" },
+  { key: "monthly", amount: "₹199", cadence: "month" },
+  { key: "yearly", amount: "₹1,999", cadence: "year" },
+] as const;
+
 export default function PremiumCheckout({ signedIn }: { signedIn: boolean }) {
   const [ready, setReady] = useState(false);
   const [scriptFailed, setScriptFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [adultConfirmed, setAdultConfirmed] = useState(false);
+  const [plan, setPlan] = useState<(typeof plans)[number]["key"]>("monthly");
   const [instagramBrowser, setInstagramBrowser] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -25,7 +32,11 @@ export default function PremiumCheckout({ signedIn }: { signedIn: boolean }) {
     if (!ready || !window.Razorpay) { toast("Secure checkout is still loading. Please try again in a moment.", "err"); return; }
     setBusy(true);
     try {
-      const response = await fetch("/api/billing/subscription", { method: "POST" });
+      const response = await fetch("/api/billing/subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
       const data = await response.json();
       if (response.status === 401) { window.location.href = "/login?next=/premium"; return; }
       if (!response.ok) throw new Error(data.error || "Could not open checkout.");
@@ -59,13 +70,19 @@ export default function PremiumCheckout({ signedIn }: { signedIn: boolean }) {
   return <>
     {signedIn && instagramBrowser === false && <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" onLoad={() => { setReady(true); setScriptFailed(false); }} onError={() => { setScriptFailed(true); toast("Secure checkout could not load. Open AniPins in Chrome and try again.", "err"); }} />}
     <label className="mb-3 flex cursor-pointer items-start gap-2.5 text-left text-xs leading-5 text-fog"><input type="checkbox" checked={adultConfirmed} onChange={event => setAdultConfirmed(event.target.checked)} className="mt-1 h-3.5 w-3.5 accent-gold" />I confirm that I am 18+ and may legally access mature illustrated reference material in my location.</label>
+    <fieldset className="mb-4 grid grid-cols-3 gap-2" aria-label="Choose Premium billing period">
+      {plans.map(option => <button key={option.key} type="button" aria-pressed={plan === option.key} onClick={() => setPlan(option.key)} className={`rounded-xl border px-2 py-3 text-center transition-colors ${plan === option.key ? "border-gold bg-gold/10 text-paper" : "border-paper/10 bg-panel text-fog hover:border-gold/40"}`}>
+        <span className="block text-sm font-semibold">{option.amount}</span>
+        <span className="mt-1 block text-[11px]">per {option.cadence}</span>
+      </button>)}
+    </fieldset>
     {!signedIn ? <Link href="/login?next=/premium" className="btn-primary w-full justify-center">Sign in to start Premium</Link> : instagramBrowser ? <div className="rounded-2xl border border-gold/35 bg-gold/10 p-4 text-left">
       <p className="font-medium text-gold">Open Chrome to subscribe securely</p>
       <p className="mt-1 text-xs leading-relaxed text-fog">Instagram&apos;s browser blocks the secure Razorpay checkout. Open AniPins in Chrome, then continue with the same account.</p>
       <a href={openInChrome} className="btn-primary mt-3 w-full justify-center">Open AniPins in Chrome</a>
       <p className="mt-3 text-center text-xs text-fog">If Chrome does not open, tap Instagram&apos;s ⋮ menu and choose <span className="text-paper">Open in browser</span>.</p>
     </div> : <>
-    <button type="button" disabled={!ready || busy || scriptFailed} onClick={startCheckout} className="btn-primary w-full justify-center disabled:cursor-wait disabled:opacity-60">{busy ? "Opening secure checkout…" : ready ? "Start Premium — ₹199 / month" : scriptFailed ? "Checkout unavailable — try Chrome" : "Loading secure checkout…"}</button>
+    <button type="button" disabled={!ready || busy || scriptFailed} onClick={startCheckout} className="btn-primary w-full justify-center disabled:cursor-wait disabled:opacity-60">{busy ? "Opening secure checkout…" : ready ? `Start Premium — ${plans.find(option => option.key === plan)?.amount} / ${plans.find(option => option.key === plan)?.cadence}` : scriptFailed ? "Checkout unavailable — try Chrome" : "Loading secure checkout…"}</button>
     </>}
   </>;
 }

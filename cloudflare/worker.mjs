@@ -15,7 +15,7 @@ const HEALTH_INTERVAL_MS = 200;
 // Increment this when a code or configuration rollout must restart the
 // existing durable container. Deploying a new image alone does not replace a
 // container that is already running for this Durable Object.
-const CONTAINER_BOOT_VERSION = "2026-10-19-retired-storage-runtime-v1";
+const CONTAINER_BOOT_VERSION = "2026-10-21-premium-pricing-v1";
 const MAX_ARTWORK_UPLOAD_BYTES = 40 * 1024 * 1024;
 const UPLOAD_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const SIGNED_STORAGE_PATHS = new Set(["/api/storage-upload", "/api/storage-read", "/api/storage-thumbnail"]);
@@ -35,6 +35,9 @@ const CONTAINER_ENV_KEYS = [
   "RAZORPAY_KEY_SECRET",
   "RAZORPAY_KEY_ID",
   "RAZORPAY_PREMIUM_PLAN_ID_199",
+  "RAZORPAY_PREMIUM_PLAN_ID_99_WEEKLY",
+  "RAZORPAY_PREMIUM_PLAN_ID_199_MONTHLY",
+  "RAZORPAY_PREMIUM_PLAN_ID_1999_YEARLY",
   "GOOGLE_CLIENT_ID",
   "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
   "GOOGLE_SITE_VERIFICATION",

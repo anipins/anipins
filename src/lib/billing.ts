@@ -1,11 +1,10 @@
 import { row, rows, run, USE_PG } from "@/lib/db";
 import { isPremiumSubscriptionStatus } from "@/lib/billing-utils";
+import { getPremiumPlan } from "@/lib/premium-plans";
 
-const PLAN_AMOUNT = 19900; // paise
-// Razorpay plans are immutable. Including the amount in this key ensures a
-// price change creates a new plan for future members rather than reusing the
-// previous ₹99 plan. Existing subscriptions retain their agreed price.
-const PLAN_KEY_PREFIX = `razorpay_premium_plan:${PLAN_AMOUNT}:`;
+// Razorpay plans are immutable. Include the selected price and cadence in the
+// setting key so one tier can never accidentally reuse another tier's plan.
+const PLAN_KEY_PREFIX = "razorpay_premium_plan:v2:";
 let schemaReady: Promise<void> | null = null;
 
 export type BillingSubscription = {
@@ -118,45 +117,53 @@ export async function canAccessPremium(user: { id: number; role?: string }) {
   return user.role === "ADMIN" || userHasPremium(user.id);
 }
 
-async function getPlanId() {
-  // A legacy RAZORPAY_PLAN_ID may point to the old ₹99 plan, so only accept a
-  // price-specific override for the current offering.
-  const configured = process.env.RAZORPAY_PREMIUM_PLAN_ID_199?.trim();
+async function getPlanId(planKey: "weekly" | "monthly" | "yearly") {
+  const planConfig = getPremiumPlan(planKey);
+  if (!planConfig) throw new Error("INVALID_PREMIUM_PLAN");
+  const envKey = {
+    weekly: "RAZORPAY_PREMIUM_PLAN_ID_99_WEEKLY",
+    monthly: "RAZORPAY_PREMIUM_PLAN_ID_199_MONTHLY",
+    yearly: "RAZORPAY_PREMIUM_PLAN_ID_1999_YEARLY",
+  }[planConfig.key];
+  const configured = process.env[envKey]?.trim()
+    || (planConfig.key === "monthly" ? process.env.RAZORPAY_PREMIUM_PLAN_ID_199?.trim() : "");
   if (configured) return configured;
   const { keyId } = credentials();
-  const settingKey = `${PLAN_KEY_PREFIX}${keyId}`;
+  const settingKey = `${PLAN_KEY_PREFIX}${planConfig.key}:${planConfig.amount}:${keyId}`;
   const saved = await row("SELECT value FROM settings WHERE key=?", settingKey);
   if (saved?.value) return String(saved.value);
   const plan = await razorpay("plans", {
     method: "POST",
     body: JSON.stringify({
-      period: "monthly",
-      interval: 1,
-      item: { name: "AniPins Premium", amount: PLAN_AMOUNT, currency: "INR", description: "Exclusive anime reference collections, HD downloads and early access." },
-      notes: { product: "anipins-premium" },
+      period: planConfig.period,
+      interval: planConfig.interval,
+      item: { name: planConfig.planName, amount: planConfig.amount, currency: "INR", description: "Exclusive anime reference collections, HD downloads and early access." },
+      notes: { product: "anipins-premium", billing_period: planConfig.key },
     }),
   });
   await run("INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT (key) DO UPDATE SET value=excluded.value", settingKey, plan.id);
   return String(plan.id);
 }
 
-export async function createPremiumSubscription(user: { id: number; email: string; name: string }) {
+export async function createPremiumSubscription(user: { id: number; email: string; name: string }, planKey: "weekly" | "monthly" | "yearly" = "monthly") {
   await ensureBillingSchema();
+  const selectedPlan = getPremiumPlan(planKey);
+  if (!selectedPlan) throw new Error("INVALID_PREMIUM_PLAN");
   const current = await getUserSubscription(user.id);
-  if (current && ["created", "authenticated", "active", "pending"].includes(current.status)) return { id: current.subscription_id, keyId: credentials().keyId };
-  const planId = await getPlanId();
+  if (current && ["created", "authenticated", "active", "pending"].includes(current.status)) return { id: current.subscription_id, keyId: credentials().keyId, description: selectedPlan.description };
+  const planId = await getPlanId(selectedPlan.key as "weekly" | "monthly" | "yearly");
   const subscription = await razorpay("subscriptions", {
     method: "POST",
     body: JSON.stringify({
       plan_id: planId,
-      total_count: 120,
+      total_count: selectedPlan.totalCount,
       quantity: 1,
       customer_notify: 1,
       notes: { user_id: String(user.id), email: user.email, product: "anipins-premium" },
     }),
   });
   await storeSubscription({ subscription_id: subscription.id, user_id: user.id, status: subscription.status || "created", current_end: subscription.current_end || 0, cancel_at_cycle_end: Number(!!subscription.cancel_at_cycle_end) });
-  return { id: String(subscription.id), keyId: credentials().keyId };
+  return { id: String(subscription.id), keyId: credentials().keyId, description: selectedPlan.description };
 }
 
 export async function refreshSubscriptionForUser(userId: number, subscriptionId: string) {

@@ -61,7 +61,7 @@ export default async function PremiumPage() {
           <h1 className="mt-4 font-display text-4xl font-semibold leading-[.94] tracking-tight text-paper sm:text-6xl">The archive behind<br/>your <span className="text-gold">best work.</span></h1>
           <p className="mt-7 max-w-lg text-base leading-7 text-fog sm:text-lg">Member-only character collections, original-resolution downloads, and new drops before they reach the public feed.</p>
           <div className="mt-8 max-w-sm">{pendingSubscription ? <PremiumActivationWatcher/> : <PremiumCheckout signedIn={Boolean(user)} />}</div>
-          <p className="mt-4 text-sm text-fog"><span className="text-paper">₹199 / month</span> <span className="px-1.5 text-gold">•</span> Cancel before your next billing cycle</p>
+          <p className="mt-4 text-sm text-fog"><span className="text-paper">₹99 / week · ₹199 / month · ₹1,999 / year</span><br/>Cancel before your next billing cycle</p>
         </div>
         <aside className="relative mx-auto w-full max-w-lg py-4 sm:py-8">
           <div className="absolute inset-x-8 inset-y-0 rotate-[5deg] rounded-[2rem] border border-gold/20 bg-gold/5"/>
