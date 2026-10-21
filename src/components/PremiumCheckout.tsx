@@ -11,9 +11,31 @@ declare global {
 }
 
 const plans = [
-  { key: "weekly", amount: "₹99", cadence: "week" },
-  { key: "monthly", amount: "₹199", cadence: "month" },
-  { key: "yearly", amount: "₹1,999", cadence: "year" },
+  {
+    key: "weekly",
+    amount: "₹99",
+    cadence: "week",
+    name: "One week",
+    pitch: "A flexible way to explore the private archive.",
+    note: "Billed weekly",
+  },
+  {
+    key: "monthly",
+    amount: "₹199",
+    cadence: "month",
+    name: "One month",
+    pitch: "A comfortable rhythm for regular art practice.",
+    note: "Billed monthly",
+  },
+  {
+    key: "yearly",
+    amount: "₹1,999",
+    cadence: "year",
+    name: "One year",
+    pitch: "Build a lasting reference library for your work.",
+    note: "About ₹167/month, billed yearly",
+    badge: "SAVE ₹389",
+  },
 ] as const;
 
 export default function PremiumCheckout({ signedIn }: { signedIn: boolean }) {
@@ -70,10 +92,20 @@ export default function PremiumCheckout({ signedIn }: { signedIn: boolean }) {
   return <>
     {signedIn && instagramBrowser === false && <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" onLoad={() => { setReady(true); setScriptFailed(false); }} onError={() => { setScriptFailed(true); toast("Secure checkout could not load. Open AniPins in Chrome and try again.", "err"); }} />}
     <label className="mb-3 flex cursor-pointer items-start gap-2.5 text-left text-xs leading-5 text-fog"><input type="checkbox" checked={adultConfirmed} onChange={event => setAdultConfirmed(event.target.checked)} className="mt-1 h-3.5 w-3.5 accent-gold" />I confirm that I am 18+ and may legally access mature illustrated reference material in my location.</label>
-    <fieldset className="mb-4 grid grid-cols-3 gap-2" aria-label="Choose Premium billing period">
-      {plans.map(option => <button key={option.key} type="button" aria-pressed={plan === option.key} onClick={() => setPlan(option.key)} className={`rounded-xl border px-2 py-3 text-center transition-colors ${plan === option.key ? "border-gold bg-gold/10 text-paper" : "border-paper/10 bg-panel text-fog hover:border-gold/40"}`}>
-        <span className="block text-sm font-semibold">{option.amount}</span>
-        <span className="mt-1 block text-[11px]">per {option.cadence}</span>
+    <fieldset className="mb-4 grid grid-cols-1 gap-2.5 md:grid-cols-3" aria-label="Choose Premium billing period">
+      {plans.map(option => <button key={option.key} type="button" aria-pressed={plan === option.key} onClick={() => setPlan(option.key)} className={`group relative flex min-h-[7.5rem] w-full items-start justify-between gap-3 rounded-2xl border p-4 text-left transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-[#12110e] md:min-h-[12rem] md:flex-col md:justify-start md:gap-2 md:p-3 ${plan === option.key ? "border-gold bg-gold/10 text-paper shadow-[0_0_24px_rgba(208,170,87,.1)]" : "border-paper/10 bg-black/25 text-fog hover:border-gold/45 hover:bg-gold/[.04]"}`}>
+        <span className="min-w-0 flex-1 md:order-2 md:flex-none">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className={`text-xs font-semibold uppercase tracking-[.16em] ${plan === option.key ? "text-gold" : "text-paper"}`}>{option.name}</span>
+            {"badge" in option && <span className="rounded-full bg-gold px-2 py-0.5 text-[9px] font-bold tracking-wide text-[#17130b]">{option.badge}</span>}
+          </span>
+          <span className="mt-1 block font-display text-2xl font-semibold tracking-tight text-paper md:text-xl">{option.amount}<span className="ml-1 font-sans text-xs font-normal text-fog">/ {option.cadence}</span></span>
+          <span className="mt-1.5 block text-xs leading-5 text-fog md:mt-2">{option.pitch}</span>
+          <span className="mt-1.5 block text-[10px] font-medium text-gold/90">{option.note}</span>
+        </span>
+        <span aria-hidden="true" className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border transition-colors md:absolute md:right-3 md:top-3 ${plan === option.key ? "border-gold bg-gold text-[#17130b]" : "border-paper/25 text-transparent group-hover:border-gold/60"}`}>
+          <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none"><path d="m3.5 8 3 3 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </span>
       </button>)}
     </fieldset>
     {!signedIn ? <Link href="/login?next=/premium" className="btn-primary w-full justify-center">Sign in to start Premium</Link> : instagramBrowser ? <div className="rounded-2xl border border-gold/35 bg-gold/10 p-4 text-left">
@@ -82,7 +114,8 @@ export default function PremiumCheckout({ signedIn }: { signedIn: boolean }) {
       <a href={openInChrome} className="btn-primary mt-3 w-full justify-center">Open AniPins in Chrome</a>
       <p className="mt-3 text-center text-xs text-fog">If Chrome does not open, tap Instagram&apos;s ⋮ menu and choose <span className="text-paper">Open in browser</span>.</p>
     </div> : <>
-    <button type="button" disabled={!ready || busy || scriptFailed} onClick={startCheckout} className="btn-primary w-full justify-center disabled:cursor-wait disabled:opacity-60">{busy ? "Opening secure checkout…" : ready ? `Start Premium — ${plans.find(option => option.key === plan)?.amount} / ${plans.find(option => option.key === plan)?.cadence}` : scriptFailed ? "Checkout unavailable — try Chrome" : "Loading secure checkout…"}</button>
+    <button type="button" disabled={!ready || busy || scriptFailed} onClick={startCheckout} className="btn-primary w-full justify-center disabled:cursor-wait disabled:opacity-60">{busy ? "Opening secure checkout…" : ready ? `Continue with Premium — ${plans.find(option => option.key === plan)?.amount} / ${plans.find(option => option.key === plan)?.cadence}` : scriptFailed ? "Checkout unavailable — try Chrome" : "Loading secure checkout…"}</button>
+    <p className="mt-2 text-center text-[11px] leading-5 text-fog">Secure checkout by Razorpay. You&apos;ll see the selected billing period before paying.</p>
     </>}
   </>;
 }
