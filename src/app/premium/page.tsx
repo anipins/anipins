@@ -49,21 +49,22 @@ export default async function PremiumPage() {
   const pendingSubscription = existingSubscription && ["created", "authenticated", "pending"].includes(existingSubscription.status)
     ? existingSubscription
     : null;
-  return <main className="mx-auto max-w-6xl overflow-hidden px-5 pb-24 pt-28 md:px-8 md:pt-36">
-    <section className="relative isolate overflow-hidden rounded-[2rem] border border-gold/30 bg-[#12110e] px-6 py-10 shadow-[0_35px_100px_rgba(0,0,0,.45)] sm:px-10 md:rounded-[2.5rem] md:px-14 md:py-16">
+  return <main className="mx-auto max-w-6xl overflow-hidden px-3 pb-40 pt-24 sm:px-5 sm:pb-24 sm:pt-28 md:px-8 md:pt-36">
+    <section className="relative isolate overflow-hidden rounded-[1.5rem] border border-gold/30 bg-[#12110e] px-4 py-6 shadow-[0_35px_100px_rgba(0,0,0,.45)] sm:rounded-[2rem] sm:px-10 sm:py-10 md:rounded-[2.5rem] md:px-14 md:py-16">
       <div className="pointer-events-none absolute -left-32 top-1/2 h-[30rem] w-[30rem] -translate-y-1/2 rounded-full bg-gold/10 blur-[120px]"/>
       <div className="pointer-events-none absolute -right-40 -top-40 h-[35rem] w-[35rem] rounded-full border border-gold/15"/>
       <div className="pointer-events-none absolute bottom-[-14rem] right-[20%] h-[30rem] w-[30rem] rounded-full border border-gold/10"/>
-      <div className="relative grid gap-12 lg:grid-cols-[.95fr_1.05fr] lg:items-center">
+      <div className="relative grid gap-6 lg:grid-cols-[.95fr_1.05fr] lg:items-center lg:gap-12">
         <div className="max-w-xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-gold/35 bg-gold/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[.22em] text-gold"><Crown/> AniPins Premium</div>
-          <p className="mt-9 text-xs font-semibold uppercase tracking-[.28em] text-gold/80">Member access / edition 01</p>
-          <h1 className="mt-4 font-display text-4xl font-semibold leading-[.94] tracking-tight text-paper sm:text-6xl">The archive behind<br/>your <span className="text-gold">best work.</span></h1>
-          <p className="mt-7 max-w-lg text-base leading-7 text-fog sm:text-lg">Member-only character collections, original-resolution downloads, and new drops before they reach the public feed.</p>
-          <div className="mt-8 max-w-xl">{pendingSubscription ? <PremiumActivationWatcher/> : <PremiumCheckout signedIn={Boolean(user)} />}</div>
-          <p className="mt-4 text-sm leading-6 text-fog">Choose the billing period that fits your art practice. Cancel before your next renewal.</p>
+          <div className="inline-flex items-center gap-2 rounded-full border border-gold/35 bg-gold/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.2em] text-gold sm:text-[11px]"><Crown/> AniPins Premium</div>
+          <p className="mt-5 hidden text-xs font-semibold uppercase tracking-[.28em] text-gold/80 lg:block">Member access / edition 01</p>
+          <h1 className="mt-4 font-display text-[2rem] font-semibold leading-[1] tracking-tight text-paper sm:text-5xl lg:text-6xl">The archive behind<br/>your <span className="text-gold">best work.</span></h1>
+          <p className="mt-3 max-w-lg text-sm leading-6 text-fog sm:mt-7 sm:text-base sm:leading-7 lg:text-lg">Member-only character collections, original-resolution downloads, and new drops before they reach the public feed.</p>
+          <div className="mt-5 hidden items-center gap-2 rounded-xl border border-gold/20 bg-gold/[.06] px-3 py-2 text-xs text-fog sm:inline-flex lg:hidden"><span className="text-gold">✦</span> Yearly access is about ₹167/month, billed ₹1,999 yearly.</div>
+          <div className="mt-5 max-w-xl sm:mt-8">{pendingSubscription ? <PremiumActivationWatcher/> : <PremiumCheckout signedIn={Boolean(user)} />}</div>
+          <p className="mt-3 hidden text-sm leading-6 text-fog sm:block lg:mt-4">Choose the billing period that fits your art practice. Cancel before your next renewal.</p>
         </div>
-        <aside className="relative mx-auto w-full max-w-lg py-4 sm:py-8">
+        <aside className="relative mx-auto hidden w-full max-w-lg py-4 sm:py-8 lg:block">
           <div className="absolute inset-x-8 inset-y-0 rotate-[5deg] rounded-[2rem] border border-gold/20 bg-gold/5"/>
           <div className="absolute inset-x-6 inset-y-3 -rotate-[3deg] rounded-[2rem] border border-paper/10 bg-black/20"/>
           <div className="relative min-h-[24rem] overflow-hidden rounded-[2rem] border border-gold/45 bg-[radial-gradient(circle_at_82%_18%,rgba(212,170,85,.24),transparent_25%),radial-gradient(circle_at_12%_82%,rgba(212,170,85,.12),transparent_32%),linear-gradient(145deg,#302516,#14110c_50%,#080808)] p-6 shadow-[0_32px_70px_rgba(0,0,0,.5)] sm:p-8">
@@ -81,7 +82,7 @@ export default async function PremiumPage() {
       </div>
     </section>
 
-    <section className="mt-8 grid gap-4 md:grid-cols-3">{benefits.map(([number, title, copy]) => <article key={number} className="group rounded-3xl border border-paper/10 bg-panel p-6 transition-colors hover:border-gold/35"><p className="text-xs font-semibold tracking-[.22em] text-gold/80">{number}</p><h2 className="mt-9 font-display text-2xl font-semibold text-paper">{title}</h2><p className="mt-3 text-sm leading-6 text-fog">{copy}</p><div className="mt-6 h-px w-10 bg-gold/60 transition-all group-hover:w-full"/></article>)}</section>
+    <section className="mt-8 hidden gap-4 md:grid md:grid-cols-3">{benefits.map(([number, title, copy]) => <article key={number} className="group rounded-3xl border border-paper/10 bg-panel p-6 transition-colors hover:border-gold/35"><p className="text-xs font-semibold tracking-[.22em] text-gold/80">{number}</p><h2 className="mt-9 font-display text-2xl font-semibold text-paper">{title}</h2><p className="mt-3 text-sm leading-6 text-fog">{copy}</p><div className="mt-6 h-px w-10 bg-gold/60 transition-all group-hover:w-full"/></article>)}</section>
 
     <section className="hidden mt-12 overflow-hidden rounded-[2rem] border border-paper/10 bg-panel p-5 sm:p-7">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold uppercase tracking-[.25em] text-gold">Preview the archive</p><h2 className="mt-2 font-display text-3xl font-semibold text-paper">More than a feed.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-fog">Premium drops are deliberately curated and kept outside the public browsing feed.</p></div><span className="inline-flex w-fit items-center gap-2 rounded-full border border-paper/10 px-3 py-1.5 text-xs text-fog"><Lock/> Member-only previews</span></div>
