@@ -21,30 +21,32 @@ test("the AniPins opening uses a compact brand lockup and a slow, readable revea
   assert.match(source, /const duration = reducedMotion \? REDUCED_MOTION_INTRO_DURATION_MS : INTRO_DURATION_MS/);
 });
 
-test("the AniPins intro follows the reference wordmark sweep without added orbit or halo effects", () => {
+test("the AniPins intro fades the mark, then letters left-to-right without a shine effect", () => {
   assert.doesNotMatch(styles, /\.intro-splash::before|\.intro-splash::after|intro-splash__orbit|intro-splash__halo|intro-splash__piece/);
   assert.match(styles, /\.intro-splash__lockup\s*\{[^}]*display:\s*flex/);
-  assert.match(styles, /intro-wordmark-reveal/);
-  assert.match(styles, /intro-wordmark-glint/);
+  assert.match(styles, /intro-mark-fade-in/);
+  assert.match(styles, /intro-letter-fade-in/);
+  assert.doesNotMatch(styles, /glint|shine/);
   assert.match(styles, /intro-tagline-arrive/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[^\n]*\.intro-splash \* \{ animation: none !important;/);
 });
 
 test("reduced-motion users still see the complete logo and tagline immediately", () => {
   const reducedMotion = styles.match(/@media \(prefers-reduced-motion: reduce\)[^\n]*/)?.[0] || "";
-  assert.match(reducedMotion, /\.intro-splash__wordmark\s*\{[^}]*clip-path:\s*inset\(0 -2% 0 0\)/);
+  assert.match(reducedMotion, /\.intro-splash__wordmark\s*\{[^}]*opacity:\s*1/);
   assert.match(reducedMotion, /\.intro-splash__tagline\s*\{[^}]*opacity:\s*\.82/);
-  assert.match(reducedMotion, /\.intro-splash__wordmark-glint\s*\{[^}]*display:\s*none/);
+  assert.match(reducedMotion, /\.intro-splash__letter\s*\{[^}]*opacity:\s*1/);
 });
 
-test("the normal-motion splash paints a visible wordmark on its very first frame", () => {
-  assert.match(styles, /\.intro-splash__wordmark\s*\{[^}]*clip-path:\s*none/);
-  assert.match(styles, /\.intro-splash__wordmark\s*\{[^}]*opacity:\s*\.\d+/);
-  assert.doesNotMatch(styles, /@keyframes intro-wordmark-reveal\s*\{[^}]*clip-path:\s*inset\(0 100%/);
+test("the normal-motion splash staggers the wordmark letters after the logo fade", () => {
+  assert.match(source, /\[\.\.\."AniPins"\]\.map/);
+  assert.match(styles, /\.intro-splash__letter\s*\{[^}]*opacity:\s*0/);
+  assert.match(styles, /animation-delay:\s*calc\(\.68s \+ var\(--letter-index\) \* \.065s\)/);
+  assert.doesNotMatch(styles, /intro-wordmark-glint|intro-wordmark-reveal/);
 });
 
 test("the mobile intro mark stays proportionate and the reveal uses a smooth paced sweep", () => {
   assert.match(styles, /@media \(max-width: 380px\)[^\n]*\.intro-logo-mark \{ width: [4-9](?:\.\d+)?rem;/);
-  assert.match(styles, /intro-wordmark-reveal 1\.2s cubic-bezier\(/);
-  assert.match(styles, /intro-mark-arrive 1\.35s cubic-bezier\(/);
+  assert.match(styles, /intro-letter-fade-in \.42s cubic-bezier\(/);
+  assert.match(styles, /intro-mark-fade-in \.62s cubic-bezier\(/);
 });

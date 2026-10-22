@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState, type CSSProperties } from "react";
 
 const INTRO_DURATION_MS = 3200;
 const EXIT_FADE_MS = 220;
@@ -37,8 +37,18 @@ export default function Intro() {
         />
         <div className="intro-splash__copy">
           <div className="intro-splash__wordmark-wrap">
-            <p className="intro-splash__wordmark" aria-label="AniPins">Ani<span>Pins</span></p>
-            <span className="intro-splash__wordmark-glint" aria-hidden="true" />
+            <p className="intro-splash__wordmark" role="img" aria-label="AniPins">
+              {[..."AniPins"].map((letter, index) => (
+                <span
+                  key={`${letter}-${index}`}
+                  className={`intro-splash__letter${index > 2 ? " intro-splash__letter--gold" : ""}`}
+                  style={{ "--letter-index": index } as CSSProperties}
+                  aria-hidden="true"
+                >
+                  {letter}
+                </span>
+              ))}
+            </p>
           </div>
           <p className="intro-splash__tagline">Discover <i>·</i> Save <i>·</i> Create</p>
         </div>
