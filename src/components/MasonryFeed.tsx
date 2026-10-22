@@ -21,8 +21,7 @@ type Props = { query?: Record<string, string>; randomize?: boolean; initialItems
 
 function columnsForWidth(width: number) {
   if (width >= 2200) return 7;
-  if (width >= 1680) return 6;
-  if (width >= 1360) return 5;
+  if (width >= 1360) return 6;
   if (width >= 1024) return 4;
   if (width >= 640) return 3;
   return 2;

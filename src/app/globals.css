@@ -62,8 +62,7 @@ img, video, canvas, svg { max-width: 100%; }
 main section:has(.masonry, .masonry-grid) { width: 100% !important; max-width: none !important; margin-inline: 0 !important; }
 @media (min-width: 640px) { .masonry { column-count: 3; } }
 @media (min-width: 1024px) { .masonry { column-count: 4; } }
-@media (min-width: 1360px) { .masonry { column-count: 5; } }
-@media (min-width: 1680px) { .masonry { column-count: 6; } }
+@media (min-width: 1360px) { .masonry { column-count: 6; } }
 @media (min-width: 2200px) { .masonry { column-count: 7; } }
 .masonry > * { break-inside: avoid; margin-bottom: 14px; }
 /* Do not use content-visibility here. Chrome/WebView can postpone an image's

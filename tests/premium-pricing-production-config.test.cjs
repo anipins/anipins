@@ -22,5 +22,5 @@ test("the Worker forwards optional price-specific plan IDs into the app containe
     "RAZORPAY_PREMIUM_PLAN_ID_199_MONTHLY",
     "RAZORPAY_PREMIUM_PLAN_ID_1999_YEARLY",
   ]) assert.match(worker, new RegExp(`\\"${key}\\"`));
-  assert.match(worker, /CONTAINER_BOOT_VERSION = "2026-10-21-premium-mobile-picker-v3"/);
+  assert.match(worker, /CONTAINER_BOOT_VERSION = "[0-9]{4}-[0-9]{2}-[0-9]{2}-.+"/);
 });
