@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -20,7 +20,26 @@ export default function ArtworkDetailClient({ initialData }: { initialData: any 
   const [share, setShare] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [toolbarVisible, setToolbarVisible] = useState(true);
+  const lastScrollY = useRef(0);
   const router = useRouter();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const previousY = lastScrollY.current;
+      if (scrollY < 24) setToolbarVisible(true);
+      else if (Math.abs(scrollY - previousY) > 3) setToolbarVisible(scrollY < previousY);
+      lastScrollY.current = scrollY;
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const closeArtwork = useCallback(() => {
+    if (window.history.length > 1) router.back();
+    else router.push("/explore");
+  }, [router]);
 
   const nav = useCallback((dir: "prev" | "next") => {
     const id = dir === "prev" ? data?.prevId : data?.nextId;
@@ -40,6 +59,11 @@ export default function ArtworkDetailClient({ initialData }: { initialData: any 
   const art = data?.art;
   const relatedQuery = { sort: "random", ...(art?.premium ? { premium: "1" } : {}), ...(isWallpaperArtwork(art) ? { wallpaper: "1" } : {}) };
   return (
+    <>
+    <div aria-hidden={!toolbarVisible} className={`pointer-events-none fixed inset-x-0 top-0 z-[90] flex items-start justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))] transition-[opacity,transform] duration-200 ${toolbarVisible ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0"}`}>
+      <button onClick={closeArtwork} tabIndex={toolbarVisible ? 0 : -1} className="pointer-events-auto flex h-11 items-center gap-2 rounded-full bg-black/70 px-4 text-sm font-medium text-white shadow-lg backdrop-blur transition-colors hover:bg-gold" aria-label="Go back"><span className="text-lg">←</span><span>Back</span></button>
+      <button onClick={closeArtwork} tabIndex={toolbarVisible ? 0 : -1} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/70 text-xl text-white shadow-lg backdrop-blur transition-colors hover:bg-gold" aria-label="Close">×</button>
+    </div>
     <section className="w-full px-3 pt-24 sm:px-4 md:px-6 md:pt-28 xl:px-8">
       {!art ? (
         <div className="grid gap-8 md:grid-cols-[1.2fr,1fr]"><div className="skeleton h-[70vh] rounded-3xl" /><div className="space-y-4"><div className="skeleton h-10 w-2/3 rounded-lg" /><div className="skeleton h-6 w-1/3 rounded-lg" /><div className="skeleton h-24 rounded-lg" /></div></div>
@@ -115,5 +139,6 @@ export default function ArtworkDetailClient({ initialData }: { initialData: any 
         {share && art && <ShareMenu url={typeof location !== "undefined" ? `${location.origin}/a/${art.id}` : ""} title={art.character_name} onClose={() => setShare(false)} />}
       </AnimatePresence>
     </section>
+    </>
   );
 }

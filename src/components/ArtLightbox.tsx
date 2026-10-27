@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type UIEvent } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import SaveMenu from "./SaveMenu";
@@ -24,7 +24,16 @@ export default function ArtLightbox() {
   const [likeCount, setLikeCount] = useState(0);
   const [detailError, setDetailError] = useState(false);
   const [detailRetry, setDetailRetry] = useState(0);
-  const panel = useRef<HTMLDivElement>(null);
+  const [toolbarVisible, setToolbarVisible] = useState(true);
+  const lastViewerScrollTop = useRef(0);
+
+  const handleViewerScroll = useCallback((event: UIEvent<HTMLDivElement>) => {
+    const scrollTop = event.currentTarget.scrollTop;
+    const previousTop = lastViewerScrollTop.current;
+    if (scrollTop < 24) setToolbarVisible(true);
+    else if (Math.abs(scrollTop - previousTop) > 3) setToolbarVisible(scrollTop < previousTop);
+    lastViewerScrollTop.current = scrollTop;
+  }, []);
 
   useEffect(() => {
     const h = (e: Event) => {
@@ -46,7 +55,9 @@ export default function ArtLightbox() {
     setSave(false);
     setShare(false);
     setMore(false);
-    panel.current?.scrollTo({ top: 0 });
+    setToolbarVisible(true);
+    lastViewerScrollTop.current = 0;
+    document.querySelector<HTMLElement>("[data-artwork-viewer]")?.scrollTo({ top: 0 });
     fetch(`/api/artworks/${id}`, { signal: controller.signal }).then(r => r.ok ? r.json() : Promise.reject()).then(d => {
       setData(d); setLiked(d.liked); setLikeCount(d.likeCount);
     }).catch(error => {
@@ -92,21 +103,27 @@ export default function ArtLightbox() {
   const wallpaperOnly = isWallpaperArtwork(art);
   const relatedQuery = { sort: "random", ...(art?.premium ? { premium: "1" } : {}), ...(wallpaperOnly ? { wallpaper: "1" } : {}) };
   const detailArt = data?.art?.id === id ? data.art : null;
-  const fullImage = detailArt?.original_url || detailArt?.orig_url || (detailArt?.orig ? `/api/img/${detailArt.orig}` : art?.orig_url || "");
+  // Prefer the URL from the clicked card. The feed and detail API each issue
+  // a new signed URL, and switching between them reloads the same original.
+  const fullImage = art?.orig_url || detailArt?.original_url || detailArt?.orig_url || (detailArt?.orig ? `/api/img/${detailArt.orig}` : "");
   const previewImage = art?.thumb_url || (art?.thumb ? `/api/img/${art.thumb}` : undefined);
   return (
     <AnimatePresence>
       {id !== null && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}
           className="fixed inset-0 z-[80] overflow-y-auto bg-black/90 p-0"
+          data-artwork-viewer
+          onScroll={handleViewerScroll}
           onClick={() => setId(null)}
           >
-          <button onClick={() => setId(null)} className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-20 flex h-11 items-center gap-2 rounded-full bg-black/70 px-4 text-sm font-medium text-white backdrop-blur hover:bg-gold hover:text-white transition-colors" aria-label="Go back"><span className="text-lg">←</span><span>Back</span></button>
-          <button onClick={() => setId(null)} className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20 grid h-11 w-11 place-items-center rounded-full bg-black/70 text-xl text-white backdrop-blur hover:bg-gold hover:text-white transition-colors" aria-label="Close">×</button>
+          <div aria-hidden={!toolbarVisible} className={`pointer-events-none fixed inset-x-0 top-0 z-20 flex items-start justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))] transition-[opacity,transform] duration-200 ${toolbarVisible ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0"}`}>
+            <button onClick={event => { event.stopPropagation(); setId(null); }} tabIndex={toolbarVisible ? 0 : -1} className="pointer-events-auto flex h-11 items-center gap-2 rounded-full bg-black/70 px-4 text-sm font-medium text-white backdrop-blur transition-colors hover:bg-gold" aria-label="Go back"><span className="text-lg">←</span><span>Back</span></button>
+            <button onClick={event => { event.stopPropagation(); setId(null); }} tabIndex={toolbarVisible ? 0 : -1} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/70 text-xl text-white backdrop-blur transition-colors hover:bg-gold" aria-label="Close">×</button>
+          </div>
           {data?.prevId && <button onClick={e => { e.stopPropagation(); nav("prev"); }} className="absolute left-3 top-1/2 z-10 hidden md:grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-gold hover:text-white transition-colors">←</button>}
           {data?.nextId && <button onClick={e => { e.stopPropagation(); nav("next"); }} className="absolute right-3 top-1/2 z-10 hidden md:grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-gold hover:text-white transition-colors">→</button>}
 
-          <motion.div ref={panel}
+          <motion.div
             initial={false}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.12 }}
