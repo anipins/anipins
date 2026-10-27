@@ -51,6 +51,7 @@ export default function Navbar() {
   const router = useRouter();
   const path = usePathname();
   const boxRef = useRef<HTMLDivElement>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
   const visualInput = useRef<HTMLInputElement>(null);
   const [visualLoading, setVisualLoading] = useState(false);
 
@@ -170,14 +171,16 @@ export default function Navbar() {
 
         <div ref={boxRef} data-search-active={focus} className={`relative ml-auto min-w-0 flex-1 transition-[max-width] duration-300 ease-out motion-reduce:transition-none lg:min-w-[260px] ${focus ? "lg:max-w-[390px]" : "lg:max-w-[300px]"}`}>
           <form onSubmit={go}>
-            <input value={q} onChange={e => setQ(e.target.value)} onFocus={() => setFocus(true)}
+            <input ref={searchInput} value={q} onChange={e => setQ(e.target.value)} onFocus={() => setFocus(true)}
               placeholder="Search characters, anime, tags…"
               className="min-h-11 w-full rounded-full bg-soft/80 hairline px-11 py-2.5 pl-9 text-sm text-paper placeholder:text-fog/60 outline-none transition-[background-color,border-color,box-shadow] duration-300 focus:border-gold-dim focus:bg-soft focus:shadow-[0_0_0_3px_rgba(198,161,91,0.12)] motion-reduce:transition-none" />
             <svg className={`search-motion-icon absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fog ${focus ? "search-motion-icon--active" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" strokeLinecap="round"/></svg>
             <input ref={visualInput} type="file" accept="image/*" className="sr-only" onChange={e=>visualSearch(e.target.files?.[0])}/>
-            <button type="button" onClick={()=>visualInput.current?.click()} disabled={visualLoading} aria-label="Search using an image" title="Search using an image" className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-fog transition-colors hover:bg-paper/5 hover:text-gold disabled:animate-pulse">
+            {q.trim() ? <button type="button" onClick={()=>{setQ("");setSugs([]);setFocus(true);searchInput.current?.focus();}} aria-label="Clear search" title="Clear search" className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-fog transition-colors hover:bg-paper/5 hover:text-gold">
+              <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m18 6-12 12M6 6l12 12"/></svg>
+            </button> : <button type="button" onClick={()=>visualInput.current?.click()} disabled={visualLoading} aria-label="Search using an image" title="Search using an image" className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-fog transition-colors hover:bg-paper/5 hover:text-gold disabled:animate-pulse">
               <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7.5h3l1.5-2h7l1.5 2h3v11H4z"/><circle cx="12" cy="13" r="3.25"/></svg>
-            </button>
+            </button>}
           </form>
           <AnimatePresence>
             {focus && (sugs.length > 0 || recent.length > 0) && (

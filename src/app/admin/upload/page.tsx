@@ -11,7 +11,7 @@ type UploadItem = {
 
 const blank = (file: File, index: number, premiumOnly: boolean): UploadItem => ({
   key: `${file.name}-${file.size}-${file.lastModified}-${index}`, file, preview: URL.createObjectURL(file),
-  title: file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "), character: "", anime: "", tags: "",
+  title: "", character: "", anime: "", tags: "",
   description: "", creator: "", sourceUrl: "", category: "", gender: "", featured: false, premium: premiumOnly, published: true,
 });
 
@@ -41,7 +41,8 @@ export default function AdminUpload({ premiumOnly = false }: { premiumOnly?: boo
   };
   const update = (key: string, values: Partial<UploadItem>) => setItems(previous => previous.map(item => item.key === key ? { ...item, ...values } : item));
   const remove = (key: string) => setItems(previous => { const item = previous.find(value => value.key === key); if (item) URL.revokeObjectURL(item.preview); return previous.filter(value => value.key !== key); });
-  const applyFirstToAll = () => setItems(previous => previous.length < 2 ? previous : previous.map((item, index) => index === 0 ? item : ({ ...item, character: previous[0].character, anime: previous[0].anime, tags: previous[0].tags, description: previous[0].description, creator: previous[0].creator, sourceUrl: previous[0].sourceUrl, category: previous[0].category, gender: previous[0].gender, featured: previous[0].featured, premium: previous[0].premium, published: previous[0].published })));
+  const applyFirstToAll = () => setItems(previous => previous.length < 2 ? previous : previous.map((item, index) => index === 0 ? item : ({ ...item, title: previous[0].title, character: previous[0].character, anime: previous[0].anime, tags: previous[0].tags, description: previous[0].description, creator: previous[0].creator, sourceUrl: previous[0].sourceUrl, category: previous[0].category, gender: previous[0].gender, featured: previous[0].featured, premium: previous[0].premium, published: previous[0].published })));
+  const clearAllTitles = () => setItems(previous => previous.map(item => ({ ...item, title: "" })));
 
   const send = async (item: UploadItem, allowDuplicate = false) => {
     const data = new FormData(); data.append("files", item.file); data.append("title", item.title); data.append("character", item.character); data.append("anime", item.anime);
@@ -142,7 +143,7 @@ export default function AdminUpload({ premiumOnly = false }: { premiumOnly?: boo
   return (
     <form onSubmit={submit} className="space-y-7">
       <div><label className="label">{premiumOnly ? "Premium library upload" : "Public artwork upload"}</label><div onDragOver={event => { event.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={event => { event.preventDefault(); setDrag(false); addFiles(event.dataTransfer.files); }} onClick={() => inputRef.current?.click()} className={`grid min-h-44 cursor-pointer place-items-center rounded-2xl border-2 border-dashed p-8 text-center transition-colors ${drag ? "border-gold bg-gold/5" : "border-paper/15 hover:border-paper/30"}`}><div><p className="text-sm">Drag and drop all images here, or click to browse</p><p className="mt-1 text-xs text-fog">JPG, PNG or WebP · up to 40 MB each · large batches of 1,000+ are queued safely · keep this page open until complete</p></div><input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={event => { if (event.target.files) addFiles(event.target.files); event.target.value = ""; }} /></div>{premiumOnly ? <p className="mt-3 rounded-xl border border-gold/25 bg-gold/5 px-4 py-3 text-sm text-gold">Premium-only destination: these uploads bypass every public feed and are available only to active Premium members and admins.</p> : <p className="mt-3 text-xs text-fog">Public uploads appear in the normal AniPins feeds. Use the separate Premium upload area for member-only artwork.</p>}</div>
-      {items.length > 1 ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-soft p-4 hairline"><p className="text-sm text-fog">Uploading one character or series? Fill the first card, then copy its shared details.</p><button type="button" onClick={applyFirstToAll} className="btn-ghost !px-4 !py-2">Apply first card details to all</button></div> : null}
+      {items.length > 0 ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-soft p-4 hairline"><p className="text-sm text-fog">Titles start blank. Fill the first card to copy shared details across the batch.</p><div className="flex flex-wrap gap-2"><button type="button" onClick={clearAllTitles} disabled={busy} className="btn-ghost !px-4 !py-2">Clear all titles</button>{items.length > 1 && <button type="button" onClick={applyFirstToAll} disabled={busy} className="btn-ghost !px-4 !py-2">Apply first card details to all</button>}</div></div> : null}
       <div className="space-y-5">{items.map((item, index) => <article key={item.key} style={{ contentVisibility: "auto", containIntrinsicSize: "280px" }} className="grid gap-5 rounded-3xl bg-panel p-5 hairline md:grid-cols-[180px,1fr]">
         <div><img src={item.preview} alt={`Preview ${index + 1}`} className="aspect-square w-full rounded-2xl object-cover" /><p className="mt-2 truncate text-xs text-fog">{item.file.name}</p><button type="button" onClick={() => remove(item.key)} className="mt-2 text-xs text-red-300 hover:underline">Remove</button></div>
         <div className="grid gap-4 sm:grid-cols-2">
