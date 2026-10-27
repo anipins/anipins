@@ -207,33 +207,33 @@ export default function Navbar() {
   download="AniPins.apk"
   onClick={rememberAppDownload}
   title="Download AniPins App"
-  className="inline-flex items-center gap-2 rounded-full hairline px-4 py-2 text-sm font-medium text-gold hover:text-paper hover:border-gold-dim hover:bg-paper/5 transition-colors"
+  className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full hairline px-4 text-sm font-medium text-gold transition-colors hover:text-paper hover:border-gold-dim hover:bg-paper/5"
 >
   Download App
 </a>}
           <ThemeToggle />
           <NotificationBell />
           <InstagramLink title="Instagram — @anipins.verse"
-            className="rounded-full p-2.5 text-fog hover:text-gold hover:bg-paper/5 transition-colors">
+            className="nav-icon-button">
             <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>
           </InstagramLink>
           {user ? (
             <>
               <AccountMenu user={user} />
               <Link href="/saves" className="hidden rounded-full px-3 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors min-[1650px]:block">Saves</Link>
-              <Link href="/settings" title="Settings" aria-label="Settings" className="grid h-10 w-10 place-items-center rounded-full border border-paper/10 bg-paper/[0.035] text-fog transition-all hover:border-gold/45 hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70">
+              <Link href="/settings" title="Settings" aria-label="Settings" className="nav-icon-button">
                 <SettingsMark />
               </Link>
               {user.role === "ADMIN" && (
-                <Link href="/admin" prefetch className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-fog hover:text-paper hover:bg-paper/5 transition-colors">
+                <Link href="/admin" prefetch className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full px-3 text-sm text-fog transition-colors hover:text-paper hover:bg-paper/5">
                   <span className="hidden min-[1450px]:inline">AniPins </span>Admin <span className="badge-gold !hidden !px-2 !py-0.5 min-[1800px]:!inline-flex">Owner</span>
                 </Link>
               )}
               <button onClick={async () => { try { await signOutFromApp(); location.reload(); } catch {} }}
-                className="rounded-full hairline px-4 py-2 text-sm text-fog hover:text-paper hover:border-gold-dim transition-colors">Sign out</button>
+                className="inline-flex h-11 shrink-0 items-center justify-center rounded-full hairline px-4 text-sm text-fog transition-colors hover:text-paper hover:border-gold-dim">Sign out</button>
             </>
           ) : (
-            <Link href="/login" className="rounded-full bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold-bright transition-colors">Sign in</Link>
+            <Link href="/login" className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-gold px-4 text-sm font-medium text-ink transition-colors hover:bg-gold-bright">Sign in</Link>
           )}
         </div>
 

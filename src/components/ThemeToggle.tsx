@@ -33,7 +33,7 @@ export default function ThemeToggle({ mobile = false }: { mobile?: boolean }) {
       title={ready ? `Switch to ${nextTheme} theme` : "Change color theme"}
       className={mobile
         ? "flex items-center justify-between py-2.5 text-left text-[15px] text-fog hover:text-paper"
-        : "grid h-9 w-9 place-items-center rounded-full hairline text-fog hover:border-gold-dim hover:bg-paper/5 hover:text-gold transition-colors"}
+        : "nav-icon-button"}
     >
       {mobile && <span>Theme</span>}
       <span className={mobile ? "inline-flex items-center gap-2 text-sm text-gold" : ""}>
