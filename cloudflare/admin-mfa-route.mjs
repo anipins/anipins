@@ -18,6 +18,7 @@ const GOOGLE_NONCE_COOKIE = "anipins_google_nonce";
 const MAX_FAILED_ATTEMPTS = 5;
 const FAILURE_WINDOW_MS = 10 * 60_000;
 const LOCKOUT_MS = 15 * 60_000;
+const ADMIN_EMAIL = "anipins01@gmail.com";
 
 function json(body, status = 200, headers = {}) {
   const responseHeaders = new Headers({ "Cache-Control": "no-store" });
@@ -111,7 +112,9 @@ async function readSession(request, env, dependencies) {
 }
 
 function isAdministrator(user) {
-  return String(user?.role || "").toUpperCase() === "ADMIN" && Number(user?.two_factor_enabled) === 1;
+  return String(user?.role || "").toUpperCase() === "ADMIN"
+    && String(user?.email || "").trim().toLowerCase() === ADMIN_EMAIL
+    && Number(user?.two_factor_enabled) === 1;
 }
 
 async function decryptAdminTotpSecret(encrypted, env) {

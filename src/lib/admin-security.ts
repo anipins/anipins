@@ -73,7 +73,13 @@ export function hashRecovery(code: string) { return crypto.createHash("sha256").
 export function createRecoveryCodes() { return Array.from({ length: 8 }, () => `${crypto.randomBytes(3).toString("hex")}-${crypto.randomBytes(3).toString("hex")}`.toUpperCase()); }
 
 export function requestInfo(req: Request) {
-  return { ip: (req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown").trim().slice(0, 80), ua: (req.headers.get("user-agent") || "Unknown device").slice(0, 500) };
+  const cloudflareIp = req.headers.get("cf-connecting-ip")?.trim();
+  const fallbackIp = req.headers.get("x-real-ip")?.trim() || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const candidate = cloudflareIp || fallbackIp || "unknown";
+  const ip = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(candidate) || candidate.includes(":")
+    ? candidate.slice(0, 80)
+    : "unknown";
+  return { ip, ua: (req.headers.get("user-agent") || "Unknown device").slice(0, 500) };
 }
 export async function audit(adminId: number, action: string, targetType = "", targetId = "", detail = "", ip = "") {
   await ensureSecuritySchema(); await run("INSERT INTO admin_audit_log (admin_id,action,target_type,target_id,detail,ip_address) VALUES (?,?,?,?,?,?)", adminId, action, targetType, targetId, detail.slice(0, 2000), ip);

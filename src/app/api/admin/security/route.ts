@@ -2,6 +2,7 @@ import crypto from "crypto";
 import QRCode from "qrcode";
 import { NextRequest, NextResponse } from "next/server";
 import { checkPassword, COOKIE, getUser, isAdmin } from "@/lib/auth";
+import { sessionStorageToken, sessionTokenMatches } from "@/lib/session-tokens";
 import { row, rows, run } from "@/lib/db";
 import { audit, createRecoveryCodes, decryptSecret, encryptSecret, ensureSecuritySchema, generateTotpSecret, hashRecovery, requestInfo, verifyTotp } from "@/lib/admin-security";
 import { GOOGLE_NONCE_COOKIE, verifyGoogleCredential } from "@/lib/google-auth";
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
     rows("SELECT id,kind,message,ip_address,user_agent,read_at,created_at FROM security_alerts WHERE user_id=? ORDER BY id DESC LIMIT 50", user.id),
     rows("SELECT id,action,target_type,target_id,detail,ip_address,created_at FROM admin_audit_log WHERE admin_id=? ORDER BY id DESC LIMIT 150", user.id),
   ]);
-  return NextResponse.json({ twoFactorEnabled: Number(account?.two_factor_enabled)===1, sessions: rawSessions.map((s:any)=>({ id:sessionId(s.token), current:s.token===current, created_at:s.created_at, last_seen_at:s.last_seen_at, ip_address:s.ip_address, user_agent:s.user_agent, expires_at:s.expires_at })), alerts, audit:log }, { headers:{"Cache-Control":"private, no-store"} });
+  return NextResponse.json({ twoFactorEnabled: Number(account?.two_factor_enabled)===1, sessions: rawSessions.map((s:any)=>({ id:sessionId(s.token), current:sessionTokenMatches(s.token,current), created_at:s.created_at, last_seen_at:s.last_seen_at, ip_address:s.ip_address, user_agent:s.user_agent, expires_at:s.expires_at })), alerts, audit:log }, { headers:{"Cache-Control":"private, no-store"} });
 }
 
 export async function POST(req: NextRequest) {
@@ -64,5 +65,5 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req:NextRequest){
-  const user=await guard();if(!user)return NextResponse.json({error:"Forbidden"},{status:403});const body=await req.json();const wanted=String(body.sessionId||"");const current=req.cookies.get(COOKIE)?.value||"";const sessions=await rows("SELECT token FROM sessions WHERE user_id=?",user.id);const found=sessions.find((s:any)=>sessionId(s.token)===wanted);if(!found)return NextResponse.json({error:"Session not found"},{status:404});await run("DELETE FROM sessions WHERE token=?",found.token);const info=requestInfo(req);await audit(user.id,"SESSION_REVOKED","session",wanted,found.token===current?"Current session":"",info.ip);const res=NextResponse.json({ok:true,current:found.token===current});if(found.token===current)res.cookies.set(COOKIE,"",{path:"/",maxAge:0});return res;
+  const user=await guard();if(!user)return NextResponse.json({error:"Forbidden"},{status:403});const body=await req.json();const wanted=String(body.sessionId||"");const current=req.cookies.get(COOKIE)?.value||"";const sessions=await rows("SELECT token FROM sessions WHERE user_id=?",user.id);const found=sessions.find((s:any)=>sessionId(s.token)===wanted);if(!found)return NextResponse.json({error:"Session not found"},{status:404});await run("DELETE FROM sessions WHERE token IN (?,?)",found.token,sessionStorageToken(found.token));const isCurrent=sessionTokenMatches(found.token,current);const info=requestInfo(req);await audit(user.id,"SESSION_REVOKED","session",wanted,isCurrent?"Current session":"",info.ip);const res=NextResponse.json({ok:true,current:isCurrent});if(isCurrent)res.cookies.set(COOKIE,"",{path:"/",maxAge:0});return res;
 }

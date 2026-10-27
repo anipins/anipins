@@ -35,7 +35,7 @@ function setup({ user, session = true, attempts = { attempt_count: 0, locked_unt
   const state = { recoveryCodes, failed: 0, cleared: false };
   const sessionExpiresAt = Date.now() + 60_000;
   const sessionData = session ? {
-    user: { id: "ba-admin", email: "owner@example.com", emailVerified: true },
+    user: { id: "ba-admin", email: "anipins01@gmail.com", emailVerified: true },
     session: { id: "ba-session", expiresAt: new Date(sessionExpiresAt).toISOString() },
   } : null;
   const dependencies = {
@@ -56,23 +56,34 @@ function setup({ user, session = true, attempts = { attempt_count: 0, locked_unt
 
 test("admin MFA endpoint refuses cross-origin requests and unauthenticated sessions", async () => {
   const { handleAdminMfaVerification } = await importRoute();
-  const setupArgs = setup({ user: { id: 7, role: "ADMIN", two_factor_enabled: 1 } });
+  const setupArgs = setup({ user: { id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1 } });
   const crossOrigin = await handleAdminMfaVerification(new Request("https://anipins.com/api/auth/admin-mfa", {
     method: "POST", headers: { origin: "https://attacker.example", "content-type": "application/json" }, body: JSON.stringify({ code: "123456" }),
   }), setupArgs.env, setupArgs.dependencies);
   assert.equal(crossOrigin.status, 403);
 
-  const unauthenticated = setup({ user: { id: 7, role: "ADMIN", two_factor_enabled: 1 }, session: false });
+  const unauthenticated = setup({ user: { id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1 }, session: false });
   const response = await handleAdminMfaVerification(new Request("https://anipins.com/api/auth/admin-mfa", {
     method: "POST", headers: { origin: "https://anipins.com", "content-type": "application/json" }, body: JSON.stringify({ code: "123456" }),
   }), unauthenticated.env, unauthenticated.dependencies);
   assert.equal(response.status, 401);
 });
 
+test("admin MFA endpoints do not treat another ADMIN role as the site owner", async () => {
+  const { handleAdminMfaVerification } = await importRoute();
+  const context = setup({ user: { id: 7, email: "other@example.com", role: "ADMIN", two_factor_enabled: 1 } });
+  const response = await handleAdminMfaVerification(new Request("https://anipins.com/api/auth/admin-mfa", {
+    method: "POST", headers: { origin: "https://anipins.com", "content-type": "application/json" }, body: JSON.stringify({ code: "123456" }),
+  }), context.env, context.dependencies);
+
+  assert.equal(response.status, 403);
+  assert.equal(context.state.failed, 0);
+});
+
 test("valid admin TOTP sets a session-bound HttpOnly proof cookie", async () => {
   const { handleAdminMfaVerification } = await importRoute();
   const secret = "JBSWY3DPEHPK3PXP";
-  const context = setup({ user: { id: 7, role: "ADMIN", two_factor_enabled: 1, two_factor_secret: encryptLegacyTotpSecret(secret), recovery_codes: "[]" } });
+  const context = setup({ user: { id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1, two_factor_secret: encryptLegacyTotpSecret(secret), recovery_codes: "[]" } });
   const response = await handleAdminMfaVerification(new Request("https://anipins.com/api/auth/admin-mfa", {
     method: "POST", headers: { origin: "https://anipins.com", "content-type": "application/json" }, body: JSON.stringify({ code: currentTotp(secret) }),
   }), context.env, context.dependencies);
@@ -85,7 +96,7 @@ test("valid admin TOTP sets a session-bound HttpOnly proof cookie", async () => 
 test("admin TOTP remains verifiable when its legacy encryption key is the admin password", async () => {
   const { handleAdminMfaVerification } = await importRoute();
   const secret = "JBSWY3DPEHPK3PXP";
-  const context = setup({ user: { id: 7, role: "ADMIN", two_factor_enabled: 1, two_factor_secret: encryptLegacyTotpSecret(secret, secretKey), recovery_codes: "[]" } });
+  const context = setup({ user: { id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1, two_factor_secret: encryptLegacyTotpSecret(secret, secretKey), recovery_codes: "[]" } });
   context.env.ADMIN_2FA_ENCRYPTION_KEY = "a-new-dedicated-key-that-did-not-encrypt-the-existing-secret";
   context.env.ADMIN_PASSWORD = secretKey;
   const response = await handleAdminMfaVerification(new Request("https://anipins.com/api/auth/admin-mfa", {
@@ -100,7 +111,7 @@ test("admin recovery code remains usable when the legacy TOTP encryption key is 
   const { handleAdminMfaVerification } = await importRoute();
   const recoveryHash = await hashLegacyRecoveryCode("ABCDEF-123456");
   const context = setup({ user: {
-    id: 7, role: "ADMIN", two_factor_enabled: 1,
+    id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1,
     two_factor_secret: encryptLegacyTotpSecret("JBSWY3DPEHPK3PXP", "old-encryption-key-no-longer-configured"),
     recovery_codes: JSON.stringify([recoveryHash]),
   } });
@@ -116,7 +127,7 @@ test("admin recovery code remains usable when the legacy TOTP encryption key is 
 test("admin MFA failures expose only a safe stage and error type to diagnostics", async () => {
   const { handleAdminMfaVerification } = await importRoute();
   const admin = {
-    id: 7, role: "ADMIN", two_factor_enabled: 1,
+    id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1,
     two_factor_secret: encryptLegacyTotpSecret("JBSWY3DPEHPK3PXP"), recovery_codes: "[]",
   };
   const context = setup({ user: admin });
@@ -138,7 +149,7 @@ test("admin MFA failures expose only a safe stage and error type to diagnostics"
 
 test("failed admin TOTP increments throttling state and never issues an MFA cookie", async () => {
   const { handleAdminMfaVerification } = await importRoute();
-  const context = setup({ user: { id: 7, role: "ADMIN", two_factor_enabled: 1, two_factor_secret: encryptLegacyTotpSecret("JBSWY3DPEHPK3PXP"), recovery_codes: "[]" } });
+  const context = setup({ user: { id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1, two_factor_secret: encryptLegacyTotpSecret("JBSWY3DPEHPK3PXP"), recovery_codes: "[]" } });
   const response = await handleAdminMfaVerification(new Request("https://anipins.com/api/auth/admin-mfa", {
     method: "POST", headers: { origin: "https://anipins.com", "content-type": "application/json" }, body: JSON.stringify({ code: "111111" }),
   }), context.env, context.dependencies);
@@ -150,7 +161,7 @@ test("failed admin TOTP increments throttling state and never issues an MFA cook
 
 test("profile lookup withholds the admin role until its session-bound MFA proof exists", async () => {
   const { handleBetterAuthProfile } = await importRoute();
-  const context = setup({ user: { id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: 1 } });
+  const context = setup({ user: { id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1 } });
   const makeRequest = cookie => new Request("https://anipins.com/api/auth/me", {
     headers: { cookie: `anipins_better_auth=valid${cookie ? `; anipins_admin_mfa=${cookie}` : ""}` },
   });
@@ -161,13 +172,13 @@ test("profile lookup withholds the admin role until its session-bound MFA proof 
 
   const proof = await createAdminMfaProof({ sessionId: "ba-session", userId: 7, expiresAt: context.sessionExpiresAt }, context.env.D1_RPC_SECRET);
   const allowed = await handleBetterAuthProfile(makeRequest(proof), context.env, context.dependencies);
-  assert.deepEqual(await allowed.json(), { user: { id: 7, email: "owner@example.com", role: "ADMIN" } });
+  assert.deepEqual(await allowed.json(), { user: { id: 7, email: "anipins01@gmail.com", role: "ADMIN" } });
   assert.equal(context.state.linked, true);
 });
 
 test("verified admin MFA proof is honored on protected app requests after sign-in", async () => {
   const { resolveBetterAuthIdentity } = await importRoute();
-  const context = setup({ user: { id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: 1 } });
+  const context = setup({ user: { id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1 } });
   const proof = await createAdminMfaProof({
     sessionId: "ba-session",
     userId: 7,
@@ -191,7 +202,7 @@ test("verified admin MFA proof is honored on protected app requests after sign-i
 
 test("admin lockout blocks further guesses and a recovery code is consumed once", async () => {
   const { handleAdminMfaVerification } = await importRoute();
-  const locked = setup({ user: { id: 7, role: "ADMIN", two_factor_enabled: 1 }, attempts: { attempt_count: 5, locked_until: Date.now() + 60_000 } });
+  const locked = setup({ user: { id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1 }, attempts: { attempt_count: 5, locked_until: Date.now() + 60_000 } });
   const lockedResponse = await handleAdminMfaVerification(new Request("https://anipins.com/api/auth/admin-mfa", {
     method: "POST", headers: { origin: "https://anipins.com", "content-type": "application/json" }, body: JSON.stringify({ code: "111111" }),
   }), locked.env, locked.dependencies);
@@ -199,7 +210,7 @@ test("admin lockout blocks further guesses and a recovery code is consumed once"
   assert.equal(locked.state.failed, 0);
 
   const recoveryHash = await hashLegacyRecoveryCode("ABCDEF-123456");
-  const recovery = setup({ user: { id: 7, role: "ADMIN", two_factor_enabled: 1, two_factor_secret: "", recovery_codes: JSON.stringify([recoveryHash]) } });
+  const recovery = setup({ user: { id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1, two_factor_secret: "", recovery_codes: JSON.stringify([recoveryHash]) } });
   const recoveryResponse = await handleAdminMfaVerification(new Request("https://anipins.com/api/auth/admin-mfa", {
     method: "POST", headers: { origin: "https://anipins.com", "content-type": "application/json" }, body: JSON.stringify({ code: "ABCDEF-123456" }),
   }), recovery.env, recovery.dependencies);
@@ -212,12 +223,12 @@ test("Google-verified MFA recovery keeps the old factor until the new authentica
   const oldEncrypted = encryptLegacyTotpSecret("JBSWY3DPEHPK3PXP");
   const state = { pending: "", secret: oldEncrypted, enabled: 1, codes: "[]", completed: false };
   const context = setup({ user: {
-    id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: 1,
+    id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1,
     two_factor_secret: oldEncrypted, recovery_codes: "[]",
   } });
   context.dependencies.storeFactory = () => ({
     findBusinessUserForMfa: async () => ({
-      id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: state.enabled,
+      id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: state.enabled,
       two_factor_secret: state.secret, recovery_codes: state.codes,
     }),
     findGoogleAccount: async (userId, subject) => userId === 7 && subject === "google-owner-sub",
@@ -236,7 +247,7 @@ test("Google-verified MFA recovery keeps the old factor until the new authentica
     recordMfaFailure: async () => { state.failed = (state.failed || 0) + 1; },
     clearMfaAttempts: async () => { state.failed = 0; },
   });
-  context.dependencies.verifyGoogleCredential = async () => ({ sub: "google-owner-sub", email: "owner@example.com", email_verified: true });
+  context.dependencies.verifyGoogleCredential = async () => ({ sub: "google-owner-sub", email: "anipins01@gmail.com", email_verified: true });
   context.env.BETTER_AUTH_GOOGLE_CLIENT_ID = "google-client-id";
   const makeRequest = (body, cookie = "") => new Request("https://anipins.com/api/auth/admin-mfa/recovery", {
     method: "POST",
@@ -279,16 +290,16 @@ test("Google-verified MFA recovery keeps the old factor until the new authentica
 test("MFA recovery cannot start with a Google identity that is not linked to this administrator", async () => {
   const { handleAdminMfaRecovery } = await importRoute();
   const context = setup({ user: {
-    id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: 1,
+    id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1,
     two_factor_secret: encryptLegacyTotpSecret("JBSWY3DPEHPK3PXP"), recovery_codes: "[]",
   } });
   let pendingWrites = 0;
   context.dependencies.storeFactory = () => ({
-    findBusinessUserForMfa: async () => ({ id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: 1 }),
+    findBusinessUserForMfa: async () => ({ id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1 }),
     findGoogleAccount: async () => false,
     setPendingMfaSecret: async () => { pendingWrites += 1; return true; },
   });
-  context.dependencies.verifyGoogleCredential = async () => ({ sub: "another-google-account", email: "owner@example.com", email_verified: true });
+  context.dependencies.verifyGoogleCredential = async () => ({ sub: "another-google-account", email: "anipins01@gmail.com", email_verified: true });
   context.env.BETTER_AUTH_GOOGLE_CLIENT_ID = "google-client-id";
   const response = await handleAdminMfaRecovery(new Request("https://anipins.com/api/auth/admin-mfa/recovery", {
     method: "POST",
@@ -315,12 +326,12 @@ test("MFA recovery verifies Google JWT signatures, audience, and one-time nonce"
   };
   const claims = {
     iss: "https://accounts.google.com", aud: "google-client-id", exp: now + 300, iat: now,
-    email: "owner@example.com", email_verified: true, sub: "google-owner-sub", nonce,
+    email: "anipins01@gmail.com", email_verified: true, sub: "google-owner-sub", nonce,
   };
-  const context = setup({ user: { id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: 1 } });
+  const context = setup({ user: { id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1 } });
   let pendingWrites = 0;
   context.dependencies.storeFactory = () => ({
-    findBusinessUserForMfa: async () => ({ id: 7, email: "owner@example.com", role: "ADMIN", two_factor_enabled: 1 }),
+    findBusinessUserForMfa: async () => ({ id: 7, email: "anipins01@gmail.com", role: "ADMIN", two_factor_enabled: 1 }),
     findGoogleAccount: async (_id, subject) => subject === claims.sub,
     setPendingMfaSecret: async () => { pendingWrites += 1; return true; },
   });

@@ -26,7 +26,7 @@ export async function GET(req: Request) {
   const log: string[] = [];
   try {
     if (process.env.NODE_ENV === "production") {
-      const expected = process.env.SETUP_SECRET;
+      const expected = process.env.SETUP_TOKEN;
       const supplied = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
       if (!expected || supplied !== expected) return new NextResponse("Not found", { status: 404 });
     }
@@ -40,7 +40,7 @@ export async function GET(req: Request) {
     const admin = await row("SELECT id FROM users WHERE email=?", ADMIN_EMAIL);
     if (!admin) {
       const pw = process.env.ADMIN_PASSWORD;
-      if (!pw || pw.length < 12) throw new Error("ADMIN_PASSWORD must be configured with at least 12 characters before setup.");
+      if (!pw || pw.length < 12 || new TextEncoder().encode(pw).byteLength > 72) throw new Error("ADMIN_PASSWORD must be configured with 12–72 UTF-8 bytes before setup.");
       await run("INSERT INTO users (email,password_hash,name,role) VALUES (?,?,?,?)", ADMIN_EMAIL, hashPassword(pw), "AniPins Admin", "ADMIN");
       log.push(`Admin account created (${ADMIN_EMAIL})`);
     } else log.push("Admin account already exists");

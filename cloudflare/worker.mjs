@@ -7,6 +7,7 @@ import { createProductionBetterAuth, isProductionBetterAuthHost, isProductionBet
 import { prepareContainerAuthRequest } from "./auth-request-bridge.mjs";
 import { handleAdminMfaRecovery, handleAdminMfaVerification, handleBetterAuthProfile, resolveBetterAuthIdentity } from "./admin-mfa-route.mjs";
 import { containerRuntimeEnvironment } from "./container-runtime-env.mjs";
+import { enforceEdgeRateLimit } from "./rate-limit.mjs";
 
 const PORT = 8080;
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
@@ -246,6 +247,8 @@ export default {
     // the live /api/auth routes used by the existing AniPins login flow.
     if (isStagingBetterAuthRequest(request)) {
       if (!isStagingBetterAuthHost(request)) return new Response("Not found", { status: 404 });
+      const rateLimited = await enforceEdgeRateLimit(request, env);
+      if (rateLimited) return rateLimited;
       try {
         return await createStagingBetterAuth(env, request).handler(request);
       } catch {
@@ -261,6 +264,8 @@ export default {
     // redirected above before reaching this point).
     if (isProductionBetterAuthRequest(request)) {
       if (!isProductionBetterAuthHost(request)) return new Response("Not found", { status: 404 });
+      const rateLimited = await enforceEdgeRateLimit(request, env);
+      if (rateLimited) return rateLimited;
       try {
         return await createProductionBetterAuth(env, request).handler(request);
       } catch {
@@ -277,6 +282,10 @@ export default {
     const signedStorageRequest = requestUrl.hostname === SIGNED_STORAGE_WORKER_HOST
       && SIGNED_STORAGE_PATHS.has(requestUrl.pathname);
     if (!isAllowedPublicHost(request) && !signedStorageRequest) return new Response("Misdirected request", { status: 421 });
+    if (!signedStorageRequest) {
+      const rateLimited = await enforceEdgeRateLimit(request, env);
+      if (rateLimited) return rateLimited;
+    }
     const isProductionHost = isProductionBetterAuthHost(request);
     const productionAuthReady = isProductionHost && env.DB && env.BETTER_AUTH_SECRET;
     const stagingAuthReady = isStagingBetterAuthHost(request) && env.DB && env.BETTER_AUTH_SECRET;

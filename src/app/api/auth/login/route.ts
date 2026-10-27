@@ -3,10 +3,16 @@ import crypto from "crypto";
 import { row, run } from "@/lib/db";
 import { checkPassword, createSession, COOKIE, rememberAccountSession, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
 import { createLoginAlert, decryptSecret, ensureSecuritySchema, hashRecovery, requestInfo, verifyTotp } from "@/lib/admin-security";
+import { readBoundedJson, RequestBodyError } from "@/lib/request-validation";
 
 export async function POST(req: NextRequest) {
   await ensureSecuritySchema();
-  const body = await req.json();
+  let body: Record<string, unknown>;
+  try { body = await readBoundedJson(req, 8 * 1024); }
+  catch (error) {
+    const status = error instanceof RequestBodyError ? error.status : 400;
+    return NextResponse.json({ error: status === 413 ? "Request body is too large." : "Invalid request." }, { status });
+  }
   const { email, password, challenge, code } = body;
   const info = requestInfo(req);
   if (challenge) {
@@ -23,7 +29,8 @@ export async function POST(req: NextRequest) {
     const token = await createSession(pending.user_id, info); await createLoginAlert(pending.user_id, info.ip, info.ua);
     const res = NextResponse.json({ ok: true, role: pending.role }); res.cookies.set(COOKIE, token, SESSION_COOKIE_OPTIONS); await rememberAccountSession(req, res, token, pending.user_id); return res;
   }
-  const em = String(email || "").toLowerCase().trim();
+  if (typeof password !== "string" || new TextEncoder().encode(password).byteLength > 72) return NextResponse.json({ error: "Incorrect email or password." }, { status: 401 });
+  const em = typeof email === "string" ? email.toLowerCase().trim().slice(0, 254) : "";
   const u = await row("SELECT * FROM users WHERE email=?", em);
   if (!u || !checkPassword(password || "", u.password_hash)) {
     return NextResponse.json({ error: "Incorrect email or password." }, { status: 401 });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { COOKIE, checkPassword, getUser, hashPassword } from "@/lib/auth";
+import { sessionStorageToken } from "@/lib/session-tokens";
 import { verifyGoogleReauthProof } from "@/lib/account-reauth";
 import { cancelSubscriptionForAccountDeletion } from "@/lib/billing";
 import { row, run } from "@/lib/db";
@@ -21,9 +22,11 @@ export async function PATCH(req: NextRequest) {
     const next = String(body.newPassword || "");
     const record = await row("SELECT password_hash FROM users WHERE id=?", user.id);
     if (!record || !checkPassword(current, record.password_hash)) return NextResponse.json({ error: "Current password is incorrect." }, { status: 400 });
-    if (next.length < 8) return NextResponse.json({ error: "New password must be at least 8 characters." }, { status: 400 });
+    const passwordBytes = new TextEncoder().encode(next).byteLength;
+    if (next.length < 8 || passwordBytes > 72) return NextResponse.json({ error: "New password must be 8–72 UTF-8 bytes." }, { status: 400 });
     await run("UPDATE users SET password_hash=? WHERE id=?", hashPassword(next), user.id);
-    await run("DELETE FROM sessions WHERE user_id=? AND token != ?", user.id, req.cookies.get(COOKIE)?.value || "");
+    const currentToken = req.cookies.get(COOKIE)?.value || "";
+    await run("DELETE FROM sessions WHERE user_id=? AND token NOT IN (?,?)", user.id, sessionStorageToken(currentToken), currentToken);
     return NextResponse.json({ ok: true });
   }
   return NextResponse.json({ error: "Unknown account action." }, { status: 400 });

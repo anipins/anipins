@@ -33,7 +33,10 @@ export function middleware(req: NextRequest) {
   if (!rule) return NextResponse.next();
 
   const now = Date.now();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+  const ip = req.headers.get("cf-connecting-ip")?.trim()
+    || req.headers.get("x-real-ip")?.trim()
+    || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || "unknown";
   const key = `${rule.path}:${ip}`;
   const current = buckets.get(key);
   const bucket = !current || current.resetAt <= now ? { count: 0, resetAt: now + rule.windowMs } : current;

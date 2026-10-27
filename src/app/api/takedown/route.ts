@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { run } from "@/lib/db";
+import { readBoundedJson, RequestBodyError } from "@/lib/request-validation";
 
 export async function POST(req: NextRequest) {
-  const { name, email, artworkUrl, copyrightedWork, authority, reason, signature, website, goodFaith, accuracy } = await req.json();
+  let body: Record<string, unknown>;
+  try { body = await readBoundedJson(req, 16 * 1024); }
+  catch (error) {
+    const status = error instanceof RequestBodyError ? error.status : 400;
+    return NextResponse.json({ error: status === 413 ? "Request body is too large." : "Invalid request." }, { status });
+  }
+  const { name, email, artworkUrl, copyrightedWork, authority, reason, signature, website, goodFaith, accuracy } = body;
   // Hidden field: real users never see or fill it, while basic form bots do.
   if (String(website || "").trim()) return NextResponse.json({ ok: true });
   const cleanName = String(name || "").trim().slice(0, 120);
@@ -12,7 +19,7 @@ export async function POST(req: NextRequest) {
   const cleanAuthority = String(authority || "").trim().slice(0, 80);
   const cleanReason = String(reason || "").trim().slice(0, 2000);
   const cleanSignature = String(signature || "").trim().slice(0, 120);
-  if (!cleanName || !cleanEmail || !cleanUrl || !cleanWork || !cleanAuthority || !cleanReason || !cleanSignature || !goodFaith || !accuracy) {
+  if (!cleanName || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) || !cleanUrl || !cleanWork || !cleanAuthority || !cleanReason || !cleanSignature || !goodFaith || !accuracy) {
     return NextResponse.json({ error: "Please complete every required declaration." }, { status: 400 });
   }
   try {

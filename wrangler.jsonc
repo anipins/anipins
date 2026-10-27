@@ -4,6 +4,11 @@
   "main": "cloudflare/worker.mjs",
   "compatibility_date": "2026-10-10",
   "workers_dev": true,
+  "ratelimits": [
+    { "name": "AUTH_RATE_LIMITER", "namespace_id": "71920451", "simple": { "limit": 20, "period": 60 } },
+    { "name": "SIGNUP_RATE_LIMITER", "namespace_id": "71920452", "simple": { "limit": 5, "period": 60 } },
+    { "name": "PUBLIC_FORM_RATE_LIMITER", "namespace_id": "71920453", "simple": { "limit": 10, "period": 60 } }
+  ],
   "vars": {
     "D1_RPC_URL": "https://anipins.com/__internal/d1",
     "BETTER_AUTH_GOOGLE_CLIENT_ID": "903834125575-h61hfmqa5l32rbun2k3tg40ab657nbut.apps.googleusercontent.com",

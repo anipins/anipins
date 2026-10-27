@@ -1,4 +1,5 @@
 const normalizeEmail = value => String(value || "").trim().toLowerCase();
+const ADMIN_EMAIL = "anipins01@gmail.com";
 
 function publicBusinessUser(user) {
   return {
@@ -9,7 +10,9 @@ function publicBusinessUser(user) {
 }
 
 function adminSecondFactorRequired(user) {
-  return String(user?.role || "").toUpperCase() === "ADMIN" && Number(user?.two_factor_enabled) === 1;
+  return String(user?.role || "").toUpperCase() === "ADMIN"
+    && normalizeEmail(user?.email) === ADMIN_EMAIL
+    && Number(user?.two_factor_enabled) === 1;
 }
 
 /**

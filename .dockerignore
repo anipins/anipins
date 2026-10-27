@@ -14,3 +14,4 @@ data/
 *.aab
 tsconfig.tsbuildinfo
 .wrangler-dry-run/
+.wrangler-dry-run-*/

@@ -1,6 +1,7 @@
 import { row, rows, run, USE_PG } from "@/lib/db";
 import { isPremiumSubscriptionStatus } from "@/lib/billing-utils";
 import { getPremiumPlan } from "@/lib/premium-plans";
+import { ADMIN_EMAIL } from "@/lib/auth";
 
 // Razorpay plans are immutable. Include the selected price and cadence in the
 // setting key so one tier can never accidentally reuse another tier's plan.
@@ -113,8 +114,9 @@ export async function userHasPremium(userId: number) {
   return !!subscription && isPremiumSubscriptionStatus(subscription.status) && Number(subscription.current_end) > 0 && subscription.current_end * 1000 > Date.now();
 }
 
-export async function canAccessPremium(user: { id: number; role?: string }) {
-  return user.role === "ADMIN" || userHasPremium(user.id);
+export async function canAccessPremium(user: { id: number; role?: string; email?: string }) {
+  return (user.role === "ADMIN" && String(user.email || "").trim().toLowerCase() === ADMIN_EMAIL)
+    || userHasPremium(user.id);
 }
 
 async function getPlanId(planKey: "weekly" | "monthly" | "yearly") {

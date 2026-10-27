@@ -5,6 +5,9 @@
   "compatibility_date": "2026-10-10",
   "workers_dev": true,
   "preview_urls": false,
+  "ratelimits": [
+    { "name": "AUTH_RATE_LIMITER", "namespace_id": "71920451", "simple": { "limit": 20, "period": 60 } }
+  ],
   "d1_databases": [
     {
       "binding": "DB",

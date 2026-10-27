@@ -78,8 +78,8 @@ test("identity endpoint refuses unverified email collision with an existing acco
 
 test("identity endpoint blocks an admin with legacy 2FA until the new server verification is complete", async () => {
   const { state, dependencies } = setup({
-    sessionUser: { id: "ba-admin", email: "owner@example.com", emailVerified: true },
-    existingBusinessUser: { id: 19, email: "owner@example.com", name: "Owner", role: "ADMIN", two_factor_enabled: 1 },
+    sessionUser: { id: "ba-admin", email: "anipins01@gmail.com", emailVerified: true },
+    existingBusinessUser: { id: 19, email: "anipins01@gmail.com", name: "Owner", role: "ADMIN", two_factor_enabled: 1 },
   });
   const response = await handleStagingIdentityRequest(
     new Request("https://anipins-better-auth-staging.anipins01.workers.dev/__staging/identity"),

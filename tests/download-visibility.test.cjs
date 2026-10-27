@@ -12,8 +12,9 @@ test("public users cannot download unpublished artwork or missing artwork", () =
 });
 
 test("authorized administrators retain access to unpublished draft downloads", () => {
-  assert.equal(mayDownloadArtwork({ published: 0 }, { id: 3, role: "ADMIN" }), true);
-  assert.equal(mayDownloadArtwork({ published: 1 }, { id: 3, role: "ADMIN" }), true);
+  assert.equal(mayDownloadArtwork({ published: 0 }, { id: 3, email: "ANIPINS01@gmail.com", role: "ADMIN" }), true);
+  assert.equal(mayDownloadArtwork({ published: 1 }, { id: 3, email: "ANIPINS01@gmail.com", role: "ADMIN" }), true);
+  assert.equal(mayDownloadArtwork({ published: 0 }, { id: 4, email: "other@example.com", role: "ADMIN" }), false);
 });
 
 test("download endpoint applies visibility before retrieving original bytes", () => {
@@ -37,8 +38,9 @@ test("public media path rejects staged and unpublished artwork keys", () => {
   assert.equal(mayReadArtworkMedia(null, null), false);
   assert.equal(mayReadArtworkMedia({ published: 0 }, null), false);
   assert.equal(mayReadArtworkMedia({ published: 1 }, null), true);
-  assert.equal(mayReadArtworkMedia(null, { role: "ADMIN" }), true);
-  assert.equal(mayReadArtworkMedia({ published: 0 }, { role: "ADMIN" }), true);
+  assert.equal(mayReadArtworkMedia(null, { email: "anipins01@gmail.com", role: "ADMIN" }), true);
+  assert.equal(mayReadArtworkMedia({ published: 0 }, { email: "anipins01@gmail.com", role: "ADMIN" }), true);
+  assert.equal(mayReadArtworkMedia({ published: 0 }, { email: "other@example.com", role: "ADMIN" }), false);
   const source = fs.readFileSync(path.join(__dirname, "../src/app/api/img/[...p]/route.ts"), "utf8");
   assert.match(source, /mayReadArtworkMedia\(artwork, user\)/);
   assert.match(source, /const restricted = premium \|\| unpublished/);

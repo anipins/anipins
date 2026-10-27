@@ -1,5 +1,6 @@
 import { createStagingBetterAuth, isStagingBetterAuthHost, isStagingBetterAuthRequest } from "./better-auth-staging.mjs";
 import { createD1BusinessIdentityStore, ensureBusinessIdentityLink } from "./business-identity-link.mjs";
+import { enforceEdgeRateLimit } from "./rate-limit.mjs";
 
 const IDENTITY_PATH = "/__staging/identity";
 
@@ -34,6 +35,8 @@ export default {
     if ((!isIdentityRequest && !isStagingBetterAuthRequest(request)) || !isStagingBetterAuthHost(request)) {
       return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
     }
+    const rateLimited = await enforceEdgeRateLimit(request, env);
+    if (rateLimited) return rateLimited;
     try {
       if (isIdentityRequest) return await handleStagingIdentityRequest(request, env);
       return await createStagingBetterAuth(env, request).handler(request);

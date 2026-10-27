@@ -8,6 +8,7 @@ import {
 } from "@/lib/admin-security";
 import { run } from "@/lib/db";
 import { sendWelcomeEmail } from "@/lib/email";
+import { readBoundedJson, RequestBodyError } from "@/lib/request-validation";
 import {
   ensureGoogleAuthSchema,
   findOrCreateGoogleUser,
@@ -27,7 +28,12 @@ function errorMessage(error: unknown) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
+  let body: Record<string, unknown>;
+  try { body = await readBoundedJson(req, 16 * 1024); }
+  catch (error) {
+    const status = error instanceof RequestBodyError ? error.status : 400;
+    return NextResponse.json({ error: status === 413 ? "Request body is too large." : "Invalid request." }, { status });
+  }
   const nonce = String(body.nonce || req.cookies.get(GOOGLE_NONCE_COOKIE)?.value || "");
   const clearNonce = (response: NextResponse) => {
     response.cookies.set(GOOGLE_NONCE_COOKIE, "", { path: "/", maxAge: 0 });

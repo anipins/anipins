@@ -10,4 +10,5 @@ uploads/
 .vercel/
 .wrangler/
 .wrangler-dry-run/
+.wrangler-dry-run-*/
 artifacts/

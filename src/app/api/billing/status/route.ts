@@ -8,7 +8,7 @@ export async function GET() {
   const user = await getUser();
   if (!user) return NextResponse.json({ user: null, subscription: null, premium: false }, { status: 401 });
   const subscription = await getUserSubscription(user.id);
-  return NextResponse.json({ subscription, premium: await canAccessPremium(user), adminPreview: user.role === "ADMIN" }, { headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json({ subscription, premium: await canAccessPremium(user), adminPreview: user.role === "ADMIN" && user.email.trim().toLowerCase() === "anipins01@gmail.com" }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 // Payment confirmation is asynchronous at Razorpay. This endpoint is called

@@ -3,6 +3,7 @@ import { row } from "@/lib/db";
 import { storeRazorpayPaymentEvent, storeSubscription } from "@/lib/billing";
 import { verifyWebhookSignature } from "@/lib/billing-utils";
 import { extractRazorpayPaymentEvent } from "@/lib/razorpay-transaction.mjs";
+import { readBoundedText, RequestBodyError } from "@/lib/request-validation";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -10,10 +11,17 @@ export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET?.trim();
   if (!secret) return NextResponse.json({ error: "Webhook is not configured." }, { status: 503 });
-  const rawBody = await req.text();
+  let rawBody: string;
+  try { rawBody = await readBoundedText(req, 1024 * 1024); }
+  catch (error) {
+    const status = error instanceof RequestBodyError ? error.status : 400;
+    return NextResponse.json({ error: status === 413 ? "Webhook payload is too large." : "Invalid webhook payload." }, { status });
+  }
   const signature = req.headers.get("x-razorpay-signature") || "";
   if (!verifyWebhookSignature(rawBody, signature, secret)) return NextResponse.json({ error: "Invalid signature." }, { status: 401 });
-  const event = JSON.parse(rawBody);
+  let event: any;
+  try { event = JSON.parse(rawBody); }
+  catch { return NextResponse.json({ error: "Invalid webhook payload." }, { status: 400 }); }
   const subscription = event?.payload?.subscription?.entity;
   const payment = event?.payload?.payment?.entity;
   const subscriptionId = String(subscription?.id || payment?.subscription_id || "");

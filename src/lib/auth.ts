@@ -3,6 +3,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { row, run } from "./db";
 import { readAuthAssertion } from "../../cloudflare/auth-assertion.mjs";
+import { sessionStorageToken } from "./session-tokens";
 
 export const ADMIN_EMAIL = "anipins01@gmail.com";
 export const COOKIE = "anipins_session";
@@ -40,8 +41,12 @@ export async function rememberAccountSession(request: { cookies: { get(name: str
   const accounts = storedAccounts(request.cookies.get(ACCOUNTS_COOKIE)?.value);
   const previousToken = request.cookies.get(COOKIE)?.value;
   if (previousToken && previousToken !== token) {
-    const previous = await row("SELECT user_id FROM sessions WHERE token=? AND expires_at>?", previousToken, Date.now());
-    if (previous) accounts.push({ userId: Number(previous.user_id), token: previousToken });
+    const previousHash = sessionStorageToken(previousToken);
+    const previous = await row("SELECT token,user_id FROM sessions WHERE token IN (?,?) AND expires_at>?", previousHash, previousToken, Date.now());
+    if (previous) {
+      if (previous.token === previousToken) await run("UPDATE sessions SET token=? WHERE token=?", previousHash, previousToken);
+      accounts.push({ userId: Number(previous.user_id), token: previousToken });
+    }
   }
   const next = [{ userId, token }, ...accounts.filter(account => account.token !== token && account.userId !== userId)].slice(0, 4);
   response.cookies.set(ACCOUNTS_COOKIE, encodeAccounts(next), SESSION_COOKIE_OPTIONS);
@@ -64,10 +69,18 @@ export async function getUser(): Promise<SessionUser | null> {
     }
     const token = (await cookies()).get(COOKIE)?.value;
     if (!token) return null;
-    const u = await row(
+    const tokenHash = sessionStorageToken(token);
+    let u = await row(
       "SELECT u.id, u.email, u.name, u.nickname, u.avatar, u.cover, u.bio, u.is_public, u.notify_following, u.notify_updates, u.role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?",
-      token, Date.now()
+      tokenHash, Date.now()
     );
+    if (!u) {
+      u = await row(
+        "SELECT u.id, u.email, u.name, u.nickname, u.avatar, u.cover, u.bio, u.is_public, u.notify_following, u.notify_updates, u.role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?",
+        token, Date.now()
+      );
+      if (u) await run("UPDATE sessions SET token=? WHERE token=?", tokenHash, token);
+    }
     return (u as SessionUser) || null;
   } catch {
     return null;
@@ -75,18 +88,18 @@ export async function getUser(): Promise<SessionUser | null> {
 }
 
 export function isAdmin(u: SessionUser | null) {
-  return !!u && u.role === "ADMIN";
+  return !!u && u.role === "ADMIN" && String(u.email || "").trim().toLowerCase() === ADMIN_EMAIL;
 }
 
 export async function createSession(userId: number, metadata: { ip?: string; ua?: string } = {}): Promise<string> {
   const token = crypto.randomBytes(32).toString("hex");
   await run("INSERT INTO sessions (token, user_id, expires_at, ip_address, user_agent) VALUES (?,?,?,?,?)",
-    token, userId, Date.now() + 1000 * 60 * 60 * 24 * 30, metadata.ip || "", metadata.ua || "");
+    sessionStorageToken(token), userId, Date.now() + 1000 * 60 * 60 * 24 * 30, metadata.ip || "", metadata.ua || "");
   return token;
 }
 
 export async function destroySession(token: string) {
-  await run("DELETE FROM sessions WHERE token = ?", token);
+  await run("DELETE FROM sessions WHERE token IN (?,?)", sessionStorageToken(token), token);
 }
 
 export function hashPassword(p: string) { return bcrypt.hashSync(p, 10); }
