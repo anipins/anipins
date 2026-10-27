@@ -11,7 +11,7 @@ export default function DeleteAccountPage() {
       <p className="mt-5 text-sm leading-7 text-fog">This page works for accounts created on the AniPins website or Android app. Deletion is permanent and removes your profile, login sessions, push tokens, follows, interaction history, likes, saves and collections. Any active Premium subscription is cancelled to prevent future renewal. Only billing records needed for receipts, refunds, disputes, accounting or legal requirements are retained. It does not remove anonymized aggregate artwork counters or separately submitted legal takedown records.</p>
       <p className="mt-3 text-sm leading-7 text-fog">You can also use <strong className="text-paper">Profile → Settings & privacy → Delete account</strong> inside AniPins. Administrator accounts require owner support so the service cannot accidentally lose its only administrator.</p>
       <DeleteAccountForm />
-      <p className="mt-6 text-xs leading-6 text-fog">If you cannot access your account, email <a href="mailto:anipins01@gmail.com" className="text-gold underline">anipins01@gmail.com</a> from the account email address for assistance.</p>
+      <p className="mt-6 text-xs leading-6 text-fog">If you cannot access your account, email <a href="mailto:support@anipins.com" className="text-gold underline">support@anipins.com</a> from the account email address for assistance.</p>
     </section>
   );
 }

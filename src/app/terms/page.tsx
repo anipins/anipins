@@ -36,7 +36,7 @@ export default function Terms() {
       <p className="mt-3">You may stop using AniPins at any time and delete your account through Settings or the public <Link href="/delete-account" className="text-gold underline">account-deletion page</Link>. AniPins may restrict or terminate access for serious or repeated violations. Provisions concerning intellectual property, disclaimers, legal compliance and records that must reasonably survive will continue after termination.</p>
 
       <h2 className="mt-8 font-display text-xl font-semibold text-paper">Applicable law and contact</h2>
-      <p className="mt-3">These terms are governed by applicable laws and mandatory consumer protections in the relevant jurisdiction. Questions about these terms can be sent to <a href="mailto:anipins01@gmail.com" className="text-gold underline">anipins01@gmail.com</a>.</p>
+      <p className="mt-3">These terms are governed by applicable laws and mandatory consumer protections in the relevant jurisdiction. Questions about these terms can be sent to <a href="mailto:support@anipins.com" className="text-gold underline">support@anipins.com</a>.</p>
     </section>
   );
 }

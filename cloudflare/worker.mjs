@@ -18,7 +18,7 @@ const CONTAINER_INSTANCE_NAME = "anipins-web-mobile-premium-v3";
 // Increment this when a code or configuration rollout must restart the
 // existing durable container. Deploying a new image alone does not replace a
 // container that is already running for this Durable Object.
-const CONTAINER_BOOT_VERSION = "2026-10-22-six-column-feed-v1";
+const CONTAINER_BOOT_VERSION = "2026-10-27-support-email-seo-v1";
 const MAX_ARTWORK_UPLOAD_BYTES = 40 * 1024 * 1024;
 const UPLOAD_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const SIGNED_STORAGE_PATHS = new Set(["/api/storage-upload", "/api/storage-read", "/api/storage-thumbnail"]);

@@ -30,7 +30,7 @@ export default function Copyright() {
       <p className="mt-3 text-sm leading-relaxed text-fog">
         AniPins curates anime fan artwork for inspiration. All characters and source material belong to their respective copyright holders.
         If you are a creator, rights owner or authorized representative and would like content reviewed or removed, submit a complete request below. AniPins may contact you for clarification and may provide relevant details of a claim to the person responsible for the content when appropriate.
-        You can also reach us at <a href="mailto:anipins01@gmail.com" className="underline decoration-white/30 underline-offset-4 hover:text-paper">anipins01@gmail.com</a>.
+        You can also reach us at <a href="mailto:support@anipins.com" className="underline decoration-white/30 underline-offset-4 hover:text-paper">support@anipins.com</a>.
       </p>
       <div className="mt-6 rounded-2xl border border-paper/10 bg-soft p-5 text-sm leading-6 text-fog"><p className="font-medium text-paper">Before submitting</p><p className="mt-2">Identify the protected work and the exact AniPins page, explain your authority to act, and provide a truthful statement. Knowingly false claims may cause harm to creators and users. This form is for intellectual-property or content-removal requests; use the artwork Report option for incorrect labels, duplicates or general safety concerns.</p></div>
       {done ? (

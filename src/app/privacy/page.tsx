@@ -28,7 +28,7 @@ export default function Privacy() {
       <h2 className="mt-8 font-display text-xl font-semibold text-paper">Policy updates</h2>
       <p className="mt-3">This policy may be updated when AniPins features, providers or legal obligations change. The effective date above will be revised, and significant changes may also be communicated through the website or app.</p>
       <h2 className="mt-8 font-display text-xl font-semibold text-paper">Contact</h2>
-      <p className="mb-16 mt-3">Questions or privacy requests can be sent to <a href="mailto:anipins01@gmail.com" className="text-gold underline">anipins01@gmail.com</a>.</p>
+      <p className="mb-16 mt-3">Questions or privacy requests can be sent to <a href="mailto:support@anipins.com" className="text-gold underline">support@anipins.com</a>.</p>
     </section>
   );
 }

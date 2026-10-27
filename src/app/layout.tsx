@@ -83,6 +83,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               name: SITE_NAME,
               alternateName: "Ani Pins",
               url: getSiteUrl(),
+              email: "support@anipins.com",
+              contactPoint: {
+                "@type": "ContactPoint",
+                contactType: "customer support",
+                email: "support@anipins.com",
+                availableLanguage: "English",
+              },
               logo: absoluteUrl("/brand/ap-symbol-192.png?v=gold-20261016"),
             },
           ],
