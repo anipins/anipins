@@ -1,0 +1,51 @@
+name: Deploy AniPins to Cloudflare production
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - security/audit-20261027
+    paths:
+      - 'cloudflare/**'
+      - 'src/**'
+      - 'migrations/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'Dockerfile'
+      - 'wrangler.approved-prod.jsonc'
+      - '.github/workflows/deploy-cloudflare-production.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: anipins-cloudflare-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run regression tests
+        run: node --test tests/*.test.cjs
+
+      - name: Build website
+        run: npm run build
+
+      - name: Deploy Worker and container to Cloudflare production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 4e98892da1393df0a7ebb912e14a1df8
+        run: npx wrangler deploy --config wrangler.approved-prod.jsonc
