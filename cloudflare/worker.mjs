@@ -170,15 +170,18 @@ export class AniPinsContainer extends DurableObject {
   async restartForConfigurationRollout() {
     const container = this.ctx.container;
     const storedVersion = await this.ctx.storage.get("containerBootVersion");
-    let shouldRestart = storedVersion !== CONTAINER_BOOT_VERSION;
+    // Include the deployed image identity in the rollout marker. With
+    // durable_object scheduling, active containers survive Worker uploads,
+    // and inspect().image can be empty after a snapshot restore. The image
+    // identity guarantees each new release restarts that restored instance
+    // even when Cloudflare cannot report its running image.
+    const desiredVersion = `${CONTAINER_BOOT_VERSION}:${container.images.base}`;
+    let shouldRestart = storedVersion !== desiredVersion;
     if (container.running) {
       const containerInfo = await container.inspect();
-      // With the durable_object scheduling policy, deploying a new image does
-      // not itself replace active containers. Compare the image pinned to this
-      // Worker version with the one currently running so ordinary deployments
-      // roll forward without requiring a manually bumped boot-version string.
-      // An empty image is reported during startup and snapshot restore; leave
-      // those instances alone and let the existing readiness path handle them.
+      // If Cloudflare reports a running image, restart on a mismatch as an
+      // additional guard. A blank image during startup/snapshot restore is
+      // handled by desiredVersion above, which includes this Worker's image.
       if (containerInfo?.image && containerInfo.image !== container.images.base) {
         shouldRestart = true;
       }
@@ -191,7 +194,7 @@ export class AniPinsContainer extends DurableObject {
     if (container.running) {
       await container.destroy("Configuration rollout");
     }
-    await this.ctx.storage.put("containerBootVersion", CONTAINER_BOOT_VERSION);
+    await this.ctx.storage.put("containerBootVersion", desiredVersion);
   }
 
   async startAndWaitForPort() {
