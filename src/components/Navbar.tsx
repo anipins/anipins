@@ -10,6 +10,7 @@ import InstagramLink from "./InstagramLink";
 import { toast } from "./Toaster";
 import AccountMenu from "./AccountMenu";
 import { signOutFromApp } from "@/lib/better-auth-client";
+import { profileImageSource } from "@/lib/profile-media.mjs";
 
 const APP_URL = "/downloads/AniPins-2.5.21.apk";
 const APP_DOWNLOAD_KEY = "anipins-app-download-requested-v1";
@@ -86,6 +87,14 @@ export default function Navbar() {
       })
       .catch(() => {});
   }, [path]);
+  useEffect(() => {
+    const updateProfile = (event: Event) => {
+      const updatedUser = (event as CustomEvent<{ user?: any }>).detail?.user;
+      if (updatedUser) setUser(updatedUser);
+    };
+    window.addEventListener("anipins:profile-updated", updateProfile);
+    return () => window.removeEventListener("anipins:profile-updated", updateProfile);
+  }, []);
   useEffect(() => {
     const isNativeApp = Boolean(window.AniPinsAndroid);
     const downloadRequested = localStorage.getItem(APP_DOWNLOAD_KEY) === "1";
@@ -267,7 +276,7 @@ export default function Navbar() {
                 <>
                   <Link href="/profile" className="flex items-center gap-3 py-2.5 text-[15px] text-fog hover:text-paper">
                     <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-soft text-xs font-semibold text-gold hairline">
-                      {user.avatar ? <img src={`/api/img/${user.avatar}`} alt="" className="h-full w-full object-cover" /> : (user.nickname || user.name || user.email || "A").slice(0, 1).toUpperCase()}
+                      {profileImageSource(user.avatar) ? <img src={profileImageSource(user.avatar)} alt="" className="h-full w-full object-cover" /> : (user.nickname || user.name || user.email || "A").slice(0, 1).toUpperCase()}
                     </span>
                     {user.nickname || user.name || "Profile"}
                   </Link>

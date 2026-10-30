@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { row, rows, run } from "@/lib/db";
 import { enqueueMediaCleanup, processMediaCleanupQueue, saveAvatar, saveCover } from "@/lib/media";
+import { profileMediaCleanupKeys } from "@/lib/profile-media.mjs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -55,11 +56,15 @@ export async function PATCH(req: NextRequest) {
     if (file.size > 8 * 1024 * 1024) {
       return NextResponse.json({ error: "Profile image must be smaller than 8 MB." }, { status: 400 });
     }
-    const nextAvatar = await saveAvatar(Buffer.from(await file.arrayBuffer()), user.id);
+    let nextAvatar: string;
+    try {
+      nextAvatar = await saveAvatar(Buffer.from(await file.arrayBuffer()), user.id);
+    } catch {
+      return NextResponse.json({ error: "The profile image could not be stored. Please try again." }, { status: 503 });
+    }
     const previousAvatar = avatar;
     avatar = nextAvatar;
-    cleanup.push({ key: nextAvatar, premium: false });
-    if (previousAvatar) cleanup.push({ key: previousAvatar, premium: false });
+    if (previousAvatar) cleanup.push(...profileMediaCleanupKeys([previousAvatar]).map(key => ({ key, premium: false })));
   }
 
   let cover = user.cover || "";
@@ -68,11 +73,15 @@ export async function PATCH(req: NextRequest) {
     if (!["image/jpeg", "image/png", "image/webp"].includes(coverFile.type) || coverFile.size > 12 * 1024 * 1024) {
       return NextResponse.json({ error: "Cover must be a JPG, PNG or WebP image smaller than 12 MB." }, { status: 400 });
     }
-    const nextCover = await saveCover(Buffer.from(await coverFile.arrayBuffer()), user.id);
+    let nextCover: string;
+    try {
+      nextCover = await saveCover(Buffer.from(await coverFile.arrayBuffer()), user.id);
+    } catch {
+      return NextResponse.json({ error: "The cover image could not be stored. Please try again." }, { status: 503 });
+    }
     const previousCover = cover;
     cover = nextCover;
-    cleanup.push({ key: nextCover, premium: false });
-    if (previousCover) cleanup.push({ key: previousCover, premium: false });
+    if (previousCover) cleanup.push(...profileMediaCleanupKeys([previousCover]).map(key => ({ key, premium: false })));
   }
 
   if (cleanup.length) await enqueueMediaCleanup(cleanup);

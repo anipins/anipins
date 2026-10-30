@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "@/components/Toaster";
+import { profileImageSource } from "@/lib/profile-media.mjs";
 
 export default function ProfilePage() {
   const [data, setData] = useState<any>(null);
@@ -35,16 +36,26 @@ export default function ProfilePage() {
     e.preventDefault(); setBusy(true);
     const form = new FormData(); form.append("nickname", nickname); form.append("bio", bio); form.append("isPublic", isPublic ? "1" : "0");
     if (avatar) form.append("avatar", avatar); if (cover) form.append("cover", cover);
-    const r = await fetch("/api/profile", { method: "PATCH", body: form }); const result = await r.json(); setBusy(false);
-    if (!r.ok) { toast(result.error || "Could not update profile", "err"); return; }
-    setAvatar(null); setCover(null); toast("Profile updated"); load();
+    try {
+      const response = await fetch("/api/profile", { method: "PATCH", body: form });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || `Could not update profile (${response.status}).`);
+      const updatedUser = result.user || { ...data.user, nickname, bio, is_public: isPublic ? 1 : 0 };
+      setData((current: any) => current ? { ...current, user: updatedUser } : current);
+      window.dispatchEvent(new CustomEvent("anipins:profile-updated", { detail: { user: updatedUser } }));
+      setAvatar(null); setCover(null); toast("Profile updated");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Could not update profile. Please retry.", "err");
+    } finally {
+      setBusy(false);
+    }
   };
 
   if (guest) return <section className="mx-auto max-w-md px-6 pt-44 text-center"><h1 className="font-display text-3xl font-semibold">Your profile</h1><p className="mt-3 text-fog">Sign in to build your AniPins profile and personalized feed.</p><Link href="/login" className="btn-primary mt-6">Sign in</Link></section>;
   if (!data) return <section className="mx-auto max-w-5xl px-6 pt-32"><div className="skeleton h-96 rounded-3xl" /></section>;
 
-  const avatarUrl = avatarPreview || (data.user.avatar ? `/api/img/${data.user.avatar}` : "");
-  const coverUrl = coverPreview || (data.user.cover ? `/api/img/${data.user.cover}` : "");
+  const avatarUrl = avatarPreview || profileImageSource(data.user.avatar);
+  const coverUrl = coverPreview || profileImageSource(data.user.cover);
   const initial = (nickname || data.user.email || "A").slice(0, 1).toUpperCase();
   return <section className="mx-auto max-w-5xl px-4 pb-12 pt-28 md:px-8 md:pt-32">
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="overflow-hidden rounded-3xl bg-panel hairline">
@@ -52,19 +63,20 @@ export default function ProfilePage() {
         {coverUrl && <img src={coverUrl} alt="Profile cover" className="h-full w-full object-cover" />}
         <span className="absolute bottom-3 right-3 rounded-full bg-black/70 px-4 py-2 text-xs text-white opacity-80 group-hover:opacity-100">Change cover</span>
       </button>
-      <input ref={coverRef} type="file" accept="image/*" hidden onChange={e => setCover(e.target.files?.[0] || null)} />
+      <input ref={coverRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={e => { setCover(e.target.files?.[0] || null); e.currentTarget.value = ""; }} />
       <div className="px-6 pb-7 md:px-10">
         <div className="-mt-14 flex flex-col items-start gap-4 sm:flex-row sm:items-end">
           <button type="button" onClick={() => avatarRef.current?.click()} className="relative z-10 grid h-28 w-28 shrink-0 place-items-center overflow-hidden rounded-full border-4 border-panel bg-soft text-4xl font-semibold text-gold shadow-xl">
             {avatarUrl ? <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" /> : initial}
           </button>
-          <input ref={avatarRef} type="file" accept="image/*" hidden onChange={e => setAvatar(e.target.files?.[0] || null)} />
+          <input ref={avatarRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={e => { setAvatar(e.target.files?.[0] || null); e.currentTarget.value = ""; }} />
           <div className="min-w-0 pb-1"><p className="text-xs uppercase tracking-[0.2em] text-gold">AniPins profile</p><h1 className="truncate font-display text-3xl font-semibold">{data.user.nickname || data.user.name || "Anime fan"}</h1><p className="truncate text-sm text-fog">{data.user.email}</p></div>
           {isPublic && <Link href={`/u/${data.user.id}`} className="btn-ghost ml-auto !py-2">View public profile</Link>}
         </div>
         {data.user.bio && <p className="mt-5 max-w-2xl text-sm leading-relaxed text-fog">{data.user.bio}</p>}
         <div className="mt-6 grid grid-cols-3 gap-3">{[[data.stats.saved_count,"Saved"],[data.stats.collection_count,"Collections"],[data.stats.liked_count,"Liked"]].map(([v,l]) => <div key={String(l)} className="rounded-2xl bg-soft p-4 text-center hairline"><p className="font-display text-2xl font-semibold">{v}</p><p className="mt-1 text-xs text-fog">{l}</p></div>)}</div>
         <form onSubmit={submit} className="mt-8 grid gap-4 border-t border-paper/10 pt-7 md:grid-cols-2">
+          {(avatar || cover) && <p className="text-sm text-gold md:col-span-2">Selected images upload when you choose Save profile.</p>}
           <div><label className="label">Nickname</label><input className="input" value={nickname} minLength={2} maxLength={40} required onChange={e => setNickname(e.target.value)} /></div>
           <div><label className="label">Profile visibility</label><button type="button" onClick={() => setIsPublic(v => !v)} className="input flex items-center justify-between text-left"><span>{isPublic ? "Public profile" : "Private profile"}</span><span className={`h-6 w-11 rounded-full p-1 transition-colors ${isPublic ? "bg-gold" : "bg-paper/15"}`}><span className={`block h-4 w-4 rounded-full bg-white transition-transform ${isPublic ? "translate-x-5" : ""}`} /></span></button></div>
           <div className="md:col-span-2"><label className="label">Bio <span className="text-fog">({bio.length}/240)</span></label><textarea className="input resize-none" rows={3} maxLength={240} value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell other anime fans about yourself…" /></div>
