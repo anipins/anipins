@@ -152,7 +152,7 @@ test("the Worker accepts only signed public-media queries for its direct R2 path
 test("homepage rotating discovery query uses a short-lived 5-second shared server cache", () => {
   const source = fs.readFileSync(path.join(__dirname, "../src/app/page.tsx"), "utf8");
   assert.match(source, /const getHomeDiscovery = unstable_cache\(/);
-  assert.match(source, /\["public-home-discovery-v2"\]/);
+  assert.match(source, /\["public-home-discovery-v3"\]/);
   assert.match(source, /revalidate: 5/);
   assert.match(source, /getHomeDiscovery\(discoverySeed\)/);
 });

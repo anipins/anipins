@@ -15,13 +15,16 @@ test("production random feed rotates from a seeded indexed position instead of s
   assert.doesNotMatch(route, /hashtextextended|ORDER BY RANDOM\(\)/);
 });
 
-test("home starts the next metadata page in the background before the visitor reaches it", () => {
+test("home keeps its initial discovery feed compact and waits for visitor scrolling before loading more", () => {
   const home = fs.readFileSync(path.join(__dirname, "../src/app/page.tsx"), "utf8");
   const feed = fs.readFileSync(path.join(__dirname, "../src/components/MasonryFeed.tsx"), "utf8");
-  assert.match(home, /<MasonryFeed query=\{HOME_DISCOVERY_QUERY\} randomize initialItems=\{discovery\} initialHasMore=\{discovery\.length === 36\} initialSeed=\{discoverySeed\} eagerLoad \/>/);
+  assert.match(home, /sort: "random", limit: 18, seed, compact: true/);
+  assert.match(home, /initialHasMore=\{discovery.length === 18\}/);
+  assert.doesNotMatch(home, /eagerLoad/);
+  assert.match(feed, /shouldLoadFromFeedSignal/);
+  assert.match(feed, /visitorScrollArmed.current = true/);
   assert.match(feed, /rootMargin: "1600px 0px"/);
   assert.match(feed, /remaining < 2000/);
-  assert.match(feed, /}, 120\)/);
   assert.doesNotMatch(home, /Browse anime art by series and character/);
 });
 
