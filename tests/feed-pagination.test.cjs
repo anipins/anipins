@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const { shouldLoadFromFeedSignal } = require("../src/lib/feed-pagination");
+const { shouldLoadFromFeedSignal, shouldRecheckFeedAfterItemsChange } = require("../src/lib/feed-pagination");
 
 test("requires a new visitor scroll gesture after the initial short-feed fill", () => {
   assert.equal(shouldLoadFromFeedSignal({ armed: false, canPrime: false }), false);
@@ -14,4 +14,10 @@ test("masonry feed arms pagination when the viewport moves via scrollbar", () =>
   assert.match(source, /const armFromScroll = \(\) => \{/);
   assert.match(source, /window\.addEventListener\("scroll", armFromScroll, \{ passive: true \}\)/);
   assert.match(source, /window\.removeEventListener\("scroll", armFromScroll\)/);
+});
+
+test("scrolling retries a sentinel that was already intersecting before the gesture", () => {
+  assert.equal(shouldRecheckFeedAfterItemsChange({ armed: false, sentinelTop: 500, viewportHeight: 900 }), false);
+  assert.equal(shouldRecheckFeedAfterItemsChange({ armed: true, sentinelTop: 2200, viewportHeight: 900 }), true);
+  assert.equal(shouldRecheckFeedAfterItemsChange({ armed: true, sentinelTop: 2600, viewportHeight: 900 }), false);
 });

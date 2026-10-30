@@ -1,10 +1,14 @@
 /**
- * A bottom-of-feed signal may be delivered more than once while the same
- * sentinel remains visible. Only a new visitor gesture may request another
- * page; one initial request is allowed for a feed shorter than the viewport.
+ * Avoid prefetching more pages before the visitor interacts. Once scrolling
+ * starts, allow follow-up pages while the sentinel remains near the viewport;
+ * one initial request is also allowed for a feed shorter than the viewport.
  */
 function shouldLoadFromFeedSignal({ armed, canPrime }) {
   return armed || canPrime;
 }
 
-module.exports = { shouldLoadFromFeedSignal };
+function shouldRecheckFeedAfterItemsChange({ armed, sentinelTop, viewportHeight, preloadDistance = 1600 }) {
+  return armed && sentinelTop <= viewportHeight + preloadDistance;
+}
+
+module.exports = { shouldLoadFromFeedSignal, shouldRecheckFeedAfterItemsChange };

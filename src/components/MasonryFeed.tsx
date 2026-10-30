@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import ArtCard from "./ArtCard";
-import { shouldLoadFromFeedSignal } from "@/lib/feed-pagination";
+import { shouldLoadFromFeedSignal, shouldRecheckFeedAfterItemsChange } from "@/lib/feed-pagination";
 import { distributePinterestFeed } from "@/lib/pinterest-feed-layout";
 
 function createFeedSeed() { return Math.floor(Math.random() * 2_147_483_646) + 1; }
@@ -167,7 +167,6 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   const loadNext = useCallback((force = false) => {
     if (!hasMore || inFlight.current) return;
     if (!force && !shouldLoadFromFeedSignal({ armed: visitorScrollArmed.current, canPrime: canPrimeShortFeed.current })) return;
-    visitorScrollArmed.current = false;
     canPrimeShortFeed.current = false;
     void requestPage(nextPage.current, false, false, false, nextCursor.current);
   }, [hasMore, requestPage]);
@@ -198,12 +197,16 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     // IntersectionObserver also reacts to layout changes. Arm pagination only
     // after the viewport actually moves, including scrollbar drags that do
     // not emit wheel, touchmove, or keyboard events.
-    const arm = () => { visitorScrollArmed.current = true; };
+    const arm = () => {
+      visitorScrollArmed.current = true;
+      const element = sentinel.current;
+      if (element && element.getBoundingClientRect().top <= window.innerHeight + 1600) loadNext();
+    };
     let lastScrollY = window.scrollY;
     const armFromScroll = () => {
       const currentScrollY = window.scrollY;
       if (currentScrollY !== lastScrollY) {
-        visitorScrollArmed.current = true;
+        arm();
         lastScrollY = currentScrollY;
       }
     };
@@ -220,7 +223,7 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
       window.removeEventListener("scroll", armFromScroll);
       window.removeEventListener("keydown", armFromKey);
     };
-  }, [activeLayout]);
+  }, [activeLayout, loadNext]);
   useEffect(() => {
     const element = sentinel.current;
     if (!activeLayout || !element) return;
@@ -228,6 +231,18 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
     observer.observe(element);
     return () => observer.disconnect();
   }, [activeLayout, loadNext]);
+  useEffect(() => {
+    const element = sentinel.current;
+    if (!activeLayout || !element || !shouldRecheckFeedAfterItemsChange({
+      armed: visitorScrollArmed.current,
+      sentinelTop: element.getBoundingClientRect().top,
+      viewportHeight: window.innerHeight,
+    })) return;
+    // The observer may not fire again if appending a page leaves the sentinel
+    // inside its root margin. Recheck after each append while the visitor is
+    // actively browsing so another page can fill the remaining viewport.
+    loadNext();
+  }, [activeLayout, items, loadNext]);
   useEffect(() => {
     // Some Android WebViews do not reliably notify IntersectionObserver after
     // masonry images change height. Keep the observer as the normal pagination
