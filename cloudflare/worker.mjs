@@ -13,8 +13,8 @@ const PORT = 8080;
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
 const HEALTH_ATTEMPTS = 100;
 const HEALTH_INTERVAL_MS = 200;
-// A new name routes production traffic to a fresh container instance when an
-// image rollout must not reuse a stale durable container.
+// Rotate this identity when a release must start with a fresh app container,
+// including when a durable instance keeps serving stale prerendered assets.
 const CONTAINER_INSTANCE_NAME = "anipins-web-mobile-premium-v4";
 // Increment this when a code or configuration rollout must restart the
 // existing durable container. Deploying a new image alone does not replace a
