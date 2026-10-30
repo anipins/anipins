@@ -130,7 +130,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
       text: "continue_with",
       size: "large",
       logo_alignment: "left",
-      width: Math.min(320, availableWidth),
+      width: Math.min(400, availableWidth),
     });
   }, []);
 
@@ -261,7 +261,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
             Continue with Google
           </button>
         ) : (
-          <div ref={buttonRef} className="mx-auto flex min-h-11 w-full max-w-[320px] min-w-0 justify-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-white/10" />
+          <div ref={buttonRef} className="mx-auto flex min-h-12 w-full min-w-0 justify-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-black/10 [clip-path:inset(0_round_9999px)]" />
         )}
       </div>
       {busy && <p className="text-center text-xs text-fog">Signing in securely…</p>}
