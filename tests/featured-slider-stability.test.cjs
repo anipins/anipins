@@ -48,7 +48,7 @@ test("navbar search expands on interaction with motion-safe transitions", () => 
 test("featured art uses its original image and shows only the character name", () => {
   assert.match(source, /art\.orig_url\s*\|\|\s*\(art\.orig\s*\?\s*`\/api\/img\/\$\{art\.orig\}`/);
   assert.match(source, /quality=\{9[0-9]\}/);
-  assert.match(source, /\{a\.character_name\}/);
+  assert.match(source, /\{a\.character_name\s*\|\|\s*"Featured artwork"\}/);
   assert.doesNotMatch(source, /AniPins archive \/ \{a\.category/);
   assert.doesNotMatch(source, /\{a\.anime_name\}/);
 });
