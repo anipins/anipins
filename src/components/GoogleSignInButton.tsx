@@ -173,6 +173,9 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
     setError("");
     try {
       const nonce = await requestNonce();
+      // Keep the nonce paired with the ID token returned by Credential Manager.
+      // Better Auth verifies this claim when it receives the native token.
+      googleNonce.current = nonce;
       if (typeof window.AniPinsAndroid?.signInWithGoogle !== "function") {
         throw new Error("Native Google sign-in is unavailable.");
       }

@@ -9,6 +9,7 @@ import FollowButton from "./FollowButton";
 import ZoomableArtwork from "./ZoomableArtwork";
 import DownloadButton from "./DownloadButton";
 import ReportArtwork from "./ReportArtwork";
+import AdminArtworkActions from "./AdminArtworkActions";
 import MasonryFeed from "./MasonryFeed";
 import { isWallpaperArtwork } from "@/lib/wallpaper-feed-utils";
 import { preserveArtworkPreview } from "@/lib/artwork-preview";
@@ -185,6 +186,7 @@ export default function ArtLightbox() {
                     <div className="mt-4 hidden gap-4 text-xs text-fog md:flex">
                       <span>{art.views} views</span><span>{art.downloads} downloads</span>
                     </div>
+                    <AdminArtworkActions art={art} onSaved={() => setDetailRetry(value => value + 1)} onDeleted={() => setId(null)} />
                     {(art.creator_name || art.source_url) && <div className="mt-4 hidden rounded-xl bg-soft p-3 text-xs text-fog md:block"><span>Artwork credit: </span>{art.source_url?<a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold underline underline-offset-4">{art.creator_name||"Original source"}</a>:art.creator_name}</div>}
                     <div className="hidden md:block">
                     <Link href={`/a/${art.id}`} onClick={() => setId(null)}
@@ -228,6 +230,7 @@ export default function ArtLightbox() {
                           <DownloadButton artworkId={art.id} className="btn-ghost !px-4 !py-2" />
                           <button onClick={() => setShare(true)} className="btn-ghost !px-4 !py-2">Share</button>
                         </div>
+                        <AdminArtworkActions art={art} onSaved={() => setDetailRetry(value => value + 1)} onDeleted={() => setId(null)} />
                         {(art.creator_name || art.source_url) && <div className="mt-6 rounded-xl bg-soft p-3 text-xs text-fog"><span>Artwork credit: </span>{art.source_url ? <a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="text-gold underline">{art.creator_name || "Original source"}</a> : art.creator_name}</div>}
                         <div className="mt-auto flex items-center justify-between gap-4 pt-10 text-sm text-fog">
                           <span>{art.views} views · {art.downloads} downloads</span>
