@@ -39,9 +39,10 @@ test("Google account deletion requires a credential linked to the signed-in user
   assert.match(deletion, /!passwordConfirmed && !googleConfirmed/);
 });
 
-test("Google sign-in uses a rounded click-to-start button without an auto-prompt", () => {
+test("Google One Tap prompts on web login while credential-only and native sign-in stay click-driven", () => {
   const source = fs.readFileSync(path.resolve(__dirname, "../src/components/GoogleSignInButton.tsx"), "utf8");
   assert.match(source, /if \(credentialOnly\)[\s\S]*?onCredential\?\.\(credential\)/);
   assert.match(source, /shape: "pill"/);
-  assert.doesNotMatch(source, /accounts\.id\.prompt\s*\(/);
+  assert.match(source, /!credentialOnly && loginParams\.get\("mobile"\) !== "1"/);
+  assert.match(source, /window\.google\?\.accounts\.id\.prompt\(\)/);
 });

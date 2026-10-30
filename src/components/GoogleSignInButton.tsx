@@ -11,8 +11,12 @@ type GoogleAccounts = {
       client_id: string;
       callback: (response: CredentialResponse) => void;
       nonce: string;
+      auto_select?: boolean;
+      cancel_on_tap_outside?: boolean;
+      use_fedcm_for_prompt?: boolean;
     }): void;
     renderButton(element: HTMLElement, options: Record<string, string | number>): void;
+    prompt(): void;
   };
 };
 
@@ -140,6 +144,9 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
       window.google.accounts.id.initialize({
         client_id: clientId,
         nonce,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        use_fedcm_for_prompt: true,
         callback: ({ credential }) => {
           if (!credential) setError("Google did not return a sign-in credential.");
           else void completeSignIn(credential);
@@ -147,6 +154,13 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
       });
       googleInitialized.current = true;
       renderButton();
+      const loginParams = new URLSearchParams(window.location.search);
+      const shouldPrompt = !credentialOnly && loginParams.get("mobile") !== "1";
+      if (shouldPrompt) {
+        window.setTimeout(() => {
+          try { window.google?.accounts.id.prompt(); } catch {}
+        }, 250);
+      }
     } catch (initializationError) {
       setError(initializationError instanceof Error ? initializationError.message : "Google sign-in is unavailable.");
     } finally {
