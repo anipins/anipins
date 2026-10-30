@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
@@ -19,10 +20,12 @@ export default function Login() {
   const [newRecoveryCodes, setNewRecoveryCodes] = useState<string[]>([]);
   const [legacyAuthFallback, setLegacyAuthFallback] = useState(false);
   const [instagramBrowser, setInstagramBrowser] = useState(false);
+  const [mobileSignIn, setMobileSignIn] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     setInstagramBrowser(/Instagram/i.test(navigator.userAgent));
+    setMobileSignIn(new URLSearchParams(window.location.search).get("mobile") === "1");
   }, []);
 
   const finishSignIn = useCallback(async (role: string) => {
@@ -170,14 +173,71 @@ export default function Login() {
     finishSignIn(d.role);
   };
 
+  const isSecurityStep = Boolean(challenge || betterAuthMfa);
+  const title = newRecoveryCodes.length
+    ? "Save your recovery codes"
+    : mfaEnrollment
+      ? "Create a new authenticator"
+      : isSecurityStep
+        ? "Security verification"
+        : mode === "login" ? "Welcome back" : "Join AniPins";
+  const description = newRecoveryCodes.length
+    ? "Your new authenticator is ready. Save these one-time recovery codes before continuing."
+    : mfaEnrollment
+      ? "Add this AniPins key to your authenticator app, then enter the code it shows."
+      : isSecurityStep
+        ? "Enter your authenticator code, a recovery code, or verify your linked Google account to create a new authenticator."
+        : mobileSignIn
+          ? "Continue with Google to sign in to AniPins."
+          : mode === "login" ? "Sign in to your account." : "Create an account to save artwork.";
+
   return (
-    <section className="mx-auto flex min-h-[80vh] w-full max-w-md flex-col justify-center px-4 pt-24 sm:px-6">
-      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        className="min-w-0 overflow-hidden rounded-3xl bg-panel hairline p-6 sm:p-8">
-        <h1 className="font-display text-2xl font-semibold">{newRecoveryCodes.length ? "Save your recovery codes" : mfaEnrollment ? "Create a new authenticator" : challenge || betterAuthMfa ? "Security verification" : mode === "login" ? "Welcome back" : "Join AniPins"}</h1>
-        <p className="mt-1 text-sm text-fog">{newRecoveryCodes.length ? "Your new authenticator is ready. Save these one-time recovery codes before continuing." : mfaEnrollment ? "Add this AniPins key to your authenticator app, then enter the code it shows." : challenge || betterAuthMfa ? "Enter your authenticator code, a recovery code, or verify your linked Google account to create a new authenticator." : new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").get("mobile") === "1" ? "Continue with Google to sign in to AniPins." : mode === "login" ? "Sign in to your account." : "Create an account to save artwork."}</p>
+    <section className="relative isolate mx-auto flex min-h-[76svh] w-full max-w-6xl items-center justify-center px-4 pb-14 pt-24 sm:px-6 lg:pt-28">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-8 top-24 -z-10 mx-auto h-80 max-w-4xl rounded-full bg-gold/[0.06] blur-3xl" />
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+        className="grid w-full overflow-hidden rounded-[28px] border border-white/[0.09] bg-panel shadow-[0_28px_90px_rgba(0,0,0,0.3)] lg:min-h-[650px] lg:grid-cols-[1fr_0.92fr]">
+        <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-white/[0.08] bg-gradient-to-br from-gold/[0.13] via-panel to-ink p-10 xl:p-14 lg:flex">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-28 -top-24 h-80 w-80 rounded-full border border-gold/10" />
+          <div aria-hidden="true" className="pointer-events-none absolute -right-10 top-[-2rem] h-64 w-64 rounded-full border border-gold/[0.08]" />
+          <div className="relative flex items-center gap-3">
+            <Image src="/brand/ap-symbol-192.png" alt="" width={42} height={42} className="rounded-xl bg-gold/10 p-1.5" />
+            <div>
+              <p className="font-display text-lg font-semibold tracking-tight text-paper">AniPins</p>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-fog">Anime art, collected</p>
+            </div>
+          </div>
+
+          <div className="relative max-w-md py-12">
+            <p className="mb-5 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-gold"><span className="h-px w-7 bg-gold/70" />Your collection starts here</p>
+            <h2 className="font-display text-4xl font-medium leading-[1.12] tracking-tight text-paper xl:text-[3.25rem]">Keep the art that moves you.</h2>
+            <p className="mt-5 max-w-sm text-sm leading-7 text-fog">Sign in to save your favorite artwork, build personal collections, and pick up where you left off.</p>
+          </div>
+
+          <div className="relative flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-black/10 p-4">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gold/10 text-gold" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.6"><path d="M7 5.5h10a1.5 1.5 0 0 1 1.5 1.5v12L12 16l-6.5 3V7A1.5 1.5 0 0 1 7 5.5Z" strokeLinejoin="round"/><path d="M9 9h6M9 12h4" strokeLinecap="round"/></svg>
+            </span>
+            <div>
+              <p className="text-sm font-medium text-paper">A place for your favorites</p>
+              <p className="mt-0.5 text-xs text-fog">Your saved art stays with your account.</p>
+            </div>
+          </div>
+        </aside>
+
+        <div className="flex min-w-0 items-center justify-center p-6 sm:p-10 lg:p-12">
+          <div className="w-full max-w-md">
+            <div className="mb-7 flex items-center gap-3 lg:hidden">
+              <Image src="/brand/ap-symbol-192.png" alt="" width={38} height={38} className="rounded-xl bg-gold/10 p-1.5" />
+              <div>
+                <p className="font-display text-base font-semibold tracking-tight text-paper">AniPins</p>
+                <p className="text-[9px] uppercase tracking-[0.2em] text-fog">Anime art, collected</p>
+              </div>
+            </div>
+            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-gold">Your AniPins account</p>
+            <h1 className="mt-2 font-display text-[1.8rem] font-semibold tracking-tight text-paper sm:text-3xl">{title}</h1>
+            <p className="mt-2 max-w-sm text-sm leading-6 text-fog">{description}</p>
         {instagramBrowser && !challenge && !betterAuthMfa && (
-          <aside className="mt-4 rounded-2xl border border-gold/25 bg-gold/10 p-3 text-sm text-paper/90">
+          <aside className="mt-5 rounded-2xl border border-gold/25 bg-gold/10 p-3.5 text-sm text-paper/90">
             <p className="font-medium text-gold">Open AniPins in Chrome for Google sign-in</p>
             <p className="mt-1 text-xs leading-relaxed text-fog">Instagram&apos;s in-app browser does not share your phone or Chrome Google accounts. Tap Instagram&apos;s ⋮ menu, then choose <span className="text-paper">Open in browser</span> to see your normal account picker.</p>
           </aside>
@@ -189,49 +249,52 @@ export default function Login() {
           <button type="button" className="btn-primary w-full" onClick={() => finishSignIn("ADMIN")}>Continue to AniPins</button>
         </div> : mfaEnrollment ? <form onSubmit={confirmMfaRecovery} className="mt-6 space-y-4">
           <div className="rounded-xl border border-line bg-soft p-4"><p className="text-sm text-paper">In your authenticator app, choose <span className="font-medium">Enter a setup key</span> (or Manual entry), then enter this key:</p><code className="mt-3 block break-all rounded-lg border border-line p-3 font-mono text-gold">{mfaEnrollment.secret}</code><p className="mt-3 text-xs text-fog">Keep this key private. It expires in 10 minutes. Do not send it to anyone.</p></div>
-          <div><label className="label">Code from the new authenticator</label><input className="input font-mono tracking-[.25em]" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={e=>setCode(e.target.value)} placeholder="000000" autoFocus /></div>
-          {err && <p className="text-sm text-red-400">{err}</p>}
-          <button disabled={busy} className="btn-primary w-full disabled:opacity-50">{busy ? "Checking…" : "Confirm new authenticator"}</button>
-        </form> : <form onSubmit={submit} className="mt-6 space-y-4">
-          {challenge || betterAuthMfa ? <div><label className="label">Authentication code or recovery code</label><input className="input font-mono tracking-[.25em]" autoComplete="one-time-code" required value={code} onChange={e=>setCode(e.target.value)} placeholder="000000" autoFocus /></div> : <>
+          <div><label htmlFor="auth-code" className="label">Code from the new authenticator</label><input id="auth-code" className="input font-mono tracking-[.25em]" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={e=>setCode(e.target.value)} placeholder="000000" autoFocus /></div>
+          {err && <p role="alert" className="rounded-xl border border-red-400/20 bg-red-400/[0.08] p-3 text-sm text-red-300">{err}</p>}
+          <button disabled={busy} className="btn-primary min-h-12 w-full disabled:opacity-50">{busy ? "Checking…" : "Confirm new authenticator"}</button>
+        </form> : <form onSubmit={submit} className="mt-7 space-y-4">
+          {isSecurityStep ? <div><label htmlFor="auth-code" className="label">Authentication code or recovery code</label><input id="auth-code" className="input font-mono tracking-[.25em]" autoComplete="one-time-code" required value={code} onChange={e=>setCode(e.target.value)} placeholder="000000" autoFocus /></div> : <>
           {mode === "register" && (
-            <div><label className="label">Name</label>
-              <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" /></div>
+            <div><label htmlFor="auth-name" className="label">Name</label>
+              <input id="auth-name" className="input" autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" /></div>
           )}
-          <div><label className="label">Email</label>
-            <input className="input" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" /></div>
-          <div><label className="label">Password</label>
-            <input className="input" type="password" required minLength={mode === "register" ? 8 : 1} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" /></div>
+          <div><label htmlFor="auth-email" className="label">Email address</label>
+            <input id="auth-email" className="input min-h-12 rounded-2xl px-4" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" /></div>
+          <div><label htmlFor="auth-password" className="label">Password</label>
+            <input id="auth-password" className="input min-h-12 rounded-2xl px-4" type="password" autoComplete={mode === "register" ? "new-password" : "current-password"} required minLength={mode === "register" ? 8 : 1} value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" /></div>
           </>}
-          {err && <p className="text-sm text-red-400">{err}</p>}
-          <button disabled={busy} className="btn-primary w-full disabled:opacity-50">{busy ? "Please wait…" : challenge || betterAuthMfa ? "Verify and sign in" : mode === "login" ? "Sign in" : "Create account"}</button>
+          {err && <p role="alert" className="rounded-xl border border-red-400/20 bg-red-400/[0.08] p-3 text-sm text-red-300">{err}</p>}
+          <button disabled={busy} className="btn-primary min-h-12 w-full shadow-[0_8px_24px_rgba(198,161,91,0.12)] disabled:cursor-wait disabled:opacity-60">{busy ? "Please wait…" : isSecurityStep ? "Verify and sign in" : mode === "login" ? "Sign in" : "Create account"}</button>
         </form>}
         {betterAuthMfa && !mfaEnrollment && newRecoveryCodes.length === 0 && <div className="mt-5 rounded-xl border border-line bg-soft p-4">
           <p className="mb-3 text-sm text-fog">If you no longer have the old authenticator or its recovery codes, verify the linked Google account to set up a replacement.</p>
           <GoogleSignInButton credentialOnly onCredential={credential => void beginMfaRecovery(credential)} onSuccess={() => {}} onTwoFactor={() => {}} />
         </div>}
         {!challenge && !betterAuthMfa && !mfaEnrollment && newRecoveryCodes.length === 0 && <>
-          <div className="my-5 flex items-center gap-3" aria-hidden="true">
+          <div className="my-6 flex items-center gap-3" aria-hidden="true">
             <span className="h-px flex-1 bg-line" />
-            <span className="text-xs uppercase tracking-[.2em] text-fog">or</span>
+            <span className="text-[10px] font-medium uppercase tracking-[.18em] text-fog">or continue with</span>
             <span className="h-px flex-1 bg-line" />
           </div>
-        <GoogleSignInButton
+          <GoogleSignInButton
             onSuccess={finishSignIn}
             onTwoFactor={requestTwoFactor}
             onAdminMfaRequired={() => { setBetterAuthMfa(true); setCode(""); setErr(""); }}
-          forceLegacyAuth={legacyAuthFallback}
+            forceLegacyAuth={legacyAuthFallback}
           />
         {isBetterAuthMode && !legacyAuthFallback && mode === "login" && (
-          <button type="button" onClick={() => { setLegacyAuthFallback(true); setErr(""); }} className="w-full text-center text-xs text-fog hover:text-paper transition-colors">
+          <button type="button" onClick={() => { setLegacyAuthFallback(true); setErr(""); }} className="mt-4 w-full rounded-xl py-2 text-center text-xs text-fog transition-colors hover:bg-paper/[0.03] hover:text-paper">
             Use existing sign-in
           </button>
         )}
         </>}
         {!mfaEnrollment && newRecoveryCodes.length === 0 && <button onClick={() => { if(challenge || betterAuthMfa){if(betterAuthMfa) void betterAuthClient.signOut({});setChallenge("");setBetterAuthMfa(false);setCode("");}else setMode(mode === "login" ? "register" : "login"); setErr(""); }}
-          className="mt-5 w-full text-center text-sm text-fog hover:text-paper transition-colors">
+          className="mt-6 w-full border-t border-line/70 pt-5 text-center text-sm text-fog transition-colors hover:text-paper">
           {challenge || betterAuthMfa ? "Back to sign in" : mode === "login" ? "New here? Create an account" : "Already have an account? Sign in"}
         </button>}
+            {!challenge && !betterAuthMfa && !mfaEnrollment && newRecoveryCodes.length === 0 && <p className="mt-5 flex items-center justify-center gap-2 text-center text-[11px] text-fog/80"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5 text-gold/80" stroke="currentColor" strokeWidth="1.5"><rect x="4.5" y="8.5" width="11" height="8" rx="2"/><path d="M7 8V6a3 3 0 1 1 6 0v2" strokeLinecap="round"/></svg>Secure sign-in for your AniPins account</p>}
+          </div>
+        </div>
       </motion.div>
     </section>
   );

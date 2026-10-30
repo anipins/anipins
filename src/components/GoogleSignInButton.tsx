@@ -11,12 +11,8 @@ type GoogleAccounts = {
       client_id: string;
       callback: (response: CredentialResponse) => void;
       nonce: string;
-      auto_select?: boolean;
-      cancel_on_tap_outside?: boolean;
-      use_fedcm_for_prompt?: boolean;
     }): void;
     renderButton(element: HTMLElement, options: Record<string, string | number>): void;
-    prompt(): void;
   };
 };
 
@@ -144,9 +140,6 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
       window.google.accounts.id.initialize({
         client_id: clientId,
         nonce,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-        use_fedcm_for_prompt: true,
         callback: ({ credential }) => {
           if (!credential) setError("Google did not return a sign-in credential.");
           else void completeSignIn(credential);
@@ -154,16 +147,6 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
       });
       googleInitialized.current = true;
       renderButton();
-      const loginParams = new URLSearchParams(window.location.search);
-      // Offer Chrome's secure Google account chooser on the normal web login
-      // page. `auto_select` stays disabled, so the visitor always chooses an
-      // account and the prompt is never shown inside the native app.
-      const shouldPrompt = !credentialOnly && loginParams.get("mobile") !== "1";
-      if (shouldPrompt) {
-        window.setTimeout(() => {
-          try { window.google?.accounts.id.prompt(); } catch {}
-        }, 250);
-      }
     } catch (initializationError) {
       setError(initializationError instanceof Error ? initializationError.message : "Google sign-in is unavailable.");
     } finally {
@@ -253,7 +236,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
           onError={() => setError("Google sign-in could not be loaded. Check your connection and try again.")}
         />
       )}
-      <div className={`min-w-0 overflow-hidden ${busy ? "pointer-events-none opacity-60" : ""}`} aria-busy={busy}>
+      <div className={`min-w-0 ${busy ? "pointer-events-none opacity-60" : ""}`} aria-busy={busy}>
         {nativeGoogle ? (
           <button
             type="button"
@@ -264,7 +247,7 @@ export default function GoogleSignInButton({ onSuccess, onTwoFactor, credentialO
             Continue with Google
           </button>
         ) : (
-          <div ref={buttonRef} className="flex min-h-11 w-full min-w-0 justify-center overflow-hidden" />
+          <div ref={buttonRef} className="mx-auto flex min-h-11 w-full max-w-[320px] min-w-0 justify-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-white/10" />
         )}
       </div>
       {busy && <p className="text-center text-xs text-fog">Signing in securely…</p>}
