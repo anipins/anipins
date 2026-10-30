@@ -21,11 +21,25 @@ export default function Login() {
   const [legacyAuthFallback, setLegacyAuthFallback] = useState(false);
   const [instagramBrowser, setInstagramBrowser] = useState(false);
   const [mobileSignIn, setMobileSignIn] = useState(false);
+  const [promoArtwork, setPromoArtwork] = useState<{ thumb_url?: string; character_name?: string; anime_name?: string } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     setInstagramBrowser(/Instagram/i.test(navigator.userAgent));
     setMobileSignIn(new URLSearchParams(window.location.search).get("mobile") === "1");
+  }, []);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("mobile") === "1" || window.matchMedia("(max-width: 1023px)").matches) return;
+    const controller = new AbortController();
+    fetch("/api/artworks?sort=popular&featured=1&page=0&limit=1", { signal: controller.signal })
+      .then(async response => response.ok ? response.json() : null)
+      .then(data => {
+        const artwork = data?.items?.[0];
+        if (artwork?.thumb_url) setPromoArtwork(artwork);
+      })
+      .catch(() => {});
+    return () => controller.abort();
   }, []);
 
   const finishSignIn = useCallback(async (role: string) => {
@@ -192,17 +206,28 @@ export default function Login() {
           : mode === "login" ? "Sign in to your account." : "Create an account to save artwork.";
 
   return (
-    <section className="relative isolate mx-auto flex min-h-[76svh] w-full items-center justify-center px-4 pb-16 pt-24 sm:px-6 lg:pt-28">
-      <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/3 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-gold/[0.07] blur-[100px]" />
+    <section className="relative isolate mx-auto flex min-h-[76svh] w-full items-center justify-center px-4 pb-14 pt-24 sm:px-6 lg:pb-16 lg:pt-28">
+      <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/3 -z-10 h-80 w-80 -translate-x-1/2 rounded-full bg-gold/[0.08] blur-[110px]" />
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
-        className="w-full max-w-[440px] overflow-hidden rounded-[24px] bg-panel hairline p-6 shadow-[0_24px_70px_rgba(0,0,0,0.24)] sm:p-9">
-          <header className="mb-7 text-center">
-            <div className="mb-6 inline-flex items-center gap-2.5">
-              <Image src="/brand/ap-symbol-192.png" alt="" width={36} height={36} className="rounded-xl bg-gold/10 p-1.5" />
-              <span className="font-display text-lg font-semibold tracking-tight text-paper">AniPins</span>
+        className="grid w-full max-w-6xl overflow-hidden rounded-[28px] bg-panel hairline shadow-[0_28px_90px_rgba(0,0,0,0.32)] lg:min-h-[660px] lg:grid-cols-[0.94fr_1.06fr]">
+        <div className="order-2 flex min-w-0 items-center justify-center p-6 sm:p-10 lg:order-1 lg:px-12 lg:py-12">
+          <div className="w-full max-w-[420px]">
+          <header className="mb-7">
+            <div className="mb-8 flex items-center justify-between gap-4">
+              <div className="inline-flex items-center gap-2.5">
+                <Image src="/brand/ap-symbol-192.png" alt="" width={38} height={38} className="rounded-xl bg-gold/10 p-1.5" />
+                <span className="font-display text-lg font-semibold tracking-tight text-paper">AniPins</span>
+              </div>
+              <a href="/" className="text-xs text-fog transition-colors hover:text-paper">Back to exploring</a>
             </div>
+            {!isSecurityStep && !mfaEnrollment && newRecoveryCodes.length === 0 && (
+              <div className="mb-7 grid grid-cols-2 rounded-xl border border-line bg-soft p-1" role="group" aria-label="Account access">
+                <button type="button" aria-pressed={mode === "login"} onClick={() => { setMode("login"); setErr(""); }} className={`min-h-10 rounded-lg text-sm font-medium transition-colors ${mode === "login" ? "bg-gold text-ink shadow-sm" : "text-fog hover:text-paper"}`}>Sign in</button>
+                <button type="button" aria-pressed={mode === "register"} onClick={() => { setMode("register"); setErr(""); }} className={`min-h-10 rounded-lg text-sm font-medium transition-colors ${mode === "register" ? "bg-gold text-ink shadow-sm" : "text-fog hover:text-paper"}`}>Create account</button>
+              </div>
+            )}
             <h1 className="font-display text-[1.8rem] font-semibold tracking-tight text-paper sm:text-3xl">{title}</h1>
-            <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-fog">{description}</p>
+            <p className="mt-2 max-w-sm text-sm leading-6 text-fog">{description}</p>
           </header>
         {instagramBrowser && !challenge && !betterAuthMfa && (
           <aside className="mb-6 rounded-2xl border border-gold/25 bg-gold/10 p-3.5 text-sm text-paper/90">
@@ -261,6 +286,30 @@ export default function Login() {
           {challenge || betterAuthMfa ? "Back to sign in" : mode === "login" ? "New here? Create an account" : "Already have an account? Sign in"}
         </button>}
           {!challenge && !betterAuthMfa && !mfaEnrollment && newRecoveryCodes.length === 0 && <p className="mt-5 text-center text-[11px] text-fog/80">Secure sign-in for your AniPins account</p>}
+          </div>
+        </div>
+        <aside className="relative order-1 hidden min-h-[300px] overflow-hidden bg-ink lg:order-2 lg:flex lg:flex-col lg:justify-between">
+          {promoArtwork?.thumb_url && <Image src={promoArtwork.thumb_url} alt="" fill sizes="(min-width: 1024px) 52vw, 100vw" priority className="object-cover opacity-65" onError={() => setPromoArtwork(null)} />}
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-black/25 via-[#11100e]/25 to-[#11100e]/95" />
+          <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(ellipse_at_78%_18%,rgba(198,161,91,0.28),transparent_38%)]" />
+          <div aria-hidden="true" className="absolute -right-24 -top-20 h-80 w-80 rounded-full border border-gold/20" />
+          <div aria-hidden="true" className="absolute -right-10 -top-6 h-56 w-56 rounded-full border border-gold/15" />
+          <div className="relative flex h-full min-h-[660px] flex-col justify-between p-9 xl:p-12">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/25 px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.2em] text-paper/85 backdrop-blur-md">
+              <span className="h-1.5 w-1.5 rounded-full bg-gold" /> AniPins art archive
+            </div>
+            <div className="max-w-lg">
+              <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-gold">Discover · Save · Create</p>
+              <h2 className="font-display text-4xl font-semibold leading-[1.08] tracking-tight text-paper xl:text-5xl">Keep the art that moves you.</h2>
+              <p className="mt-5 max-w-md text-sm leading-7 text-paper/75">Find your next reference, save the pieces that inspire you, and build a collection that feels like yours.</p>
+              {promoArtwork?.character_name && <div className="mt-8 inline-flex items-center gap-3 rounded-2xl border border-white/15 bg-black/30 px-4 py-3 backdrop-blur-md">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-gold/15 text-lg text-gold" aria-hidden="true">✦</span>
+                <span><span className="block text-sm font-medium text-paper">{promoArtwork.character_name}</span><span className="mt-0.5 block text-xs text-paper/60">{promoArtwork.anime_name || "Featured artwork"}</span></span>
+              </div>}
+            </div>
+            <p className="text-xs text-paper/55">A home for the artwork you want to come back to.</p>
+          </div>
+        </aside>
       </motion.div>
     </section>
   );

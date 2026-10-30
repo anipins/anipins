@@ -195,19 +195,29 @@ export default function MasonryFeed({ query = {}, randomize = false, initialItem
   }, [activeLayout, randomize, requestPage]);
   useEffect(() => {
     if (!activeLayout) return;
-    // IntersectionObserver reacts to layout changes as well as actual
-    // scrolling. Arm pagination from physical input, so appending cards can
-    // never fetch every subsequent page by itself.
+    // IntersectionObserver also reacts to layout changes. Arm pagination only
+    // after the viewport actually moves, including scrollbar drags that do
+    // not emit wheel, touchmove, or keyboard events.
     const arm = () => { visitorScrollArmed.current = true; };
+    let lastScrollY = window.scrollY;
+    const armFromScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY !== lastScrollY) {
+        visitorScrollArmed.current = true;
+        lastScrollY = currentScrollY;
+      }
+    };
     const armFromKey = (event: KeyboardEvent) => {
       if (["ArrowDown", "PageDown", "End", " "].includes(event.key)) arm();
     };
     window.addEventListener("wheel", arm, { passive: true });
     window.addEventListener("touchmove", arm, { passive: true });
+    window.addEventListener("scroll", armFromScroll, { passive: true });
     window.addEventListener("keydown", armFromKey);
     return () => {
       window.removeEventListener("wheel", arm);
       window.removeEventListener("touchmove", arm);
+      window.removeEventListener("scroll", armFromScroll);
       window.removeEventListener("keydown", armFromKey);
     };
   }, [activeLayout]);
