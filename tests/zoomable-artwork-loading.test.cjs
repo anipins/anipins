@@ -21,3 +21,9 @@ test("zoomable artwork checks cached images after hydration and displays a failu
   assert.match(source, /onError=\{\(\)=>setFailedSrc\(src\)\}/);
   assert.match(source, /Full quality unavailable/);
 });
+
+test("feed cards reveal thumbnails whose load event fired before hydration", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../src/components/ArtCard.tsx"), "utf8");
+  assert.match(source, /isImageAlreadyLoaded\(imageRef\.current\)/);
+  assert.match(source, /ref=\{imageRef\}/);
+});

@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence } from "framer-motion";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import SaveMenu from "./SaveMenu";
 import ShareMenu from "./ShareMenu";
 import { toast } from "./Toaster";
@@ -11,6 +11,7 @@ import ReportArtwork from "./ReportArtwork";
 import DownloadButton from "./DownloadButton";
 import { getArtworkImageFit } from "@/lib/artwork-layout";
 import { makeArtworkPreview } from "@/lib/artwork-preview";
+import { isImageAlreadyLoaded } from "@/lib/image-loading-state";
 
 const warmingOriginals = new Set<string>();
 
@@ -44,8 +45,13 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
   const [share, setShare] = useState(false);
   const [imageState, setImageState] = useState<"loading" | "ready" | "failed">("loading");
   const [imageAttempt, setImageAttempt] = useState(0);
+  const imageRef = useRef<HTMLImageElement>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const suppressOpen = useRef(false);
+  useEffect(() => {
+    // A cached thumbnail can finish before React hydrates and attaches onLoad.
+    if (isImageAlreadyLoaded(imageRef.current)) setImageState("ready");
+  }, [art.thumb, art.thumb_url, imageAttempt]);
   const ratio = art.width && art.height ? art.height / art.width : 1.3;
   // Wide artwork must remain complete in the gallery. Portrait cards keep
   // their edge-to-edge presentation, while landscape cards become easy-to-tap
@@ -90,6 +96,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
             className="block w-full touch-pan-y text-left cursor-zoom-in">
             <div style={{ aspectRatio: `1 / ${ratio}`, minHeight: landscape ? "clamp(180px, 44vw, 360px)" : undefined }} className={`relative w-full overflow-hidden bg-ink ${imageState === "loading" ? "skeleton" : ""}`}>
               <Image
+                ref={imageRef}
                 key={imageAttempt}
                 src={art.thumb_url || `/api/img/${art.thumb}`}
                 alt={artworkAlt(art)}
