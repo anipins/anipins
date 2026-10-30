@@ -73,7 +73,7 @@ export default function ArtworkDetailClient({ initialData }: { initialData: any 
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="grid gap-8 lg:grid-cols-[1.15fr,1fr]">
             <div className="relative">
               <div className="overflow-hidden rounded-3xl hairline bg-soft">
-                <ZoomableArtwork src={art.original_url || `/api/img/${art.orig}`} previewSrc={art.thumb_url || `/api/img/${art.thumb}`} alt={art.title || art.character_name} onSwipe={nav} className="mx-auto max-h-[80vh] w-full" />
+                <ZoomableArtwork src={art.original_url || `/api/img/${art.orig}`} previewSrc={art.thumb_url || `/api/img/${art.thumb}`} alt={art.title || art.character_name || art.anime_name || "Anime artwork"} onSwipe={nav} className="mx-auto max-h-[80vh] w-full" />
               </div>
               <div className="mt-4 flex items-center justify-between">
                 <button onClick={() => nav("prev")} disabled={!data.prevId}
@@ -85,15 +85,15 @@ export default function ArtworkDetailClient({ initialData }: { initialData: any 
             </div>
 
             <div>
-              <h1 className="font-display text-3xl font-semibold md:text-4xl">{art.title || art.character_name}</h1>
+              <h1 className="font-display text-3xl font-semibold md:text-4xl">{art.title || art.character_name || art.anime_name || "Untitled artwork"}</h1>
               <div className="mt-3 flex flex-wrap gap-2 text-sm">
-                <Link href={`/c/${art.character_slug}`} className="chip chip-on">{art.character_name}</Link>
-                <Link href={`/anime/${art.anime_slug}`} className="chip">{art.anime_name}</Link>
+                {art.character_name && art.character_slug && <Link href={`/c/${art.character_slug}`} className="chip chip-on">{art.character_name}</Link>}
+                {art.anime_name && art.anime_slug && <Link href={`/anime/${art.anime_slug}`} className="chip">{art.anime_name}</Link>}
                 {art.gender && <span className="chip">{art.gender}</span>}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
-                <FollowButton kind="character" value={art.character_slug} label={art.character_name} />
-                <FollowButton kind="anime" value={art.anime_slug} label={art.anime_name} />
+                {art.character_name && art.character_slug && <FollowButton kind="character" value={art.character_slug} label={art.character_name} />}
+                {art.anime_name && art.anime_slug && <FollowButton kind="anime" value={art.anime_slug} label={art.anime_name} />}
               </div>
               {art.description && <p className="mt-5 text-sm leading-relaxed text-fog">{art.description}</p>}
               {(art.creator_name || art.source_url) && <div className="mt-5 rounded-2xl bg-soft p-4 text-sm hairline"><p className="text-xs uppercase tracking-widest text-fog">Creator & source</p><p className="mt-1">{art.creator_name || "Original creator"}</p>{art.source_url && <a href={art.source_url} target="_blank" rel="noopener noreferrer nofollow" className="mt-1 block truncate text-gold hover:underline">Visit original source ↗</a>}</div>}
@@ -136,7 +136,7 @@ export default function ArtworkDetailClient({ initialData }: { initialData: any 
 
       <AnimatePresence>
         {save && art && <SaveMenu artworkId={art.id} onClose={() => setSave(false)} />}
-        {share && art && <ShareMenu url={typeof location !== "undefined" ? `${location.origin}/a/${art.id}` : ""} title={art.character_name} onClose={() => setShare(false)} />}
+        {share && art && <ShareMenu url={typeof location !== "undefined" ? `${location.origin}/a/${art.id}` : ""} title={art.title || art.character_name || art.anime_name || "AniPins artwork"} onClose={() => setShare(false)} />}
       </AnimatePresence>
     </section>
     </>

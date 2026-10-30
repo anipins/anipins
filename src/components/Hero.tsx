@@ -53,11 +53,11 @@ export default function Hero() {
                 exit={{ opacity: 0, x: -70, rotate: -5, transition: { duration: 0.5 } }}
                 className="absolute inset-0 overflow-hidden rounded-3xl hairline shadow-[0_30px_80px_rgba(0,0,0,0.55)]"
               >
-                <img src={`/api/img/${a.thumb}`} alt={a.character_name} className="h-full w-full object-cover" />
+                <img src={`/api/img/${a.thumb}`} alt={a.title || a.character_name || a.anime_name || "Anime artwork"} className="h-full w-full object-cover" />
                 {i === 0 && (
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-5">
-                    <p className="font-medium">{a.character_name}</p>
-                    <p className="text-sm text-white/60">{a.anime_name}</p>
+                    <p className="font-medium">{a.title || a.character_name || a.anime_name || "Anime artwork"}</p>
+                    {a.character_name && a.anime_name && <p className="text-sm text-white/60">{a.character_name} · {a.anime_name}</p>}
                   </div>
                 )}
               </motion.div>

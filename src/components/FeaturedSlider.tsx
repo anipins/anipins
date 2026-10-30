@@ -99,7 +99,7 @@ export default function FeaturedSlider({ initialArts = [], premium = false }: { 
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
               <motion.div initial={{ y: 28, opacity: 0, x: -20 }} animate={{ y: 0, opacity: 1, x: 0 }} transition={{ delay: .2, duration: .48, ease: [0.22, 1, .36, 1] }}
                 className="absolute inset-x-0 bottom-0 p-6 md:p-9">
-                <h3 className="font-display text-3xl md:text-5xl font-semibold">{a.character_name}</h3>
+                <h3 className="font-display text-3xl md:text-5xl font-semibold">{a.title || a.character_name || a.anime_name || "Featured artwork"}</h3>
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button onClick={() => openArtwork(a.id)} className="btn-primary !py-2.5">View Artwork</button>
                   <DownloadButton artworkId={a.id} className="btn-ghost !py-2.5 !bg-black/30 backdrop-blur" />

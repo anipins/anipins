@@ -106,7 +106,6 @@ export default function AdminUpload({ premiumOnly = false }: { premiumOnly?: boo
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault(); if (!items.length) { setMessage("Add at least one image."); return; }
-    if (!premiumOnly && items.some(item => !item.character.trim() || !item.anime.trim())) { setMessage("Every public image needs its own character and anime name."); return; }
     setBusy(true); setMessage(""); const uploaded = new Set<string>(); const failures: string[] = [];
     let nextIndex = 0;
     let completeCount = 0;
@@ -149,8 +148,8 @@ export default function AdminUpload({ premiumOnly = false }: { premiumOnly?: boo
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2"><p className="text-xs font-medium text-gold">Artwork {index + 1} of {items.length}</p></div>
           <Field label="Title" value={item.title} onChange={title => update(item.key, { title })} />
-           <Field label={premiumOnly ? "Character name (optional)" : "Character name *"} value={item.character} onChange={character => update(item.key, { character })} required={!premiumOnly} />
-           <Field label={premiumOnly ? "Anime / series (optional)" : "Anime / manhua series *"} value={item.anime} onChange={anime => update(item.key, { anime })} required={!premiumOnly} />
+           <Field label="Character name (optional)" value={item.character} onChange={character => update(item.key, { character })} />
+           <Field label="Anime / series (optional)" value={item.anime} onChange={anime => update(item.key, { anime })} />
           <Field label="Tags" value={item.tags} onChange={tags => update(item.key, { tags })} placeholder="portrait, action, wallpaper" />
           <div><label className="label">Gender / sex</label><select className="input" value={item.gender} onChange={event => update(item.key, { gender: event.target.value })}><option value="">Not specified</option><option>Male</option><option>Female</option><option>Non-binary</option></select></div>
           <div><label className="label">Category</label><select className="input" value={item.category} onChange={event => update(item.key, { category: event.target.value })}><option value="">None</option><option>Male Characters</option><option>Female Characters</option><option>Wallpapers</option><option>Action</option><option>Aesthetic</option></select><p className="mt-1 text-xs text-fog">Choose Wallpapers to show this image only in Wallpaper browsing, never in the normal Home or Explore feeds.</p></div>

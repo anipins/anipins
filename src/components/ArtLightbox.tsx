@@ -132,22 +132,22 @@ export default function ArtLightbox() {
             className="min-h-full w-full max-w-none overflow-hidden bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
             <div className="grid md:min-h-dvh md:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)] xl:grid-cols-[minmax(360px,42vw)_minmax(0,1fr)]">
               <div className="relative flex min-h-0 w-full items-center justify-start overflow-hidden bg-black md:h-dvh xl:hidden">
-                {art && (fullImage || previewImage) ? <ZoomableArtwork src={fullImage || previewImage!} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} align="start" className="h-auto w-auto max-w-full md:h-dvh md:max-h-dvh" />
+                {art && (fullImage || previewImage) ? <ZoomableArtwork src={fullImage || previewImage!} previewSrc={previewImage} alt={art.title || art.character_name || art.anime_name || "Anime artwork"} onSwipe={nav} align="start" className="h-auto w-auto max-w-full md:h-dvh md:max-h-dvh" />
                   : <div className="skeleton h-[50vh] w-full" />}
               </div>
               <div className="artwork-detail-panel flex h-auto min-h-0 flex-col justify-start p-6 pb-6 md:min-h-80 md:p-8 md:pb-[max(2rem,env(safe-area-inset-bottom))] xl:hidden">
                 {detailError && <div className="mb-4 rounded-xl border border-gold/30 bg-gold/10 p-3 text-sm text-paper">Artwork details are taking longer than usual. <button type="button" onClick={() => setDetailRetry(value => value + 1)} className="ml-2 text-gold underline underline-offset-4">Retry</button></div>}
                 {art && (
                   <>
-                    <h2 className="font-display text-2xl font-semibold">{art.title || art.character_name}</h2>
+                    <h2 className="font-display text-2xl font-semibold">{art.title || art.character_name || art.anime_name || "Untitled artwork"}</h2>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <Link href={`/c/${art.character_slug}`} onClick={() => setId(null)} className="chip chip-on">{art.character_name}</Link>
-                      <Link href={`/anime/${art.anime_slug}`} onClick={() => setId(null)} className="chip">{art.anime_name}</Link>
+                      {art.character_name && art.character_slug && <Link href={`/c/${art.character_slug}`} onClick={() => setId(null)} className="chip chip-on">{art.character_name}</Link>}
+                      {art.anime_name && art.anime_slug && <Link href={`/anime/${art.anime_slug}`} onClick={() => setId(null)} className="chip">{art.anime_name}</Link>}
                       {art.gender && <span className="chip hidden md:inline-flex">{art.gender}</span>}
                     </div>
                     <div className="mt-3 hidden flex-wrap gap-2 md:flex">
-                      <FollowButton kind="character" value={art.character_slug} label={art.character_name} />
-                      <FollowButton kind="anime" value={art.anime_slug} label={art.anime_name} />
+                      {art.character_name && art.character_slug && <FollowButton kind="character" value={art.character_slug} label={art.character_name} />}
+                      {art.anime_name && art.anime_slug && <FollowButton kind="anime" value={art.anime_slug} label={art.anime_name} />}
                     </div>
                     {art.description && <p className="mt-4 text-sm leading-relaxed text-fog">{art.description}</p>}
                     <div className="hidden md:block">
@@ -174,8 +174,8 @@ export default function ArtLightbox() {
                     {more && <div className="mt-3 rounded-2xl border border-paper/10 bg-soft/70 p-3 md:hidden">
                       <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-fog">More options</p>
                       <div className="mt-2 grid gap-2">
-                        <FollowButton kind="character" value={art.character_slug} label={art.character_name} />
-                        <FollowButton kind="anime" value={art.anime_slug} label={art.anime_name} />
+                        {art.character_name && art.character_slug && <FollowButton kind="character" value={art.character_slug} label={art.character_name} />}
+                        {art.anime_name && art.anime_slug && <FollowButton kind="anime" value={art.anime_slug} label={art.anime_name} />}
                       </div>
                       <div className="mt-3 flex items-center justify-between gap-3 border-t border-paper/10 pt-3 text-sm">
                         <button type="button" onClick={() => { setShare(true); setMore(false); }} className="text-fog transition-colors hover:text-paper">Share</button>
@@ -212,15 +212,15 @@ export default function ArtLightbox() {
                   pinterestLayout={{
                     leadingContent: <article className="grid overflow-hidden rounded-2xl bg-black shadow-[0_20px_50px_rgba(0,0,0,0.35)] 2xl:grid-cols-[minmax(0,1fr)_minmax(360px,1.12fr)]">
                       <div className="min-w-0 bg-black">
-                        {fullImage || previewImage ? <ZoomableArtwork src={fullImage || previewImage!} previewSrc={previewImage} alt={art.title || art.character_name} onSwipe={nav} align="start" className="h-auto w-full" /> : <div className="skeleton aspect-[3/4] w-full" />}
+                        {fullImage || previewImage ? <ZoomableArtwork src={fullImage || previewImage!} previewSrc={previewImage} alt={art.title || art.character_name || art.anime_name || "Anime artwork"} onSwipe={nav} align="start" className="h-auto w-full" /> : <div className="skeleton aspect-[3/4] w-full" />}
                       </div>
                       <div className="flex min-h-full flex-col p-6 2xl:p-8">
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <h2 className="font-display text-3xl font-semibold">{art.title || art.character_name}</h2>
+                            <h2 className="font-display text-3xl font-semibold">{art.title || art.character_name || art.anime_name || "Untitled artwork"}</h2>
                             <div className="mt-3 flex flex-wrap gap-2">
-                              <Link href={`/c/${art.character_slug}`} onClick={() => setId(null)} className="chip chip-on">{art.character_name}</Link>
-                              <Link href={`/anime/${art.anime_slug}`} onClick={() => setId(null)} className="chip">{art.anime_name}</Link>
+                              {art.character_name && art.character_slug && <Link href={`/c/${art.character_slug}`} onClick={() => setId(null)} className="chip chip-on">{art.character_name}</Link>}
+                              {art.anime_name && art.anime_slug && <Link href={`/anime/${art.anime_slug}`} onClick={() => setId(null)} className="chip">{art.anime_name}</Link>}
                             </div>
                           </div>
                           <button onClick={() => setSave(true)} className="btn-primary shrink-0 !px-5 !py-2.5">Save</button>
@@ -255,7 +255,7 @@ export default function ArtLightbox() {
           </motion.div>
           <AnimatePresence>
             {save && art && <SaveMenu artworkId={art.id} onClose={() => setSave(false)} />}
-            {share && art && <ShareMenu url={`${location.origin}/a/${art.id}`} title={art.character_name} onClose={() => setShare(false)} />}
+            {share && art && <ShareMenu url={`${location.origin}/a/${art.id}`} title={art.title || art.character_name || art.anime_name || "AniPins artwork"} onClose={() => setShare(false)} />}
           </AnimatePresence>
         </motion.div>
       )}

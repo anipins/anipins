@@ -13,6 +13,17 @@ test("upload cards start without filename-derived titles and can clear all title
   assert.match(upload, />Clear all titles</);
 });
 
+test("public uploads allow artwork without character or series metadata", () => {
+  const upload = read("src/app/admin/upload/page.tsx");
+  const endpoint = read("src/app/api/admin/upload/route.ts");
+  assert.match(upload, /Character name \(optional\)/);
+  assert.match(upload, /Anime \/ series \(optional\)/);
+  assert.doesNotMatch(upload, /Every public image needs its own character and anime name/);
+  assert.doesNotMatch(endpoint, /Character and anime names are required for public artwork/);
+  assert.match(endpoint, /character \|\| \(premium \? "Premium reference" : ""\)/);
+  assert.match(endpoint, /anime \|\| \(premium \? "AniPins Premium" : ""\)/);
+});
+
 test("search input exposes a clear button for a nonempty query", () => {
   const navbar = read("src/components/Navbar.tsx");
   assert.match(navbar, /q\.trim\(\)\s*\?\s*<button/);

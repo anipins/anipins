@@ -44,11 +44,10 @@ export async function POST(req: NextRequest) {
   const character = String(value("character") || "").trim();
   const anime = String(value("anime") || "").trim();
   const premium = value("premium") === (direct ? true : "1") ? 1 : 0;
-  // Public artwork needs searchable metadata. Premium drops can be a private
-  // visual collection, so the creator may intentionally leave both fields blank.
-  if ((!character || !anime) && !premium) return NextResponse.json({ error: "Character and anime names are required for public artwork." }, { status: 400 });
-  const storedCharacter = character || "Premium reference";
-  const storedAnime = anime || "AniPins Premium";
+  // Keep omitted character/series metadata empty so public uploads can be
+  // published as standalone artwork without inventing searchable labels.
+  const storedCharacter = character || (premium ? "Premium reference" : "");
+  const storedAnime = anime || (premium ? "AniPins Premium" : "");
 
   const title = String(value("title") || "").trim().slice(0, 160);
   const description = String(value("description") || "").trim().slice(0, 2000);
@@ -96,13 +95,14 @@ export async function POST(req: NextRequest) {
     await run(
       `INSERT INTO artworks (title, character_name, character_slug, anime_name, anime_slug, description, tags, gender, category, premium, featured, published, orig, thumb, width, height, content_hash, perceptual_hash, creator_name, source_url)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      title || storedCharacter, storedCharacter, slugify(storedCharacter), storedAnime, slugify(storedAnime), description, tags, gender, category, premium, featured, published, m.orig, m.thumb, m.width, m.height, item.fingerprint.contentHash, item.fingerprint.perceptualHash, creator, sourceUrl);
+      title || storedCharacter || item.name.replace(/\.[^.]+$/, "").trim().slice(0, 160) || "Untitled artwork", storedCharacter, slugify(storedCharacter), storedAnime, slugify(storedAnime), description, tags, gender, category, premium, featured, published, m.orig, m.thumb, m.width, m.height, item.fingerprint.contentHash, item.fingerprint.perceptualHash, creator, sourceUrl);
     const r = await row("SELECT id FROM artworks WHERE orig=?", m.orig);
     ids.push(r.id);
-    if (published && !premium) await notifyFollowers(r.id, slugify(storedCharacter), storedCharacter, slugify(storedAnime), storedAnime);
+    if (published && !premium && (character || anime)) await notifyFollowers(r.id, slugify(storedCharacter), storedCharacter || "New", slugify(storedAnime), storedAnime || "AniPins");
   }
   phase = "audit-log";
-  await audit(u!.id, "ARTWORK_UPLOAD", "artwork", ids.join(","), `${ids.length} artwork(s): ${character} · ${anime}`, requestInfo(req).ip);
+  const metadataSummary = [character, anime].filter(Boolean).join(" · ") || "metadata omitted";
+  await audit(u!.id, "ARTWORK_UPLOAD", "artwork", ids.join(","), `${ids.length} artwork(s): ${metadataSummary}`, requestInfo(req).ip);
   return NextResponse.json({ ok: true, ids });
   } catch (error) {
     // Return a retryable response rather than dropping the browser connection.

@@ -91,11 +91,11 @@ export async function getPremiumPreviewCards(limit = 3) {
 
 export async function getCharacters() {
   return rows(
-    `SELECT MIN(character_name) AS name, character_slug AS slug, MIN(anime_name) AS anime,
-      MIN(anime_slug) AS anime_slug, COUNT(*) AS count,
+    `SELECT MIN(character_name) AS name, character_slug AS slug, MIN(NULLIF(anime_name, '')) AS anime,
+      MIN(NULLIF(anime_slug, '')) AS anime_slug, COUNT(*) AS count,
        (SELECT thumb FROM artworks a2 WHERE a2.character_slug=a.character_slug AND a2.published=1 AND COALESCE(a2.premium, 0)=0 AND ${nonWallpaperFilter()} ORDER BY views DESC, id DESC LIMIT 1) AS cover,
       MAX(created_at) AS updated_at
-     FROM artworks a WHERE published=1 AND COALESCE(a.premium, 0)=0 AND ${nonWallpaperFilter()}
+     FROM artworks a WHERE published=1 AND COALESCE(a.premium, 0)=0 AND character_slug <> '' AND ${nonWallpaperFilter()}
      GROUP BY character_slug ORDER BY count DESC, name ASC`,
   );
 }
@@ -106,15 +106,15 @@ export async function getAnime() {
       COUNT(DISTINCT character_slug) AS characters,
        (SELECT thumb FROM artworks a2 WHERE a2.anime_slug=a.anime_slug AND a2.published=1 AND COALESCE(a2.premium, 0)=0 AND ${nonWallpaperFilter()} ORDER BY views DESC, id DESC LIMIT 1) AS cover,
       MAX(created_at) AS updated_at
-     FROM artworks a WHERE published=1 AND COALESCE(a.premium, 0)=0 AND ${nonWallpaperFilter()}
+     FROM artworks a WHERE published=1 AND COALESCE(a.premium, 0)=0 AND anime_slug <> '' AND ${nonWallpaperFilter()}
      GROUP BY anime_slug ORDER BY count DESC, name ASC`,
   );
 }
 
 export async function getCharacter(slug: string) {
   return row(
-    `SELECT MIN(character_name) AS name, character_slug AS slug, MIN(anime_name) AS anime,
-      MIN(anime_slug) AS anime_slug, COUNT(*) AS count, MAX(created_at) AS updated_at
+    `SELECT MIN(character_name) AS name, character_slug AS slug, MIN(NULLIF(anime_name, '')) AS anime,
+      MIN(NULLIF(anime_slug, '')) AS anime_slug, COUNT(*) AS count, MAX(created_at) AS updated_at
      FROM artworks WHERE published=1 AND COALESCE(premium, 0)=0 AND ${nonWallpaperFilter()} AND character_slug=? GROUP BY character_slug`,
     slug,
   );
@@ -132,7 +132,7 @@ export async function getAnimeBySlug(slug: string) {
 export async function getCharactersForAnime(animeSlug: string) {
   return rows(
     `SELECT MIN(character_name) AS name, character_slug AS slug, COUNT(*) AS count
-     FROM artworks WHERE published=1 AND COALESCE(premium, 0)=0 AND ${nonWallpaperFilter()} AND anime_slug=?
+     FROM artworks WHERE published=1 AND COALESCE(premium, 0)=0 AND ${nonWallpaperFilter()} AND anime_slug=? AND character_slug <> ''
      GROUP BY character_slug ORDER BY count DESC, name ASC`,
     animeSlug,
   );

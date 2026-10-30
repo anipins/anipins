@@ -137,7 +137,7 @@ export default function ArtCard({ art, index = 0, priority }: { art: any; index?
       </div>
       <AnimatePresence>
         {save && <SaveMenu artworkId={art.id} onClose={() => setSave(false)} />}
-        {share && <ShareMenu url={typeof location !== "undefined" ? `${location.origin}/a/${art.id}` : `/a/${art.id}`} title={art.character_name} onClose={() => setShare(false)} />}
+        {share && <ShareMenu url={typeof location !== "undefined" ? `${location.origin}/a/${art.id}` : `/a/${art.id}`} title={art.title || art.character_name || art.anime_name || "AniPins artwork"} onClose={() => setShare(false)} />}
       </AnimatePresence>
     </>
   );
