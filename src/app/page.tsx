@@ -24,8 +24,8 @@ const getHomeFeatured = unstable_cache(
 // Keep the discovery set fresh but avoid a costly ORDER BY RANDOM() database
 // query for every page open. Cards are shuffled in the client on each visit.
 const getHomeDiscovery = unstable_cache(
-  (seed: number) => getArtworkCards({ sort: "random", limit: 36, seed }),
-  ["public-home-discovery-v2"],
+  (seed: number) => getArtworkCards({ sort: "random", limit: 18, seed, compact: true }),
+  ["public-home-discovery-v3"],
   { revalidate: 5 },
 );
 
@@ -49,7 +49,7 @@ export default async function Home() {
           </ScrollReveal>
           <FilterChips />
         </div>
-        <MasonryFeed query={HOME_DISCOVERY_QUERY} randomize initialItems={discovery} initialHasMore={discovery.length === 36} initialSeed={discoverySeed} eagerLoad />
+        <MasonryFeed query={HOME_DISCOVERY_QUERY} randomize initialItems={discovery} initialHasMore={discovery.length === 18} initialSeed={discoverySeed} />
       </section>
     </div>
   );
