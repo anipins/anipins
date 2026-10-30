@@ -39,8 +39,9 @@ test("Google account deletion requires a credential linked to the signed-in user
   assert.match(deletion, /!passwordConfirmed && !googleConfirmed/);
 });
 
-test("credential-only Google button does not start an unrelated sign-in or auto-prompt", () => {
+test("Google sign-in uses a rounded click-to-start button without an auto-prompt", () => {
   const source = fs.readFileSync(path.resolve(__dirname, "../src/components/GoogleSignInButton.tsx"), "utf8");
   assert.match(source, /if \(credentialOnly\)[\s\S]*?onCredential\?\.\(credential\)/);
-  assert.match(source, /!credentialOnly && loginParams\.get\("mobile"\) !== "1"/);
+  assert.match(source, /shape: "pill"/);
+  assert.doesNotMatch(source, /accounts\.id\.prompt\s*\(/);
 });
